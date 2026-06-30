@@ -22,9 +22,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import it.northleap.backend.exceptions.RbacDeniedException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 // Copre in particolare resolveOwnerId: sotto scope OWN un attore non deve poter intestare/
@@ -145,5 +152,53 @@ class RecordsServiceTest {
         Record updated = service.update(actor(actorId), "lead", existing.getId(), dto(newOwner), null);
 
         assertEquals(newOwner, updated.getOwnerId());
+    }
+
+    @Test
+    void removeUnderOwnScopeDeniesSomeoneElsesRecord() {
+        UUID actorId = UUID.randomUUID();
+        UUID otherOwner = UUID.randomUUID();
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setOwnerId(otherOwner);
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.OWN));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+
+        assertThrows(RbacDeniedException.class,
+                () -> service.remove(actor(actorId), "lead", existing.getId(), null));
+        assertFalse(existing.isDeleted());
+        verify(recordRepository, never()).save(any(Record.class));
+    }
+
+    @Test
+    void removeUnderOwnScopeAllowsOwnRecord() {
+        UUID actorId = UUID.randomUUID();
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setOwnerId(actorId);
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.OWN));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+
+        service.remove(actor(actorId), "lead", existing.getId(), null);
+
+        assertTrue(existing.isDeleted());
+    }
+
+    @Test
+    void removeUnderAllScopeAllowsSomeoneElsesRecord() {
+        UUID actorId = UUID.randomUUID();
+        UUID otherOwner = UUID.randomUUID();
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setOwnerId(otherOwner);
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+
+        service.remove(actor(actorId), "lead", existing.getId(), null);
+
+        assertTrue(existing.isDeleted());
     }
 }

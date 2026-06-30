@@ -95,10 +95,7 @@ public class RecordsService {
                 .filter(r -> r.getObjectType().getId().equals(obj.getId()))
                 .orElseThrow(() -> new NotFoundException("Record non trovato"));
 
-        if (scope == PermScope.OWN && actor.type() == ActorType.USER
-                && !actor.id().equals(existing.getOwnerId())) {
-            throw new RbacDeniedException("Puoi modificare solo i tuoi record");
-        }
+        assertOwnership(scope, actor, existing, "Puoi modificare solo i tuoi record");
 
         Map<String, Object> merged = new LinkedHashMap<>(existing.getData());
         merged.putAll(dto.getData());
@@ -119,11 +116,16 @@ public class RecordsService {
 
     @Transactional
     public void remove(Actor actor, String key, UUID id, String ip) {
-        authorize(actor, key, PermAction.WRITE);
+        PermScope scope = authorize(actor, key, PermAction.WRITE);
         ObjectType obj = objectOrThrow(key);
         Record existing = recordRepository.findByIdAndIsDeletedFalse(id)
                 .filter(r -> r.getObjectType().getId().equals(obj.getId()))
                 .orElseThrow(() -> new NotFoundException("Record non trovato"));
+
+        // stessa enforcement OWN-scope di update()/bulk(): senza questo un attore con WRITE in
+        // scope OWN poteva cancellare (soft-delete) record altrui — lo scope qui veniva ignorato
+        assertOwnership(scope, actor, existing, "Puoi eliminare solo i tuoi record");
+
         existing.setDeleted(true);
         recordRepository.save(existing);
 
@@ -174,10 +176,21 @@ public class RecordsService {
         List<Record> candidates = recordRepository.findByIsDeletedFalseAndTitleContainingOrderByUpdatedAtDesc(q)
                 .stream().limit(30).toList();
 
-        Map<UUID, Boolean> cache = new LinkedHashMap<>();
+        Map<UUID, RbacService.Resolution> cache = new LinkedHashMap<>();
         return candidates.stream()
-                .filter(r -> cache.computeIfAbsent(r.getObjectType().getId(),
-                        oid -> rbacService.resolve(actor.roleIds(), r.getObjectType().getKey(), PermAction.READ).allowed()))
+                .filter(r -> {
+                    RbacService.Resolution res = cache.computeIfAbsent(r.getObjectType().getId(),
+                            oid -> rbacService.resolve(actor.roleIds(), r.getObjectType().getKey(), PermAction.READ));
+                    if (!res.allowed()) {
+                        return false;
+                    }
+                    // sotto scope OWN la ricerca globale non deve esporre i titoli dei record altrui
+                    // (stesso confine record-level che query() applica via owner_id)
+                    if (res.scope() == PermScope.OWN && actor.type() == ActorType.USER) {
+                        return actor.id().equals(r.getOwnerId());
+                    }
+                    return true;
+                })
                 .toList();
     }
 
@@ -199,6 +212,15 @@ public class RecordsService {
             return currentOwnerId;
         }
         return actor.type() == ActorType.USER ? actor.id() : null;
+    }
+
+    // Enforcement record-level dello scope OWN: un attore USER con permesso solo OWN può agire
+    // solo sui propri record. Per scope ALL/TEAM (o attori non-USER) non si applica.
+    private void assertOwnership(PermScope scope, Actor actor, Record rec, String message) {
+        if (scope == PermScope.OWN && actor.type() == ActorType.USER
+                && !actor.id().equals(rec.getOwnerId())) {
+            throw new RbacDeniedException(message);
+        }
     }
 
     private PermScope authorize(Actor actor, String key, PermAction action) {
