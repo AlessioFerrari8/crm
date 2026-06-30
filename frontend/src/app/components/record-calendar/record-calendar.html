@@ -1,0 +1,43 @@
+<div>
+  <div class="mb-3 flex items-center gap-2">
+    <button class="btn btn-ghost btn-sm btn-square" (click)="prevMonth()" aria-label="Mese precedente">
+      <lucide-icon [img]="ChevronLeftIcon" [size]="16" />
+    </button>
+    <span class="w-40 text-center text-sm font-medium capitalize">{{ monthLabel() }}</span>
+    <button class="btn btn-ghost btn-sm btn-square" (click)="nextMonth()" aria-label="Mese successivo">
+      <lucide-icon [img]="ChevronRightIcon" [size]="16" />
+    </button>
+    <button class="btn btn-ghost btn-sm" (click)="goToday()">Oggi</button>
+    <span class="ml-auto text-xs text-base-content/50">su "{{ dateField().label }}"</span>
+  </div>
+
+  <div class="border border-base-300 rounded-box overflow-hidden">
+    <div class="grid grid-cols-7 bg-base-200 text-xs font-medium text-base-content/60">
+      @for (wd of weekdays; track wd) {
+        <div class="px-2 py-2 text-center">{{ wd }}</div>
+      }
+    </div>
+    <div class="grid grid-cols-7">
+      @for (cell of cells(); track $index) {
+        <div class="min-h-24 border-b border-r border-base-300 p-1.5">
+          @if (cell.day) {
+            <div class="mb-1 text-xs"
+                 [class]="isToday(cell.day) ? 'grid h-5 w-5 place-items-center rounded-full bg-primary text-primary-content' : 'text-base-content/40'">
+              {{ cell.day }}
+            </div>
+            <div class="space-y-1">
+              @for (rec of cell.items.slice(0, 4); track rec.id) {
+                <a [routerLink]="['/o', objectKey(), rec.id]"
+                   class="block truncate rounded-sm bg-primary/15 text-primary px-1 py-0.5 text-[11px] hover:bg-primary/25"
+                   [title]="rec.title">{{ rec.title }}</a>
+              }
+              @if (cell.items.length > 4) {
+                <div class="text-[10px] text-base-content/40">+{{ cell.items.length - 4 }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

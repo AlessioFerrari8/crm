@@ -8,13 +8,25 @@
       <button class="btn btn-ghost btn-sm rounded-sm" (click)="showFilters.set(!showFilters())">
         Filtri @if (activeFilterCount() > 0) { <span class="badge badge-primary badge-xs">{{ activeFilterCount() }}</span> }
       </button>
-      @if (statusField()) {
-        <label class="swap btn btn-ghost btn-sm rounded-sm">
-          <input type="checkbox" [checked]="view() === 'board'"
-                 (change)="view.set(view() === 'board' ? 'table' : 'board')" />
-          <span class="swap-on">Tabella</span>
-          <span class="swap-off">Board</span>
-        </label>
+      @if (statusField() || dateField()) {
+        <div class="join">
+          <button class="join-item btn btn-sm" [class.btn-active]="view() === 'table'"
+                  (click)="view.set('table')" title="Tabella" aria-label="Tabella">
+            <lucide-icon [img]="LayoutListIcon" [size]="16" />
+          </button>
+          @if (statusField()) {
+            <button class="join-item btn btn-sm" [class.btn-active]="view() === 'board'"
+                    (click)="view.set('board')" title="Board" aria-label="Board">
+              <lucide-icon [img]="ColumnsIcon" [size]="16" />
+            </button>
+          }
+          @if (dateField()) {
+            <button class="join-item btn btn-sm" [class.btn-active]="view() === 'calendar'"
+                    (click)="view.set('calendar')" title="Calendario" aria-label="Calendario">
+              <lucide-icon [img]="CalendarIcon" [size]="16" />
+            </button>
+          }
+        </div>
       }
       <ui-button variant="primary" (click)="drawerOpen.set(true)">+ Nuovo</ui-button>
     </div>
@@ -35,6 +47,8 @@
     <div class="text-center py-12 text-base-content/50">Nessun record. Creane uno con "+ Nuovo".</div>
   } @else if (view() === 'board' && statusField()) {
     <app-record-board [items]="records()" [statusField]="statusField()!" [objectKey]="objectKey()" />
+  } @else if (view() === 'calendar' && dateField()) {
+    <app-record-calendar [items]="records()" [dateField]="dateField()!" [objectKey]="objectKey()" />
   } @else {
     <div class="overflow-x-auto border border-base-300 rounded-sm">
       <table class="table table-sm">
