@@ -58,19 +58,33 @@ public final class SafeUrlValidator {
             return false;
         }
 
+        // host IPv6 letterale: URI.getHost() lo restituisce tra parentesi quadre ([::1]), che
+        // InetAddress non accetta — vanno tolte prima della risoluzione
+        String resolveHost = (host.startsWith("[") && host.endsWith("]"))
+                ? host.substring(1, host.length() - 1)
+                : host;
+
         InetAddress[] resolved;
         try {
-            resolved = resolver.resolve(host);
+            resolved = resolver.resolve(resolveHost);
         } catch (UnknownHostException e) {
             return false;
         }
         for (InetAddress addr : resolved) {
             if (addr.isAnyLocalAddress() || addr.isLoopbackAddress()
-                    || addr.isLinkLocalAddress() || addr.isSiteLocalAddress()) {
+                    || addr.isLinkLocalAddress() || addr.isSiteLocalAddress()
+                    || isUniqueLocalIpv6(addr)) {
                 return false;
             }
         }
         return true;
+    }
+
+    // IPv6 Unique Local Address (fc00::/7): non intercettato da isSiteLocalAddress() (che copre
+    // solo il deprecato fec0::/10 per IPv6), quindi un ULA bypasserebbe la guardia senza questo
+    private static boolean isUniqueLocalIpv6(InetAddress addr) {
+        byte[] b = addr.getAddress();
+        return b.length == 16 && (b[0] & 0xfe) == 0xfc;
     }
 
     private static boolean isBlockedIpv4Literal(String host) {

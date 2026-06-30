@@ -21,6 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimiter {
 
+    // oltre questa soglia di chiavi distinte si fa uno sweep dei bucket scaduti: senza, la mappa
+    // crescerebbe illimitatamente (una entry per ogni IP+endpoint mai più rivisto) — leak di memoria
+    private static final int CLEANUP_THRESHOLD = 10_000;
+
     private final int maxAttempts;
     private final Duration window;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -49,6 +53,11 @@ public class RateLimiter {
     // (AnalyticsService.referenceDate, WorkflowEngine.runWorkflow) per evitare di dover
     // mockare/aspettare il tempo reale nei test
     boolean allow(String key, Instant now) {
+        // i bucket scaduti verrebbero comunque resettati al prossimo accesso: rimuoverli è sicuro
+        // (una richiesta successiva ne ricrea uno fresco) e tiene la mappa limitata nel tempo
+        if (buckets.size() > CLEANUP_THRESHOLD) {
+            buckets.entrySet().removeIf(e -> Duration.between(e.getValue().windowStart, now).compareTo(window) >= 0);
+        }
         Bucket bucket = buckets.computeIfAbsent(key, k -> new Bucket(now));
         synchronized (bucket) {
             if (Duration.between(bucket.windowStart, now).compareTo(window) >= 0) {

@@ -20,6 +20,15 @@ class SafeUrlValidatorTest {
         return InetAddress.getByAddress(bytes);
     }
 
+    // IPv6 da 16 byte grezzi (stesso principio: nessuna I/O, solo costruzione dell'oggetto)
+    private static InetAddress fakeAddress6(int... octets) throws UnknownHostException {
+        byte[] bytes = new byte[16];
+        for (int i = 0; i < 16; i++) {
+            bytes[i] = (byte) octets[i];
+        }
+        return InetAddress.getByAddress(bytes);
+    }
+
     private static SafeUrlValidator.DnsResolver resolvesTo(InetAddress... addresses) {
         return host -> addresses;
     }

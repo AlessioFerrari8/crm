@@ -52,8 +52,22 @@ public class FileController {
                 .build();
 
         return ResponseEntity.ok()
-                .contentType(file.getMime() != null ? MediaType.parseMediaType(file.getMime()) : MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(safeMediaType(file.getMime()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(resource);
+    }
+
+    // il mime è salvato dal client all'upload: un valore malformato farebbe lanciare
+    // MediaType.parseMediaType (InvalidMediaTypeException) → 500 sul download. Si ricade su
+    // application/octet-stream, che con Content-Disposition: attachment forza comunque il download.
+    private MediaType safeMediaType(String mime) {
+        if (mime == null || mime.isBlank()) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+        try {
+            return MediaType.parseMediaType(mime);
+        } catch (org.springframework.http.InvalidMediaTypeException e) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
     }
 }
