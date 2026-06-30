@@ -1,35 +1,76 @@
 <div>
-  <p class="text-sm text-base-content/60 mb-3">
-    Automazioni attive. L'editor visuale a grafo arriverà più avanti — qui per ora si può
-    attivare/disattivare, eseguire manualmente ed eliminare.
-  </p>
+  @if (openWf(); as wf) {
+    <!-- editor visuale del workflow aperto -->
+    <div class="mb-4 flex items-center gap-2">
+      <button class="btn btn-ghost btn-sm rounded-sm" (click)="closeEditor()">← Indietro</button>
+      <h2 class="text-lg font-semibold">{{ wf.name }}</h2>
+      <div class="ml-auto flex items-center gap-2">
+        <span class="text-xs text-base-content/60">Attivo</span>
+        <input type="checkbox" class="toggle toggle-primary toggle-sm" [checked]="wf.active" (change)="toggleOpen()" />
+        <button class="btn btn-ghost btn-sm rounded-sm" (click)="runOpen()">Esegui</button>
+        <button class="btn btn-primary btn-sm rounded-sm" (click)="save()">Salva</button>
+        @if (saved()) { <span class="text-success text-xs">salvato ✓</span> }
+      </div>
+    </div>
 
-  @if (loading()) {
-    <div class="flex justify-center py-8"><ui-spinner /></div>
+    <app-workflow-editor [(value)]="graph" />
+
+    <p class="mt-2 text-[11px] text-base-content/40">
+      Trascina i blocchi per spostarli. Clicca un handle (es. ● out) e poi un altro blocco per collegarli.
+      Il trigger è il punto di partenza.
+    </p>
   } @else {
-    <table class="table table-sm border border-base-300 rounded-sm">
-      <thead><tr><th>Nome</th><th>Trigger</th><th>Attivo</th><th></th></tr></thead>
-      <tbody>
-        @for (w of workflows(); track w.id) {
-          <tr>
-            <td>
-              <div class="font-medium">{{ w.name }}</div>
-              @if (w.description) { <div class="text-xs text-base-content/50">{{ w.description }}</div> }
-            </td>
-            <td><code class="text-xs">{{ triggerType(w) }}</code></td>
-            <td>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" [checked]="w.active" (change)="toggle(w)" />
-            </td>
-            <td class="text-right whitespace-nowrap">
-              @if (ranId() === w.id) {
-                <span class="text-success text-xs mr-2">in coda ✓</span>
-              }
-              <button class="btn btn-ghost btn-xs rounded-sm" (click)="run(w)">Esegui</button>
-              <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="remove(w)">Elimina</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+    <!-- lista workflow -->
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-sm text-base-content/60">
+        Automazioni. Crea o apri un workflow per modificarlo nell'editor visuale a grafo.
+      </p>
+      @if (!creating()) {
+        <button class="btn btn-primary btn-sm rounded-sm" (click)="startCreate()">+ Nuovo workflow</button>
+      }
+    </div>
+
+    @if (creating()) {
+      <div class="flex items-center gap-2 mb-3">
+        <input class="input input-bordered input-sm flex-1" placeholder="Nome del workflow"
+               [value]="newName()" (input)="newName.set(val($event))"
+               (keyup.enter)="confirmCreate()" />
+        <button class="btn btn-primary btn-sm rounded-sm" [disabled]="!newName().trim()" (click)="confirmCreate()">Crea</button>
+        <button class="btn btn-ghost btn-sm rounded-sm" (click)="creating.set(false)">Annulla</button>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="flex justify-center py-8"><ui-spinner /></div>
+    } @else if (workflows().length === 0) {
+      <div class="text-center py-8 text-base-content/50">Nessun workflow. Creane uno con "+ Nuovo workflow".</div>
+    } @else {
+      <table class="table table-sm border border-base-300 rounded-sm">
+        <thead><tr><th>Nome</th><th>Trigger</th><th>Blocchi</th><th>Attivo</th><th></th></tr></thead>
+        <tbody>
+          @for (w of workflows(); track w.id) {
+            <tr>
+              <td>
+                <div class="font-medium">{{ w.name }}</div>
+                @if (w.description) { <div class="text-xs text-base-content/50">{{ w.description }}</div> }
+              </td>
+              <td><code class="text-xs">{{ triggerType(w) }}</code></td>
+              <td class="text-xs text-base-content/60">{{ blockCount(w) }}</td>
+              <td>
+                <input type="checkbox" class="toggle toggle-primary toggle-sm" [checked]="w.active" (change)="toggle(w)" />
+              </td>
+              <td class="text-right whitespace-nowrap">
+                @if (ranId() === w.id) {
+                  <span class="text-success text-xs mr-2">in coda ✓</span>
+                }
+                <button class="btn btn-ghost btn-xs rounded-sm" (click)="openEditor(w)">Apri editor</button>
+                <button class="btn btn-ghost btn-xs rounded-sm" (click)="run(w)">Esegui</button>
+                <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="remove(w)">Elimina</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   }
 </div>

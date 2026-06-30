@@ -14,6 +14,7 @@ import {
   WebhookDirection,
   Workflow
 } from '../models/admin';
+import { WfGraph } from '../models/workflow-graph';
 
 // service per gestione user admin, e gestione impostazioni
 @Injectable({ providedIn: 'root' })
@@ -68,7 +69,21 @@ export class AdminService {
   listWorkflows(): Observable<Workflow[]> {
     return this.http.get<Workflow[]>(`${this.api}/workflows`);
   }
-  
+
+  // nuovo workflow vuoto: solo il nodo trigger nel grafo, da configurare poi nell'editor
+  createWorkflow(name: string): Observable<Workflow> {
+    return this.http.post<Workflow>(`${this.api}/workflows`, {
+      name,
+      trigger: { type: 'record.created' },
+      graph: { nodes: [{ id: 'trigger', type: 'trigger', x: 40, y: 40, data: { type: 'record.created' } }], edges: [] }
+    });
+  }
+
+  // salva il grafo dell'editor; `trigger` (matcher evento) viene estratto dal nodo trigger
+  saveWorkflowGraph(id: string, graph: WfGraph, trigger: Record<string, unknown>): Observable<Workflow> {
+    return this.http.patch<Workflow>(`${this.api}/workflows/${id}`, { graph, trigger });
+  }
+
   setWorkflowActive(id: string, active: boolean): Observable<Workflow> {
     return this.http.patch<Workflow>(`${this.api}/workflows/${id}`, { isActive: active });
   }

@@ -3,13 +3,15 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
 
 import { UiSpinner } from '../../../components/ui/spinner';
+import { WorkflowEditor } from '../../../components/workflow-editor/workflow-editor';
 import { Workflow } from '../../../models/admin';
+import { WfGraph, synthGraph } from '../../../models/workflow-graph';
 import { AdminService } from '../../../services/admin.service';
 
 @Component({
   selector: 'app-workflows-tab',
   standalone: true,
-  imports: [UiSpinner],
+  imports: [UiSpinner, WorkflowEditor],
   templateUrl: './workflows-tab.html'
 })
 export class WorkflowsTab {
@@ -18,6 +20,15 @@ export class WorkflowsTab {
 
   protected readonly loading = signal(true);
   protected readonly ranId = signal<string | null>(null);
+
+  // editor: workflow in modifica + grafo locale (mutato dall'editor a due vie)
+  protected readonly openWf = signal<Workflow | null>(null);
+  protected readonly graph = signal<WfGraph>({ nodes: [], edges: [] });
+  protected readonly saved = signal(false);
+
+  // creazione: form inline col nome
+  protected readonly creating = signal(false);
+  protected readonly newName = signal('');
 
   private readonly reload$ = new Subject<void>();
 
@@ -33,6 +44,11 @@ export class WorkflowsTab {
 
   protected triggerType(w: Workflow): string {
     return (w.trigger?.['type'] as string) ?? '—';
+  }
+
+  protected blockCount(w: Workflow): number {
+    const nodes = (w.graph as { nodes?: unknown[] } | null)?.nodes;
+    return Array.isArray(nodes) ? nodes.length : 0;
   }
 
   protected toggle(w: Workflow): void {
@@ -58,5 +74,77 @@ export class WorkflowsTab {
       .removeWorkflow(w.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.reload$.next());
+  }
+
+  // ── editor ───────────────────────────────────────────────────────────────
+  protected openEditor(w: Workflow): void {
+    const raw = w.graph as unknown as WfGraph | null;
+    const g = raw && Array.isArray(raw.nodes) && raw.nodes.length ? raw : synthGraph(w);
+    // copia profonda: l'editor muta il grafo, non deve toccare l'item della lista
+    this.graph.set(structuredClone(g));
+    this.openWf.set(w);
+    this.saved.set(false);
+  }
+
+  protected closeEditor(): void {
+    this.openWf.set(null);
+  }
+
+  protected save(): void {
+    const w = this.openWf();
+    if (!w) return;
+    const g = this.graph();
+    const triggerNode = g.nodes.find((n) => n.type === 'trigger');
+    const trigger = (triggerNode?.data ?? { type: 'record.created' }) as Record<string, unknown>;
+    this.admin
+      .saveWorkflowGraph(w.id, g, trigger)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((updated) => {
+        this.openWf.set(updated);
+        this.saved.set(true);
+        setTimeout(() => this.saved.set(false), 2000);
+        this.reload$.next();
+      });
+  }
+
+  protected toggleOpen(): void {
+    const w = this.openWf();
+    if (!w) return;
+    this.admin
+      .setWorkflowActive(w.id, !w.active)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((updated) => {
+        this.openWf.set(updated);
+        this.reload$.next();
+      });
+  }
+
+  protected runOpen(): void {
+    const w = this.openWf();
+    if (!w) return;
+    this.run(w);
+  }
+
+  // ── creazione ──────────────────────────────────────────────────────────────
+  protected startCreate(): void {
+    this.newName.set('');
+    this.creating.set(true);
+  }
+
+  protected confirmCreate(): void {
+    const name = this.newName().trim();
+    if (!name) return;
+    this.admin
+      .createWorkflow(name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((w) => {
+        this.creating.set(false);
+        this.reload$.next();
+        this.openEditor(w);
+      });
+  }
+
+  protected val(e: Event): string {
+    return (e.target as HTMLInputElement).value;
   }
 }
