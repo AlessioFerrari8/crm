@@ -18,6 +18,7 @@ import { ChartCard } from './chart-card';
   templateUrl: './charts.html'
 })
 export class Charts {
+  // injection di servizi
   private readonly fb = inject(FormBuilder);
   private readonly chartService = inject(ChartService);
   private readonly objectTypeService = inject(ObjectTypeService);

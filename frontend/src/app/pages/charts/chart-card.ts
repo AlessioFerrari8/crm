@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal, WritableSignal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ChartConfiguration } from 'chart.js';
 import { catchError, of, switchMap, tap } from 'rxjs';
@@ -10,8 +10,6 @@ import { ChartService } from '../../services/chart.service';
 
 const PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-// Una card che esegue un Chart (GET /run) e lo renderizza: grafico chart.js per BAR/LINE/PIE/FUNNEL,
-// numero grande per KPI, tabella per TABLE.
 @Component({
   selector: 'app-chart-card',
   standalone: true,
@@ -19,12 +17,14 @@ const PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4
   templateUrl: './chart-card.html'
 })
 export class ChartCard {
+  // servizio per i grafici
   private readonly chartService = inject(ChartService);
 
   readonly chart = input.required<Chart>();
   readonly remove = output<Chart>();
 
-  protected readonly loading = signal(true);
+  // per gestire caricamento
+  protected readonly loading: WritableSignal<boolean> = signal(true);
 
   // esegue il chart quando l'input è disponibile; pattern reattivo input -> stream -> signal
   private readonly run = toSignal(
@@ -36,6 +36,7 @@ export class ChartCard {
     { initialValue: null }
   );
 
+  // gestione punti 
   protected readonly points = computed(() => this.run()?.data ?? []);
 
   protected readonly isChart = computed(() => ['BAR', 'LINE', 'PIE', 'FUNNEL'].includes(this.chart().type));
