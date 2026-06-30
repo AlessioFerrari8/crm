@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, catchError, combineLatest, filter, map, of, startWith, switchMap, tap } from 'rxjs';
@@ -12,22 +12,33 @@ import { FilterGroup } from '../../models/filter';
 import { FieldDef } from '../../models/object-type';
 import { RecordItem } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
+import { RecordBoard } from '../../components/record-board/record-board';
 
 @Component({
   selector: 'app-record-list',
   standalone: true,
-  imports: [Drawer, FilterBuilder, DynamicForm, UiButton, UiSpinner],
+  imports: [Drawer, FilterBuilder, DynamicForm, UiButton, UiSpinner, RecordBoard],
   templateUrl: './record-list.html'
 })
 export class RecordList {
+  // serivizi vari
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recordsService = inject(RecordsService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly loading = signal(true);
-  protected readonly drawerOpen = signal(false);
-  protected readonly submitting = signal(false);
+  protected readonly loading: WritableSignal<boolean> = signal(true);
+  protected readonly drawerOpen: WritableSignal<boolean> = signal(false);
+  protected readonly submitting: WritableSignal<boolean> = signal(false);
+
+
+  // stato griglia o tabella
+  protected readonly view = signal<'table' | 'board'>('table');
+
+  // computed per lo status field (le colonne della board). null se l'object type non ne ha uno
+  protected readonly statusField = computed<FieldDef | null>(
+    () => this.formFields().find((f) => f.type === 'STATUS' || f.key === 'status') ?? null
+  );
 
   // filtri avanzati (AND/OR annidati). Vuoto = nessun filtro.
   protected readonly showFilters = signal(false);

@@ -1,1 +1,24 @@
-<p>record-board works!</p>
+<div class="flex gap-3 overflow-x-auto pb-4">
+  @for (g of groups(); track g.value) {
+    <div class="w-64 shrink-0 bg-base-200/50 rounded-box p-2">
+      <div class="mb-2 flex items-center gap-2 px-1 text-sm font-medium">
+        <span class="badge badge-ghost badge-sm gap-1.5">
+          <span class="inline-block w-2 h-2 rounded-full" [style.background-color]="g.color || 'currentColor'"></span>
+          {{ g.label }}
+        </span>
+        <span class="text-base-content/50">{{ g.records.length }}</span>
+      </div>
+
+      <div class="space-y-2">
+        @for (rec of g.records; track rec.id) {
+          <a [routerLink]="['/o', objectKey(), rec.id]"
+             class="card card-sm bg-base-100 border border-base-300 p-3 text-sm block hover:border-base-content/30 hover:shadow-sm transition">
+            {{ rec.title }}
+          </a>
+        } @empty {
+          <div class="text-center text-xs text-base-content/30 py-4">Nessun record</div>
+        }
+      </div>
+    </div>
+  }
+</div>
