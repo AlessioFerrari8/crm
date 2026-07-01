@@ -159,7 +159,8 @@ public class RecordValidator {
         if (f.getMax() != null && s.length() > f.getMax()) {
             throw new RecordValidationException(f.getLabel() + ": max " + f.getMax().intValue() + " caratteri");
         }
-        if (f.getPattern() != null && !java.util.regex.Pattern.compile(f.getPattern()).matcher(s).find()) {
+        // SafeRegex: match con deadline, una regex admin patologica (ReDoS) non blocca il thread
+        if (f.getPattern() != null && !SafeRegex.find(f.getPattern(), s)) {
             throw new RecordValidationException(f.getLabel() + ": formato non valido");
         }
         return s;

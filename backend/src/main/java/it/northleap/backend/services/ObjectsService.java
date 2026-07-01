@@ -85,6 +85,7 @@ public class ObjectsService {
 
     @Transactional
     public ObjectType addField(String key, FieldDefDto dto) {
+        assertValidPattern(dto.getPattern());
         ObjectType obj = objectTypeOrThrow(key);
         int order = obj.getFields().size();
         FieldDef field = buildFieldDef(obj, dto, order);
@@ -96,6 +97,7 @@ public class ObjectsService {
 
     @Transactional
     public ObjectType updateField(String key, String fieldKey, FieldDefDto dto) {
+        assertValidPattern(dto.getPattern());
         ObjectType obj = objectTypeOrThrow(key);
         FieldDef field = fieldOrThrow(obj, fieldKey);
         // i campi obbligatori sono "di base" e non si toccano: né si modificano né si eliminano
@@ -156,6 +158,16 @@ public class ObjectsService {
         field.setIcon(f.getIcon());
         field.setSortOrder(f.getSortOrder() != null ? f.getSortOrder() : order);
         return field;
+    }
+
+    // il pattern regex arriva dall'admin via UI: sintassi e lunghezza vanno verificate subito al
+    // salvataggio (400 chiaro), non scoperte a runtime alla prima validazione di un record.
+    // A runtime resta comunque la guardia SafeRegex (deadline anti-ReDoS) in RecordValidator.
+    private void assertValidPattern(String pattern) {
+        String error = SafeRegex.validationError(pattern);
+        if (error != null) {
+            throw new BadRequestException("Pattern: " + error);
+        }
     }
 
     private void applyFieldUpdates(FieldDef field, FieldDefDto dto) {
