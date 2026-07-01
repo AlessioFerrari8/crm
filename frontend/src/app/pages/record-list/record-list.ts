@@ -25,12 +25,14 @@ import { FieldCell, fieldCell } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
 import { RecordItem, SortSpec } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
+import { SavedView, SavedViewService } from '../../services/saved-view.service';
 import { RecordBoard } from '../../components/record-board/record-board';
 import { RecordCalendar } from '../../components/record-calendar/record-calendar';
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Bookmark,
   Calendar,
   Columns3,
   LayoutList,
@@ -52,6 +54,7 @@ export class RecordList {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recordsService = inject(RecordsService);
+  private readonly savedViewService = inject(SavedViewService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading: WritableSignal<boolean> = signal(true);
@@ -70,6 +73,7 @@ export class RecordList {
   protected readonly SortDescIcon = ArrowDown;
   protected readonly SearchIcon = Search;
   protected readonly TrashIcon = Trash2;
+  protected readonly BookmarkIcon = Bookmark;
 
   // ricerca testuale (q, debounced), ordinamento singolo per colonna (asc/desc/nessuno)
   protected readonly search = signal('');
@@ -103,6 +107,7 @@ export class RecordList {
       this.selected.set(new Set());
       this.bulkField.set('');
       this.bulkValue.set('');
+      this.activeView.set(null);
     });
   }
 
@@ -249,6 +254,62 @@ export class RecordList {
           this.reload$.next();
         },
         error: () => this.bulkPending.set(false)
+      });
+  }
+
+  // ── viste salvate ───────────────────────────────────────────────────────────
+  private readonly viewsReload$ = new Subject<void>();
+
+  protected readonly savedViews = toSignal(
+    combineLatest([this.key$, this.viewsReload$.pipe(startWith(undefined))]).pipe(
+      map(([key]) => key),
+      filter((key): key is string => key.length > 0),
+      switchMap((key) => this.savedViewService.list(key).pipe(catchError(() => of<SavedView[]>([]))))
+    ),
+    { initialValue: [] as SavedView[] }
+  );
+
+  // vista attiva (solo indicatore visivo: applicare filtri/sort a mano la "sgancia")
+  protected readonly activeView = signal<string | null>(null);
+
+  protected applyView(v: SavedView): void {
+    const c = v.config ?? {};
+    this.filterGroup.set(c.filter ?? { combinator: 'and', conditions: [] });
+    this.sort.set(c.sort ?? []);
+    this.search.set(c.q ?? '');
+    if (c.mode === 'board' && this.statusField()) this.view.set('board');
+    else if (c.mode === 'calendar' && this.dateField()) this.view.set('calendar');
+    else this.view.set('table');
+    this.showFilters.set((c.filter?.conditions?.length ?? 0) > 0);
+    this.activeView.set(v.id);
+  }
+
+  protected saveCurrentView(): void {
+    const name = prompt('Nome della vista:');
+    if (!name || !name.trim()) return;
+    this.savedViewService
+      .create(this.objectKey(), name.trim().slice(0, 100), {
+        filter: this.filterGroup(),
+        sort: this.sort(),
+        q: this.search().trim() || undefined,
+        mode: this.view()
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((v) => {
+        this.activeView.set(v.id);
+        this.viewsReload$.next();
+      });
+  }
+
+  protected deleteView(v: SavedView, event: Event): void {
+    event.stopPropagation();
+    if (!confirm(`Eliminare la vista "${v.name}"?`)) return;
+    this.savedViewService
+      .remove(v.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.activeView() === v.id) this.activeView.set(null);
+        this.viewsReload$.next();
       });
   }
 

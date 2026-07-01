@@ -5,6 +5,30 @@
       <p class="text-sm text-base-content/50">{{ total() }} record</p>
     </div>
     <div class="flex items-center gap-2">
+      <div class="dropdown">
+        <button tabindex="0" class="btn btn-ghost btn-sm rounded-sm gap-1.5">
+          <lucide-icon [img]="BookmarkIcon" [size]="14" />
+          Viste
+          @if (savedViews().length > 0) { <span class="badge badge-ghost badge-xs">{{ savedViews().length }}</span> }
+        </button>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-sm border border-base-300 z-30 w-64 p-1 shadow">
+          @for (v of savedViews(); track v.id) {
+            <li>
+              <button class="flex items-center justify-between" [class.active]="activeView() === v.id" (click)="applyView(v)">
+                <span class="truncate">{{ v.name }}</span>
+                <span class="p-0.5 text-base-content/30 hover:text-error" (click)="deleteView(v, $event)">
+                  <lucide-icon [img]="TrashIcon" [size]="13" />
+                </span>
+              </button>
+            </li>
+          } @empty {
+            <li class="p-2 text-xs text-base-content/50">Nessuna vista salvata per questo tipo.</li>
+          }
+          <li class="border-t border-base-300 mt-1 pt-1">
+            <button (click)="saveCurrentView()">+ Salva vista corrente</button>
+          </li>
+        </ul>
+      </div>
       <button class="btn btn-ghost btn-sm rounded-sm" (click)="showFilters.set(!showFilters())">
         Filtri @if (activeFilterCount() > 0) { <span class="badge badge-primary badge-xs">{{ activeFilterCount() }}</span> }
       </button>
