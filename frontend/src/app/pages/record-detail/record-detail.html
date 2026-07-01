@@ -20,7 +20,26 @@
       @for (field of visibleFields(); track field.id) {
         <div>
           <dt class="text-xs uppercase tracking-wide text-base-content/50">{{ field.label }}</dt>
-          <dd class="text-sm">{{ displayValue(field) }}</dd>
+          <dd class="text-sm">
+            @let c = cell(field);
+            @switch (c.kind) {
+              @case ('chips') {
+                <span class="flex flex-wrap gap-1">
+                  @for (chip of c.chips; track $index) {
+                    <span class="badge badge-sm rounded-sm"
+                          [class.badge-ghost]="!chip.color"
+                          [style.background-color]="chip.color || null"
+                          [style.border-color]="chip.color || null"
+                          [style.color]="chip.color ? 'white' : null">{{ chip.label }}</span>
+                  }
+                </span>
+              }
+              @case ('link') {
+                <a [href]="c.href" target="_blank" rel="noopener" class="link link-primary break-all">{{ c.text }}</a>
+              }
+              @default { {{ c.text }} }
+            }
+          </dd>
         </div>
       }
     </dl>

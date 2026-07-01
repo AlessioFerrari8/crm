@@ -7,6 +7,7 @@ import { Drawer } from '../../components/drawer/drawer';
 import { DynamicForm } from '../../components/dynamic-form/dynamic-form';
 import { UiButton } from '../../components/ui/button';
 import { UiSpinner } from '../../components/ui/spinner';
+import { FieldCell, fieldCell } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
 import { FileObject } from '../../models/file-object';
 import { FileService } from '../../services/file.service';
@@ -73,14 +74,12 @@ export class RecordDetail {
     (this.object()?.fields ?? []).filter((f) => !f.hidden).sort((a, b) => a.sortOrder - b.sortOrder)
   );
 
-  protected displayValue(field: FieldDef): string {
+  // cella type-aware (badge colorati, link, testo formattato) - formatter condiviso con la record-list
+  protected cell(field: FieldDef): FieldCell {
     const rec = this.record();
-    if (!rec) return '—';
+    if (!rec) return { kind: 'text', text: '—' };
     const raw = field.key === 'status' ? rec.status : rec.data[field.key];
-    if (raw == null || raw === '') return '—';
-    if (Array.isArray(raw)) return raw.join(', ');
-    if (typeof raw === 'boolean') return raw ? 'Sì' : 'No';
-    return String(raw);
+    return fieldCell(field, raw);
   }
 
   protected saveEdit(data: Record<string, unknown>): void {

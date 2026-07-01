@@ -9,6 +9,7 @@ import { DynamicForm } from '../../components/dynamic-form/dynamic-form';
 import { UiButton } from '../../components/ui/button';
 import { UiSpinner } from '../../components/ui/spinner';
 import { FilterGroup } from '../../models/filter';
+import { formatFieldValue } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
 import { RecordItem } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
@@ -115,10 +116,7 @@ export class RecordList {
 
   protected cellValue(rec: RecordItem, field: FieldDef): string {
     const raw = field.key === 'status' ? rec.status : rec.data[field.key];
-    if (raw == null || raw === '') return '—';
-    if (Array.isArray(raw)) return raw.join(', ');
-    if (typeof raw === 'boolean') return raw ? 'Sì' : 'No';
-    return String(raw);
+    return formatFieldValue(field, raw);
   }
 
   protected resetFilter(): void {
