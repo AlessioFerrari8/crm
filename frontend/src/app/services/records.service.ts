@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
 import {
+  BulkRecordsRequest,
+  BulkResult,
   QueryRecordsDto,
   RecordDetailResponse,
   RecordItem,
@@ -48,6 +50,12 @@ export class RecordsService {
 
   remove(key: string, id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${key}/${id}`);
+  }
+
+  // azione di massa su più record (update di un campo o delete). Il backend applica RBAC + scope OWN
+  // e cappa a 500 id lato server.
+  bulk(key: string, body: BulkRecordsRequest): Observable<BulkResult> {
+    return this.http.post<BulkResult>(`${this.base}/${key}/bulk`, body);
   }
 
   search(q: string): Observable<SearchResult[]> {

@@ -32,12 +32,44 @@
     </div>
   </div>
 
+  <label class="input input-sm rounded-sm flex items-center gap-2 max-w-sm mb-3">
+    <lucide-icon [img]="SearchIcon" [size]="14" class="opacity-50" />
+    <input type="search" class="grow" [placeholder]="'Cerca in ' + (object()?.pluralLabel ?? 'record') + '…'"
+           [value]="search()" (input)="onSearch($any($event.target).value)" />
+  </label>
+
   @if (showFilters()) {
     <div class="mb-4">
       <app-filter-builder [fields]="formFields()" [(value)]="filterGroup" />
       @if (activeFilterCount() > 0) {
         <button class="btn btn-ghost btn-xs rounded-sm mt-2" (click)="resetFilter()">Azzera filtri</button>
       }
+    </div>
+  }
+
+  @if (selected().size > 0 && view() === 'table') {
+    <div class="mb-3 flex flex-wrap items-center gap-2 rounded-sm border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
+      <span class="font-medium">{{ selected().size }} selezionati</span>
+      <span class="text-base-content/40">·</span>
+      <span class="text-base-content/60">Imposta</span>
+      <select class="select select-xs rounded-sm" [value]="bulkField()" (change)="setBulkField($any($event.target).value)">
+        <option value="">campo…</option>
+        @for (f of editableFields(); track f.id) { <option [value]="f.key">{{ f.label }}</option> }
+      </select>
+      @if (bulkFieldDef()?.options?.length) {
+        <select class="select select-xs rounded-sm" [value]="bulkValue()" (change)="bulkValue.set($any($event.target).value)">
+          <option value="">valore…</option>
+          @for (o of bulkFieldDef()!.options!; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+        </select>
+      } @else {
+        <input class="input input-xs rounded-sm" placeholder="valore"
+               [value]="bulkValue()" (input)="bulkValue.set($any($event.target).value)" />
+      }
+      <button class="btn btn-xs btn-primary rounded-sm" [disabled]="!bulkField() || bulkPending()" (click)="applyBulk()">Applica</button>
+      <button class="btn btn-xs btn-error rounded-sm" [disabled]="bulkPending()" (click)="deleteBulk()">
+        <lucide-icon [img]="TrashIcon" [size]="13" /> Elimina
+      </button>
+      <button class="btn btn-xs btn-ghost rounded-sm ml-auto" (click)="clearSelection()">Deseleziona</button>
     </div>
   }
 
@@ -54,14 +86,35 @@
       <table class="table table-sm">
         <thead>
           <tr>
+            <th class="w-10">
+              <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                     [checked]="allSelected()" (change)="toggleSelectAll()" />
+            </th>
             @for (col of columns(); track col.id) {
-              <th>{{ col.label }}</th>
+              <th>
+                @if (col.sortable !== false) {
+                  <button class="inline-flex items-center gap-1 hover:text-base-content" (click)="toggleSort(col.key)">
+                    {{ col.label }}
+                    @switch (sortDir(col.key)) {
+                      @case ('asc') { <lucide-icon [img]="SortAscIcon" [size]="12" class="text-primary" /> }
+                      @case ('desc') { <lucide-icon [img]="SortDescIcon" [size]="12" class="text-primary" /> }
+                      @default { <lucide-icon [img]="SortIcon" [size]="12" class="opacity-30" /> }
+                    }
+                  </button>
+                } @else {
+                  {{ col.label }}
+                }
+              </th>
             }
           </tr>
         </thead>
         <tbody>
           @for (rec of records(); track rec.id) {
-            <tr class="hover cursor-pointer" (click)="openRecord(rec)">
+            <tr class="hover cursor-pointer" [class.bg-base-200]="isSelected(rec.id)" (click)="openRecord(rec)">
+              <td class="w-10" (click)="$event.stopPropagation()">
+                <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                       [checked]="isSelected(rec.id)" (change)="toggleSelect(rec.id)" />
+              </td>
               @for (col of columns(); track col.id) {
                 <td>{{ cellValue(rec, col) }}</td>
               }

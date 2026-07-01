@@ -38,6 +38,19 @@ export interface QueryRecordsDto {
   sort?: SortSpec[];
 }
 
+// dtos/BulkRecordsRequest.java — azione di massa (UPDATE imposta `set` sui record, DELETE soft-delete).
+// NB l'enum backend è maiuscolo (Jackson case-sensitive di default): inviare "UPDATE"/"DELETE".
+export interface BulkRecordsRequest {
+  ids: string[];
+  action: 'UPDATE' | 'DELETE';
+  set?: Record<string, unknown>;
+}
+
+// dtos/BulkResult.java
+export interface BulkResult {
+  affected: number;
+}
+
 // dtos/RecordQueryResponse.java
 export interface RecordQueryResponse {
   items: RecordItem[];

@@ -1,7 +1,19 @@
 import { Component, DestroyRef, WritableSignal, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, catchError, combineLatest, filter, map, of, startWith, switchMap, tap } from 'rxjs';
+import {
+  Subject,
+  catchError,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  of,
+  startWith,
+  switchMap,
+  tap
+} from 'rxjs';
 
 import { Drawer } from '../../components/drawer/drawer';
 import { FilterBuilder } from '../../components/filter-builder/filter-builder';
@@ -11,11 +23,21 @@ import { UiSpinner } from '../../components/ui/spinner';
 import { FilterGroup } from '../../models/filter';
 import { formatFieldValue } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
-import { RecordItem } from '../../models/record';
+import { RecordItem, SortSpec } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
 import { RecordBoard } from '../../components/record-board/record-board';
 import { RecordCalendar } from '../../components/record-calendar/record-calendar';
-import { Calendar, Columns3, LayoutList, LucideAngularModule } from 'lucide-angular';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Calendar,
+  Columns3,
+  LayoutList,
+  LucideAngularModule,
+  Search,
+  Trash2
+} from 'lucide-angular';
 
 type RecordView = 'table' | 'board' | 'calendar';
 
@@ -43,6 +65,21 @@ export class RecordList {
   protected readonly LayoutListIcon = LayoutList;
   protected readonly ColumnsIcon = Columns3;
   protected readonly CalendarIcon = Calendar;
+  protected readonly SortIcon = ArrowUpDown;
+  protected readonly SortAscIcon = ArrowUp;
+  protected readonly SortDescIcon = ArrowDown;
+  protected readonly SearchIcon = Search;
+  protected readonly TrashIcon = Trash2;
+
+  // ricerca testuale (q, debounced), ordinamento singolo per colonna (asc/desc/nessuno)
+  protected readonly search = signal('');
+  protected readonly sort = signal<SortSpec[]>([]);
+
+  // selezione righe + stato del pannello azioni di massa
+  protected readonly selected = signal<Set<string>>(new Set());
+  protected readonly bulkField = signal('');
+  protected readonly bulkValue = signal('');
+  protected readonly bulkPending = signal(false);
 
   // status field -> abilita la board (le colonne). null se l'object type non ne ha uno
   protected readonly statusField = computed<FieldDef | null>(
@@ -60,6 +97,12 @@ export class RecordList {
     effect(() => {
       this.objectKey();
       this.view.set('table');
+      // reset stato specifico dell'elenco cambiando tipo (equivalente al remount con key= del riferimento)
+      this.sort.set([]);
+      this.search.set('');
+      this.selected.set(new Set());
+      this.bulkField.set('');
+      this.bulkValue.set('');
     });
   }
 
@@ -83,14 +126,23 @@ export class RecordList {
     combineLatest([
       this.key$,
       this.reload$.pipe(startWith(undefined)),
-      toObservable(this.filterGroup)
+      toObservable(this.filterGroup),
+      // startWith('') emette subito così il primo caricamento non aspetta i 300ms del debounce;
+      // distinctUntilChanged dopo lo startWith evita la query doppia iniziale (due '' consecutivi)
+      toObservable(this.search).pipe(debounceTime(300), startWith(''), distinctUntilChanged()),
+      toObservable(this.sort)
     ]).pipe(
       map(([key]) => key),
       filter((key): key is string => key.length > 0),
       tap(() => this.loading.set(true)),
       switchMap((key) =>
         this.recordsService
-          .queryAdvanced(key, { pageSize: 200, filter: this.filterGroup() })
+          .queryAdvanced(key, {
+            pageSize: 200,
+            filter: this.filterGroup(),
+            q: this.search().trim() || undefined,
+            sort: this.sort().length ? this.sort() : undefined
+          })
           .pipe(catchError(() => of(null)))
       ),
       tap(() => this.loading.set(false))
@@ -114,9 +166,107 @@ export class RecordList {
     );
   });
 
+  // campi impostabili in massa (esclude i sola-lettura); e def del campo scelto (per select opzioni)
+  protected readonly editableFields = computed<FieldDef[]>(() =>
+    this.formFields().filter((f) => !f.readonly)
+  );
+  protected readonly bulkFieldDef = computed<FieldDef | null>(
+    () => this.formFields().find((f) => f.key === this.bulkField()) ?? null
+  );
+
   protected cellValue(rec: RecordItem, field: FieldDef): string {
     const raw = field.key === 'status' ? rec.status : rec.data[field.key];
     return formatFieldValue(field, raw);
+  }
+
+  // ── ricerca / ordinamento ──────────────────────────────────────────────────
+  protected onSearch(value: string): void {
+    this.search.set(value);
+  }
+
+  // ciclo asc → desc → nessuno, ordinamento singolo (come il riferimento)
+  protected toggleSort(field: string): void {
+    const cur = this.sort()[0];
+    if (!cur || cur.field !== field) this.sort.set([{ field, dir: 'asc' }]);
+    else if (cur.dir === 'asc') this.sort.set([{ field, dir: 'desc' }]);
+    else this.sort.set([]);
+  }
+
+  protected sortDir(field: string): 'asc' | 'desc' | null {
+    const cur = this.sort()[0];
+    return cur && cur.field === field ? cur.dir : null;
+  }
+
+  // ── selezione / azioni di massa ─────────────────────────────────────────────
+  protected isSelected(id: string): boolean {
+    return this.selected().has(id);
+  }
+
+  protected toggleSelect(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const recs = this.records();
+    return recs.length > 0 && recs.every((r) => this.selected().has(r.id));
+  }
+
+  protected toggleSelectAll(): void {
+    this.selected.set(this.allSelected() ? new Set() : new Set(this.records().map((r) => r.id)));
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+    this.bulkField.set('');
+    this.bulkValue.set('');
+  }
+
+  // cambiando campo azzero il valore (le opzioni valide dipendono dal campo)
+  protected setBulkField(key: string): void {
+    this.bulkField.set(key);
+    this.bulkValue.set('');
+  }
+
+  protected applyBulk(): void {
+    const field = this.bulkField();
+    if (!field || this.bulkPending()) return;
+    this.bulkPending.set(true);
+    this.recordsService
+      .bulk(this.objectKey(), {
+        ids: [...this.selected()],
+        action: 'UPDATE',
+        set: { [field]: this.bulkValue() }
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.bulkPending.set(false);
+          this.clearSelection();
+          this.reload$.next();
+        },
+        error: () => this.bulkPending.set(false)
+      });
+  }
+
+  protected deleteBulk(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0 || this.bulkPending()) return;
+    if (!confirm(`Eliminare ${ids.length} record?`)) return;
+    this.bulkPending.set(true);
+    this.recordsService
+      .bulk(this.objectKey(), { ids, action: 'DELETE' })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.bulkPending.set(false);
+          this.clearSelection();
+          this.reload$.next();
+        },
+        error: () => this.bulkPending.set(false)
+      });
   }
 
   protected resetFilter(): void {
