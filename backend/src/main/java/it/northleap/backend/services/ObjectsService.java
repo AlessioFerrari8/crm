@@ -70,6 +70,7 @@ public class ObjectsService {
         if (dto.getIcon() != null) obj.setIcon(dto.getIcon());
         if (dto.getColor() != null) obj.setColor(dto.getColor());
         if (dto.getIsEnabled() != null) obj.setEnabled(dto.getIsEnabled());
+        if (dto.getSortOrder() != null) obj.setSortOrder(dto.getSortOrder());
         objectTypeRepository.save(obj);
         return objectTypeOrThrow(key);
     }

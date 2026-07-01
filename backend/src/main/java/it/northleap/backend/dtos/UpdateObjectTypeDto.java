@@ -13,4 +13,5 @@ public class UpdateObjectTypeDto {
     private String icon;
     private String color;
     private Boolean isEnabled;
+    private Integer sortOrder;
 }
