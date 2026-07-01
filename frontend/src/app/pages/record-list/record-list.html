@@ -116,7 +116,25 @@
                        [checked]="isSelected(rec.id)" (change)="toggleSelect(rec.id)" />
               </td>
               @for (col of columns(); track col.id) {
-                <td>{{ cellValue(rec, col) }}</td>
+                <td>
+                  @let c = cell(rec, col);
+                  @switch (c.kind) {
+                    @case ('chips') {
+                      @for (chip of c.chips; track $index) {
+                        <span class="badge badge-sm rounded-sm mr-1"
+                              [class.badge-ghost]="!chip.color"
+                              [style.background-color]="chip.color || null"
+                              [style.border-color]="chip.color || null"
+                              [style.color]="chip.color ? 'white' : null">{{ chip.label }}</span>
+                      }
+                    }
+                    @case ('link') {
+                      <a [href]="c.href" target="_blank" rel="noopener" class="link link-primary"
+                         (click)="$event.stopPropagation()">{{ c.text }}</a>
+                    }
+                    @default { {{ c.text }} }
+                  }
+                </td>
               }
             </tr>
           }

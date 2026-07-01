@@ -21,7 +21,7 @@ import { DynamicForm } from '../../components/dynamic-form/dynamic-form';
 import { UiButton } from '../../components/ui/button';
 import { UiSpinner } from '../../components/ui/spinner';
 import { FilterGroup } from '../../models/filter';
-import { formatFieldValue } from '../../core/field-format';
+import { FieldCell, fieldCell } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
 import { RecordItem, SortSpec } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
@@ -174,9 +174,10 @@ export class RecordList {
     () => this.formFields().find((f) => f.key === this.bulkField()) ?? null
   );
 
-  protected cellValue(rec: RecordItem, field: FieldDef): string {
+  // cella type-aware (badge colorati, link, testo formattato) - stesso formatter del dettaglio
+  protected cell(rec: RecordItem, field: FieldDef): FieldCell {
     const raw = field.key === 'status' ? rec.status : rec.data[field.key];
-    return formatFieldValue(field, raw);
+    return fieldCell(field, raw);
   }
 
   // ── ricerca / ordinamento ──────────────────────────────────────────────────

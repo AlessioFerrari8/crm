@@ -37,6 +37,11 @@ export function formatFieldValue(field: FieldDef, raw: unknown): string {
       return formatCurrency(raw);
     case 'PERCENT':
       return `${raw}%`;
+    case 'RATING': {
+      const n = Number(raw) || 0;
+      const max = field.max ?? 5;
+      return '★'.repeat(n) + '☆'.repeat(Math.max(0, max - n));
+    }
     case 'DATE':
       return formatDate(raw, false);
     case 'DATETIME':
@@ -61,6 +66,8 @@ export function fieldCell(field: FieldDef, raw: unknown): FieldCell {
     return { kind: 'chips', text: '', chips };
   }
   if (typeof raw === 'string') {
+    // COLOR: chip con il colore stesso come sfondo e l'esadecimale come etichetta
+    if (field.type === 'COLOR') return { kind: 'chips', text: '', chips: [{ label: raw, color: raw }] };
     if (field.type === 'URL') return { kind: 'link', text: raw, href: raw };
     if (field.type === 'EMAIL') return { kind: 'link', text: raw, href: `mailto:${raw}` };
     if (field.type === 'PHONE') return { kind: 'link', text: raw, href: `tel:${raw}` };
