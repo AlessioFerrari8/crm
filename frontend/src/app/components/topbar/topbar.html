@@ -9,7 +9,8 @@
   <div class="flex-none">
     <div class="flex items-center gap-2 pl-4 h-[36px] w-80 max-w-md rounded-full border border-gray-500/30 overflow-hidden transition duration-300 ease-out hover:border-gray-550 hover:ring-1 hover:ring-gray-600 focus-within:border-gray-550 focus-within:ring-1 focus-within:ring-gray-600">
       <lucide-icon [img]="SearchIcon" [size]="17" class="shrink-0 text-gray-500" />
-      <input type="text" placeholder="Cerca" class="w-full h-full outline-none text-gray-500 bg-transparent placeholder-gray-500 text-sm" />
+      <input #topSearch type="text" placeholder="Cerca" class="w-full h-full outline-none text-gray-500 bg-transparent placeholder-gray-500 text-sm"
+             (keyup.enter)="goSearch(topSearch.value); topSearch.value = ''" />
     </div>
   </div>
 

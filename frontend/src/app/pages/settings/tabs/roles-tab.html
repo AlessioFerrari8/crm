@@ -68,20 +68,20 @@
                       <tr>
                         <td class="font-medium">{{ res }}</td>
                         <td class="text-center">
-                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm" [disabled]="isLocked(role)"
                                  [checked]="draftRow(res).canRead" (change)="togglePerm(res, 'canRead')" />
                         </td>
                         <td class="text-center">
-                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm" [disabled]="isLocked(role)"
                                  [checked]="draftRow(res).canWrite" (change)="togglePerm(res, 'canWrite')" />
                         </td>
                         <td class="text-center">
-                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm" [disabled]="isLocked(role)"
                                  [checked]="draftRow(res).canExecute" (change)="togglePerm(res, 'canExecute')" />
                         </td>
                         <td>
-                          <select class="select select-xs rounded-sm" [value]="draftRow(res).scope"
-                                  (change)="setScope(res, val($event))">
+                          <select class="select select-xs rounded-sm" [disabled]="isLocked(role)"
+                                  [value]="draftRow(res).scope" (change)="setScope(res, val($event))">
                             @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
                           </select>
                         </td>
@@ -90,9 +90,15 @@
                   </tbody>
                 </table>
               </div>
-              <button class="btn btn-primary btn-sm rounded-sm mt-3" [disabled]="saving()" (click)="saveMatrix(role)">
-                Salva permessi
-              </button>
+              @if (isLocked(role)) {
+                <p class="mt-3 text-xs text-base-content/50">
+                  I permessi del ruolo owner non sono modificabili (protezione anti-lockout).
+                </p>
+              } @else {
+                <button class="btn btn-primary btn-sm rounded-sm mt-3" [disabled]="saving()" (click)="saveMatrix(role)">
+                  Salva permessi
+                </button>
+              }
             </div>
           }
         </div>

@@ -87,6 +87,11 @@ export class RolesTab {
     return this.draft()[resource] ?? this.emptyRow(resource);
   }
 
+  // il backend rifiuta le modifiche ai permessi di owner (anti-lockout): matrice in sola lettura
+  protected isLocked(role: Role): boolean {
+    return role.system && role.key === 'owner';
+  }
+
   protected togglePerm(resource: string, key: 'canRead' | 'canWrite' | 'canExecute'): void {
     const d = this.draft();
     const row = d[resource] ?? this.emptyRow(resource);

@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, startWith, switchMap } from 'rxjs';
 
 import { UiSpinner } from '../../components/ui/spinner';
@@ -26,8 +26,16 @@ const IDLE: SearchState = { loading: false, results: [], searched: false };
 })
 export class Search {
   private readonly recordsService = inject(RecordsService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly query = new FormControl('', { nonNullable: true });
+
+  constructor() {
+    // termine iniziale dalla query string (?q=..., arriva dal topbar). Nel costruttore i field
+    // initializer (incluso lo stream qui sotto) sono gia' pronti: il setValue emette nello stream.
+    const initial = this.route.snapshot.queryParamMap.get('q');
+    if (initial) this.query.setValue(initial);
+  }
 
   private readonly state = toSignal(
     this.query.valueChanges.pipe(

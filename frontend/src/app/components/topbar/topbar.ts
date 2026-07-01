@@ -62,6 +62,12 @@ export class Topbar {
     this.theme.toggle();
   }
 
+  // invio nella barra di ricerca -> pagina di ricerca globale col termine precompilato
+  protected goSearch(term: string): void {
+    const q = term.trim();
+    this.router.navigate(['/search'], q ? { queryParams: { q } } : undefined);
+  }
+
   protected markAllRead(): void {
     this.notificationService.markAllRead().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
