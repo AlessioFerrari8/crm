@@ -42,18 +42,33 @@ public class RecordFilterCompiler {
         return compileGroup(filter, obj, params);
     }
 
-    public String compileOrderBy(List<SortSpec> sorts) {
+    public String compileOrderBy(List<SortSpec> sorts, ObjectType obj) {
         if (sorts == null || sorts.isEmpty()) {
             return "updated_at DESC";
         }
         return sorts.stream()
-                .map(s -> {
-                    String column = NATIVE_COLUMNS.get(s.getField());
-                    String dir = "desc".equalsIgnoreCase(s.getDir()) ? "DESC" : "ASC";
-                    // campi dinamici: fallback su updated_at, stessa limitazione nota dell'originale
-                    return (column != null ? column : "updated_at") + " " + dir;
-                })
+                .map(s -> orderClause(s.getField(), "desc".equalsIgnoreCase(s.getDir()) ? "DESC" : "ASC", obj))
                 .collect(Collectors.joining(", "));
+    }
+
+    // colonna nativa, oppure campo dinamico jsonb col cast del suo FieldType (stessa whitelist
+    // SAFE_KEY + esistenza del FieldDef del WHERE: mai testo non validato nell'ORDER BY).
+    // NULLS LAST sui dinamici: i record senza il campo (->> ritorna NULL) vanno in fondo,
+    // altrimenti in DESC Postgres li metterebbe per primi. Migliora l'originale, che ordinava
+    // solo le colonne native e faceva fallback silenzioso su updated_at per tutto il resto.
+    private String orderClause(String field, String dir, ObjectType obj) {
+        if (field == null || !SAFE_KEY.matcher(field).matches()) {
+            return "updated_at " + dir;
+        }
+        String column = NATIVE_COLUMNS.get(field);
+        if (column != null) {
+            return column + " " + dir;
+        }
+        FieldDef fieldDef = obj != null ? findField(obj, field) : null;
+        if (fieldDef == null) {
+            return "updated_at " + dir;
+        }
+        return "(data->>'" + field + "')" + castFor(fieldDef.getType()) + " " + dir + " NULLS LAST";
     }
 
     @SuppressWarnings("unchecked")

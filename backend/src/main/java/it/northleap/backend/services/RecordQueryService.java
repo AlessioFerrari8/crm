@@ -54,7 +54,7 @@ public class RecordQueryService {
             where.append(" AND ").append(advanced);
         }
 
-        String orderBy = filterCompiler.compileOrderBy(q.getSort());
+        String orderBy = filterCompiler.compileOrderBy(q.getSort(), obj);
         String whereClause = where.toString();
 
         String selectSql = "SELECT * FROM record WHERE " + whereClause + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?";

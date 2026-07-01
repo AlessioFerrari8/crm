@@ -241,28 +241,61 @@ class RecordFilterCompilerTest {
         s.setField("title");
         s.setDir("asc");
 
-        String sql = compiler.compileOrderBy(List.of(s));
+        String sql = compiler.compileOrderBy(List.of(s), obj);
 
         assertEquals("title ASC", sql);
     }
 
     @Test
-    void orderByDynamicFieldFallsBackToUpdatedAt() {
+    void orderByDynamicNumericFieldUsesJsonExprWithCastAndNullsLast() {
         SortSpec s = new SortSpec();
         s.setField("amount");
         s.setDir("desc");
 
-        String sql = compiler.compileOrderBy(List.of(s));
+        String sql = compiler.compileOrderBy(List.of(s), obj);
+
+        assertEquals("(data->>'amount')::numeric DESC NULLS LAST", sql);
+    }
+
+    @Test
+    void orderByDynamicTextFieldHasNoCast() {
+        SortSpec s = new SortSpec();
+        s.setField("name");
+        s.setDir("asc");
+
+        String sql = compiler.compileOrderBy(List.of(s), obj);
+
+        assertEquals("(data->>'name') ASC NULLS LAST", sql);
+    }
+
+    @Test
+    void orderByUnknownFieldFallsBackToUpdatedAt() {
+        SortSpec s = new SortSpec();
+        s.setField("nonEsiste");
+        s.setDir("desc");
+
+        String sql = compiler.compileOrderBy(List.of(s), obj);
 
         assertEquals("updated_at DESC", sql);
     }
 
     @Test
+    void orderByInjectionAttemptFallsBackToUpdatedAt() {
+        SortSpec s = new SortSpec();
+        s.setField("amount; DROP TABLE record--");
+        s.setDir("asc");
+
+        String sql = compiler.compileOrderBy(List.of(s), obj);
+
+        assertEquals("updated_at ASC", sql);
+    }
+
+    @Test
     void orderByEmptyListFallsBackToUpdatedAtDesc() {
-        String sql = compiler.compileOrderBy(List.of());
+        String sql = compiler.compileOrderBy(List.of(), obj);
         assertEquals("updated_at DESC", sql);
 
-        String sqlNull = compiler.compileOrderBy(null);
+        String sqlNull = compiler.compileOrderBy(null, obj);
         assertEquals("updated_at DESC", sqlNull);
     }
 }
