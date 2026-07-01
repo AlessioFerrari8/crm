@@ -1,0 +1,102 @@
+<div>
+  <div class="flex items-center justify-between mb-3">
+    <p class="text-sm text-base-content/60">
+      Ruoli e permessi: matrice risorsa × lettura (R) / scrittura (W) / esecuzione (X) + ambito.
+    </p>
+    @if (!creating()) {
+      <ui-button variant="primary" (click)="startCreate()">+ Nuovo ruolo</ui-button>
+    }
+  </div>
+
+  @if (creating()) {
+    <div class="border border-base-300 rounded-sm p-3 mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div>
+        <label class="block text-xs mb-1">Nome</label>
+        <input class="input input-sm rounded-sm w-full" [value]="newLabel()"
+               (input)="onLabelInput(val($event))" placeholder="Commerciale" />
+      </div>
+      <div>
+        <label class="block text-xs mb-1">Chiave</label>
+        <input class="input input-sm rounded-sm w-full" [value]="newKey()"
+               (input)="newKey.set(val($event))" placeholder="commerciale" />
+      </div>
+      <div class="sm:col-span-2 flex justify-end gap-2">
+        <button class="btn btn-ghost btn-sm rounded-sm" (click)="creating.set(false)">Annulla</button>
+        <button class="btn btn-primary btn-sm rounded-sm"
+                [disabled]="!newKey().trim() || !newLabel().trim()" (click)="confirmCreate()">Crea</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="flex justify-center py-8"><ui-spinner /></div>
+  } @else if (roles().length === 0) {
+    <div class="text-center py-8 text-base-content/50">Nessun ruolo.</div>
+  } @else {
+    <div class="space-y-2">
+      @for (role of roles(); track role.id) {
+        <div class="border border-base-300 rounded-sm">
+          <div class="flex items-center gap-2 p-3">
+            <span class="font-medium capitalize">{{ role.label }}</span>
+            @if (role.system) { <span class="badge badge-ghost badge-xs rounded-sm">sistema</span> }
+            <span class="text-xs text-base-content/40">{{ role.permissions.length }} permessi · {{ role.key }}</span>
+            <div class="ml-auto flex items-center gap-1">
+              <button class="btn btn-ghost btn-xs rounded-sm" (click)="toggleMatrix(role)">
+                {{ openRole() === role.id ? 'Chiudi' : 'Permessi' }}
+              </button>
+              @if (!role.system) {
+                <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="remove(role)">Elimina</button>
+              }
+            </div>
+          </div>
+
+          @if (openRole() === role.id) {
+            <div class="border-t border-base-300 p-3">
+              <div class="overflow-x-auto">
+                <table class="table table-xs">
+                  <thead>
+                    <tr>
+                      <th>Risorsa</th>
+                      <th class="text-center">R</th>
+                      <th class="text-center">W</th>
+                      <th class="text-center">X</th>
+                      <th>Ambito</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (res of resources(); track res) {
+                      <tr>
+                        <td class="font-medium">{{ res }}</td>
+                        <td class="text-center">
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                                 [checked]="draftRow(res).canRead" (change)="togglePerm(res, 'canRead')" />
+                        </td>
+                        <td class="text-center">
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                                 [checked]="draftRow(res).canWrite" (change)="togglePerm(res, 'canWrite')" />
+                        </td>
+                        <td class="text-center">
+                          <input type="checkbox" class="checkbox checkbox-xs rounded-sm"
+                                 [checked]="draftRow(res).canExecute" (change)="togglePerm(res, 'canExecute')" />
+                        </td>
+                        <td>
+                          <select class="select select-xs rounded-sm" [value]="draftRow(res).scope"
+                                  (change)="setScope(res, val($event))">
+                            @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
+                          </select>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <button class="btn btn-primary btn-sm rounded-sm mt-3" [disabled]="saving()" (click)="saveMatrix(role)">
+                Salva permessi
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

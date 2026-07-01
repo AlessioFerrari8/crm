@@ -8,6 +8,8 @@ import {
   ApiKeySummary,
   AuditLog,
   InviteCreatedResponse,
+  Permission,
+  Role,
   UserSummary,
   Webhook,
   WebhookCreated,
@@ -112,6 +114,24 @@ export class AdminService {
 
   removeWebhook(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/webhooks/${id}`);
+  }
+
+  // ruoli / permessi (RBAC). listRoles ritorna ogni ruolo con la sua matrice permessi.
+  listRoles(): Observable<Role[]> {
+    return this.http.get<Role[]>(`${this.api}/roles`);
+  }
+
+  createRole(key: string, label: string): Observable<Role> {
+    return this.http.post<Role>(`${this.api}/roles`, { key, label });
+  }
+
+  // upsert della matrice: invia tutte le righe (risorsa × R/W/X + scope)
+  setRolePermissions(id: string, permissions: Permission[]): Observable<Role> {
+    return this.http.put<Role>(`${this.api}/roles/${id}/permissions`, { permissions });
+  }
+
+  removeRole(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/roles/${id}`);
   }
 
   // audit log (sola lettura, con filtri opzionali resource/resourceId)

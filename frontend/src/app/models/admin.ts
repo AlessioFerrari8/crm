@@ -16,6 +16,28 @@ export interface InviteCreatedResponse {
   email: string;
 }
 
+// entities/PermScope.java — ampiezza OWN < TEAM < ALL
+export type PermScope = 'OWN' | 'TEAM' | 'ALL';
+
+// dtos/RoleResponse.PermissionView — riga della matrice permessi
+export interface Permission {
+  resource: string;
+  canRead: boolean;
+  canWrite: boolean;
+  canExecute: boolean;
+  scope: PermScope;
+}
+
+// dtos/RoleResponse.java — ruolo + matrice permessi (composta a livello DTO). `system` = di sistema
+// (non eliminabile).
+export interface Role {
+  id: string;
+  key: string;
+  label: string;
+  system: boolean;
+  permissions: Permission[];
+}
+
 // dtos/ApiKeySummary.java
 export interface ApiKeySummary {
   id: string;
