@@ -5,7 +5,9 @@ import { tap } from 'rxjs';
 import { API_BASE_URL } from '../core/api-config';
 import { FieldOption, FieldType, ObjectType } from '../models/object-type';
 
-// payload di creazione/modifica campo (chiave inclusa in creazione, ignorata in modifica)
+// payload di creazione/modifica campo (chiave inclusa in creazione, ignorata in modifica).
+// NB i booleani usano i nomi del DTO backend (isUnique/isIndexed/... showInList) - vedi FieldDefDto.java.
+// In update i campi null/omessi vengono ignorati (non azzerati): per svuotare un testo mandare "".
 export interface FieldUpsert {
   key?: string;
   label?: string;
@@ -14,6 +16,22 @@ export interface FieldUpsert {
   icon?: string;
   options?: FieldOption[];
   config?: Record<string, unknown>;
+  // config avanzata
+  description?: string;
+  placeholder?: string;
+  section?: string;
+  width?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  pattern?: string;
+  showInList?: boolean;
+  isFilterable?: boolean;
+  isSortable?: boolean;
+  isUnique?: boolean;
+  isIndexed?: boolean;
+  isReadonly?: boolean;
+  isHidden?: boolean;
 }
 
 // service che prende solo la lista di oggetti

@@ -66,12 +66,38 @@ export class ObjectsTab {
     optionsText: [''],
     // configurazione relazione
     targetObject: [''],
-    multiple: [false]
+    multiple: [false],
+    // config avanzata
+    description: [''],
+    placeholder: [''],
+    section: [''],
+    width: ['full'],
+    min: this.fb.control<number | null>(null),
+    max: this.fb.control<number | null>(null),
+    step: this.fb.control<number | null>(null),
+    pattern: [''],
+    showInList: [true],
+    filterable: [true],
+    sortable: [true],
+    unique: [false],
+    indexed: [false],
+    readonly: [false],
+    hidden: [false]
   });
 
   // tipi che richiedono una lista di opzioni / una relazione (per mostrare i campi giusti nel form)
   protected readonly selectTypes: FieldType[] = ['SELECT', 'MULTISELECT', 'STATUS', 'TAGS'];
   protected readonly relationTypes: FieldType[] = ['RELATION', 'LOOKUP'];
+  // tipi con vincoli numerici (min/max/step) e testuali (min/max lunghezza + pattern)
+  protected readonly numericTypes: FieldType[] = [
+    'NUMBER', 'INTEGER', 'BIGINT', 'DECIMAL', 'FLOAT', 'PERCENT', 'CURRENCY', 'RATING', 'DURATION'
+  ];
+  protected readonly textualTypes: FieldType[] = ['TEXT', 'VARCHAR', 'LONGTEXT', 'RICHTEXT'];
+  protected readonly widths = [
+    { value: 'full', label: 'Intera' },
+    { value: 'half', label: 'Metà' },
+    { value: 'third', label: 'Un terzo' }
+  ];
 
   // chiave del campo in modifica (null = stiamo aggiungendo un campo nuovo)
   protected readonly editingFieldKey = signal<string | null>(null);
@@ -104,7 +130,22 @@ export class ObjectsTab {
       icon: field.icon ?? '',
       optionsText: this.optionsToText(field.options),
       targetObject: (field.config?.['targetObject'] as string) ?? '',
-      multiple: field.config?.['multiple'] === true
+      multiple: field.config?.['multiple'] === true,
+      description: field.description ?? '',
+      placeholder: field.placeholder ?? '',
+      section: field.section ?? '',
+      width: field.width || 'full',
+      min: field.min,
+      max: field.max,
+      step: field.step,
+      pattern: field.pattern ?? '',
+      showInList: field.showInList,
+      filterable: field.filterable,
+      sortable: field.sortable,
+      unique: field.unique,
+      indexed: field.indexed,
+      readonly: field.readonly,
+      hidden: field.hidden
     });
     this.fieldForm.controls.key.disable();
     this.addingField.set(true);
@@ -131,8 +172,30 @@ export class ObjectsTab {
       label: raw.label,
       type: raw.type,
       required: raw.required,
-      icon: raw.icon
+      icon: raw.icon,
+      description: raw.description,
+      placeholder: raw.placeholder,
+      section: raw.section,
+      width: raw.width,
+      showInList: raw.showInList,
+      isFilterable: raw.filterable,
+      isSortable: raw.sortable,
+      isUnique: raw.unique,
+      isIndexed: raw.indexed,
+      isReadonly: raw.readonly,
+      isHidden: raw.hidden
     };
+    // vincoli numerici (min/max/step) e testuali (min/max lunghezza + pattern) solo per i tipi pertinenti
+    if (this.numericTypes.includes(raw.type) || this.textualTypes.includes(raw.type)) {
+      dto.min = raw.min ?? undefined;
+      dto.max = raw.max ?? undefined;
+    }
+    if (this.numericTypes.includes(raw.type)) {
+      dto.step = raw.step ?? undefined;
+    }
+    if (this.textualTypes.includes(raw.type)) {
+      dto.pattern = raw.pattern || undefined;
+    }
     // allego options/config solo per i tipi che li usano
     if (this.selectTypes.includes(raw.type)) {
       dto.options = this.parseOptions(raw.optionsText);

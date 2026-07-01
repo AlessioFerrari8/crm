@@ -155,6 +155,85 @@
                       <input type="checkbox" formControlName="multiple" class="checkbox checkbox-sm rounded-sm" /> Selezione multipla
                     </label>
                   }
+                  <details class="sm:col-span-2 border border-base-300 rounded-sm">
+                    <summary class="cursor-pointer select-none px-3 py-2 text-xs font-medium text-base-content/70">Opzioni avanzate</summary>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 pt-0">
+                      <div class="sm:col-span-2">
+                        <label class="block text-xs mb-1">Descrizione / aiuto</label>
+                        <input formControlName="description" class="input input-sm rounded-sm w-full" placeholder="Testo di aiuto mostrato nel form" />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="block text-xs mb-1">Placeholder</label>
+                        <input formControlName="placeholder" class="input input-sm rounded-sm w-full" />
+                      </div>
+                      <div>
+                        <label class="block text-xs mb-1">Larghezza nel form</label>
+                        <select formControlName="width" class="select select-sm rounded-sm w-full">
+                          @for (w of widths; track w.value) { <option [value]="w.value">{{ w.label }}</option> }
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-xs mb-1">Sezione (raggruppamento)</label>
+                        <input formControlName="section" class="input input-sm rounded-sm w-full" placeholder="Generale" />
+                      </div>
+
+                      @if (numericTypes.includes(fieldForm.controls.type.value)) {
+                        <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+                          <div>
+                            <label class="block text-xs mb-1">Min</label>
+                            <input type="number" formControlName="min" class="input input-sm rounded-sm w-full" />
+                          </div>
+                          <div>
+                            <label class="block text-xs mb-1">Max</label>
+                            <input type="number" formControlName="max" class="input input-sm rounded-sm w-full" />
+                          </div>
+                          <div>
+                            <label class="block text-xs mb-1">Step</label>
+                            <input type="number" formControlName="step" class="input input-sm rounded-sm w-full" />
+                          </div>
+                        </div>
+                      }
+                      @if (textualTypes.includes(fieldForm.controls.type.value)) {
+                        <div>
+                          <label class="block text-xs mb-1">Lunghezza min</label>
+                          <input type="number" formControlName="min" class="input input-sm rounded-sm w-full" />
+                        </div>
+                        <div>
+                          <label class="block text-xs mb-1">Lunghezza max</label>
+                          <input type="number" formControlName="max" class="input input-sm rounded-sm w-full" />
+                        </div>
+                        <div class="sm:col-span-2">
+                          <label class="block text-xs mb-1">Pattern (regex)</label>
+                          <input formControlName="pattern" class="input input-sm rounded-sm w-full font-mono" placeholder="^[A-Z]{2,}$" />
+                        </div>
+                      }
+
+                      <div class="sm:col-span-2 grid grid-cols-2 gap-1.5 rounded-sm border border-base-300 p-2">
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="showInList" class="checkbox checkbox-xs rounded-sm" /> Mostra in tabella
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="filterable" class="checkbox checkbox-xs rounded-sm" /> Filtrabile
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="sortable" class="checkbox checkbox-xs rounded-sm" /> Ordinabile
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="unique" class="checkbox checkbox-xs rounded-sm" /> Valore unico
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="indexed" class="checkbox checkbox-xs rounded-sm" /> Indicizzato
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="readonly" class="checkbox checkbox-xs rounded-sm" /> Sola lettura
+                        </label>
+                        <label class="flex items-center gap-2 text-xs">
+                          <input type="checkbox" formControlName="hidden" class="checkbox checkbox-xs rounded-sm" /> Nascosto nel form
+                        </label>
+                      </div>
+                    </div>
+                  </details>
+
                   @if (fieldError()) {
                     <div class="sm:col-span-2 alert alert-error rounded-sm py-1 text-xs">{{ fieldError() }}</div>
                   }
