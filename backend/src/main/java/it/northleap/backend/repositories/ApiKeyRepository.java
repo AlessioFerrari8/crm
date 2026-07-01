@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface ApiKeyRepository extends JpaRepository<ApiKey, UUID> {
     Optional<ApiKey> findByKeyHash(String keyHash);
     List<ApiKey> findByRevokedAtIsNullOrderByCreatedAtDesc();
+    boolean existsByRole_Id(UUID roleId);
 }

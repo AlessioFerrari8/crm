@@ -8,8 +8,11 @@ import it.northleap.backend.entities.PermScope;
 import it.northleap.backend.entities.Permission;
 import it.northleap.backend.entities.Role;
 import it.northleap.backend.exceptions.BadRequestException;
+import it.northleap.backend.repositories.ApiKeyRepository;
+import it.northleap.backend.repositories.InviteRepository;
 import it.northleap.backend.repositories.PermissionRepository;
 import it.northleap.backend.repositories.RoleRepository;
+import it.northleap.backend.repositories.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,9 @@ public class RolesService {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final InviteRepository inviteRepository;
+    private final ApiKeyRepository apiKeyRepository;
 
     public List<RoleResponse> list() {
         List<Role> roles = roleRepository.findAll();
@@ -58,6 +64,13 @@ public class RolesService {
     public RoleResponse setPermissions(UUID roleId, SetPermissionsDto dto) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new BadRequestException("Ruolo inesistente"));
+        // hardening (deviazione voluta dal riferimento, che permette anche questo): i permessi di
+        // "owner" non si toccano. Il seeder ripristina solo le righe MANCANTI, non quelle
+        // modificate, quindi un owner spogliato dei propri permessi sarebbe un lockout permanente
+        // sanabile solo a mano sul DB.
+        if (role.isSystem() && "owner".equals(role.getKey())) {
+            throw new BadRequestException("I permessi del ruolo owner non sono modificabili");
+        }
         for (PermissionItemDto item : dto.getPermissions()) {
             Permission perm = permissionRepository.findByRole_IdAndResource(roleId, item.getResource())
                     .orElseGet(() -> {
@@ -81,6 +94,17 @@ public class RolesService {
                 .orElseThrow(() -> new BadRequestException("Ruolo inesistente"));
         if (role.isSystem()) {
             throw new BadRequestException("Ruolo di sistema non eliminabile");
+        }
+        // UserRole/Invite/ApiKey hanno FK verso Role: senza questi guard la delete violerebbe il
+        // vincolo e uscirebbe un 500 generico invece di un errore leggibile
+        if (userRoleRepository.existsByRole_Id(roleId)) {
+            throw new BadRequestException("Ruolo assegnato a uno o più utenti: rimuovilo prima dagli utenti");
+        }
+        if (inviteRepository.existsByRole_Id(roleId)) {
+            throw new BadRequestException("Esistono inviti che usano questo ruolo: eliminali prima");
+        }
+        if (apiKeyRepository.existsByRole_Id(roleId)) {
+            throw new BadRequestException("Esistono API key che usano questo ruolo: revocale prima");
         }
         permissionRepository.deleteByRole_Id(roleId);
         roleRepository.delete(role);

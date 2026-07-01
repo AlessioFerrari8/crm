@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface InviteRepository extends JpaRepository<Invite, UUID> {
     Optional<Invite> findByTokenHash(String tokenHash);
+    boolean existsByRole_Id(UUID roleId);
 }
