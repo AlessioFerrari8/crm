@@ -36,6 +36,10 @@
               title="Esporta la pagina corrente in CSV (filtri e ordinamento applicati)" (click)="exportCsv()">
         <lucide-icon [img]="DownloadIcon" [size]="14" /> Esporta
       </button>
+      <button class="btn btn-ghost btn-sm rounded-sm gap-1.5" title="Importa record da un file CSV"
+              (click)="importOpen.set(true)">
+        <lucide-icon [img]="UploadIcon" [size]="14" /> Importa
+      </button>
       @if (statusField() || dateField()) {
         <div class="join">
           <button class="join-item btn btn-sm" [class.btn-active]="view() === 'table'"
@@ -179,6 +183,8 @@
     </div>
   }
 </div>
+
+<app-record-import [(open)]="importOpen" [objectKey]="objectKey()" [fields]="formFields()" (imported)="refresh()" />
 
 <app-drawer [open]="drawerOpen()" [title]="'Nuovo ' + (object()?.label ?? 'record')" (close)="drawerOpen.set(false)">
   @if (drawerOpen()) {

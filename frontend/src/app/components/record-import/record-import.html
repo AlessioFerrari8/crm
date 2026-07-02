@@ -1,0 +1,96 @@
+@if (open()) {
+  <div class="fixed inset-0 z-[90] bg-black/40 flex items-start justify-center p-4 pt-16" (click)="close()">
+    <div class="w-full max-w-2xl bg-base-100 border border-base-300 rounded-sm shadow-xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-base-300 px-4 py-3">
+        <h2 class="font-semibold">Importa da CSV</h2>
+        <button class="btn btn-ghost btn-xs rounded-sm" (click)="close()">✕</button>
+      </div>
+
+      <div class="p-4 max-h-[70vh] overflow-y-auto">
+        @switch (step()) {
+          @case ('pick') {
+            <p class="text-sm text-base-content/60 mb-3">
+              Scegli un file CSV con una riga di intestazione. Separatore <code>;</code> <code>,</code> o tab
+              (rilevato in automatico), max {{ 500 }} righe per import.
+            </p>
+            <input type="file" accept=".csv,.txt,text/csv" class="file-input file-input-bordered file-input-sm rounded-sm w-full"
+                   (change)="onFile($event)" />
+            @if (error()) {
+              <div class="alert alert-error rounded-sm py-2 text-sm mt-3">{{ error() }}</div>
+            }
+          }
+
+          @case ('map') {
+            <p class="text-sm text-base-content/60 mb-3">
+              {{ rows().length }} righe lette. Abbina le colonne del CSV ai campi
+              @if (truncated()) { <span class="text-warning">(file più lungo: importo solo le prime 500)</span> }
+            </p>
+            <table class="table table-xs border border-base-300 rounded-sm mb-3">
+              <thead><tr><th>Colonna CSV</th><th>Esempio</th><th>Campo destinazione</th></tr></thead>
+              <tbody>
+                @for (h of headers(); track $index) {
+                  <tr>
+                    <td class="font-medium">{{ h || '(colonna ' + ($index + 1) + ')' }}</td>
+                    <td class="text-xs text-base-content/50 max-w-40 truncate">{{ example($index) }}</td>
+                    <td>
+                      <select class="select select-xs rounded-sm w-full" [value]="mapping()[$index] ?? ''"
+                              (change)="setMapping($index, val($event))">
+                        <option value="">— ignora —</option>
+                        @for (f of eligibleFields(); track f.id) {
+                          <option [value]="f.key">{{ f.label }}{{ f.required ? ' *' : '' }}</option>
+                        }
+                      </select>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            @if (requiredMissing().length > 0) {
+              <div class="alert alert-warning rounded-sm py-2 text-xs mb-3">
+                Campi obbligatori non mappati: {{ requiredMissing().join(', ') }} — le righe senza questi valori verranno rifiutate.
+              </div>
+            }
+            <div class="flex justify-between">
+              <button class="btn btn-ghost btn-sm rounded-sm" (click)="reset()">← Cambia file</button>
+              <button class="btn btn-primary btn-sm rounded-sm" [disabled]="mappedCount() === 0" (click)="startImport()">
+                Importa {{ rows().length }} righe
+              </button>
+            </div>
+          }
+
+          @case ('run') {
+            <div class="text-center py-6 space-y-3">
+              <p class="text-sm">Importazione in corso… {{ progress() }} / {{ rows().length }}</p>
+              <progress class="progress progress-primary w-full" [value]="progress()" [max]="rows().length"></progress>
+            </div>
+          }
+
+          @case ('done') {
+            <div class="space-y-3">
+              <div class="alert rounded-sm py-2 text-sm" [class.alert-success]="failures().length === 0"
+                   [class.alert-warning]="failures().length > 0">
+                Importate {{ okCount() }} righe su {{ rows().length }}
+                @if (skipped() > 0) { · {{ skipped() }} vuote saltate }
+                @if (failures().length > 0) { · {{ failures().length }} errori }
+              </div>
+              @if (failures().length > 0) {
+                <ul class="border border-base-300 rounded-sm divide-y divide-base-200 max-h-48 overflow-y-auto text-xs">
+                  @for (f of failures().slice(0, 30); track f.row) {
+                    <li class="p-2"><span class="font-medium">Riga {{ f.row }}:</span> <span class="text-error">{{ f.message }}</span></li>
+                  }
+                  @if (failures().length > 30) {
+                    <li class="p-2 text-base-content/50">… e altri {{ failures().length - 30 }} errori</li>
+                  }
+                </ul>
+              }
+              <div class="flex justify-end gap-2">
+                <button class="btn btn-ghost btn-sm rounded-sm" (click)="reset()">Nuovo import</button>
+                <button class="btn btn-primary btn-sm rounded-sm" (click)="close()">Chiudi</button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

@@ -28,6 +28,7 @@ import { RecordsService } from '../../services/records.service';
 import { SavedView, SavedViewService } from '../../services/saved-view.service';
 import { RecordBoard } from '../../components/record-board/record-board';
 import { RecordCalendar } from '../../components/record-calendar/record-calendar';
+import { RecordImport } from '../../components/record-import/record-import';
 import {
   ArrowDown,
   ArrowUp,
@@ -37,6 +38,7 @@ import {
   Columns3,
   Download,
   LayoutList,
+  Upload,
   LucideAngularModule,
   Search,
   Trash2
@@ -60,7 +62,7 @@ function csvCell(value: string): string {
 @Component({
   selector: 'app-record-list',
   standalone: true,
-  imports: [Drawer, FilterBuilder, DynamicForm, UiButton, UiSpinner, RecordBoard, RecordCalendar, LucideAngularModule],
+  imports: [Drawer, FilterBuilder, DynamicForm, UiButton, UiSpinner, RecordBoard, RecordCalendar, RecordImport, LucideAngularModule],
   templateUrl: './record-list.html'
 })
 export class RecordList {
@@ -89,6 +91,10 @@ export class RecordList {
   protected readonly TrashIcon = Trash2;
   protected readonly BookmarkIcon = Bookmark;
   protected readonly DownloadIcon = Download;
+  protected readonly UploadIcon = Upload;
+
+  // pannello import CSV
+  protected readonly importOpen = signal(false);
 
   // ricerca testuale (q, debounced), ordinamento singolo per colonna (asc/desc/nessuno)
   protected readonly search = signal('');
