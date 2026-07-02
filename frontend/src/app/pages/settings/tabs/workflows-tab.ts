@@ -4,7 +4,7 @@ import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
 
 import { UiSpinner } from '../../../components/ui/spinner';
 import { WorkflowEditor } from '../../../components/workflow-editor/workflow-editor';
-import { Workflow } from '../../../models/admin';
+import { Workflow, WorkflowRun } from '../../../models/admin';
 import { WfGraph, synthGraph } from '../../../models/workflow-graph';
 import { AdminService } from '../../../services/admin.service';
 
@@ -84,6 +84,37 @@ export class WorkflowsTab {
     this.graph.set(structuredClone(g));
     this.openWf.set(w);
     this.saved.set(false);
+    this.loadRuns(w.id);
+  }
+
+  // ── esecuzioni recenti del workflow aperto ─────────────────────────────────
+  protected readonly runs = signal<WorkflowRun[]>([]);
+  protected readonly runsLoading = signal(false);
+
+  protected loadRuns(id: string): void {
+    this.runsLoading.set(true);
+    this.admin
+      .getWorkflow(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (detail) => {
+          this.runs.set(detail.runs);
+          this.runsLoading.set(false);
+        },
+        error: () => this.runsLoading.set(false)
+      });
+  }
+
+  protected runStatusClass(r: WorkflowRun): string {
+    switch (r.status) {
+      case 'SUCCESS': return 'badge-success';
+      case 'FAILED': return 'badge-error';
+      default: return 'badge-ghost';
+    }
+  }
+
+  protected runDate(r: WorkflowRun): string {
+    return new Date(r.startedAt).toLocaleString('it-IT');
   }
 
   protected closeEditor(): void {
@@ -123,6 +154,9 @@ export class WorkflowsTab {
     const w = this.openWf();
     if (!w) return;
     this.run(w);
+    // l'esecuzione e' asincrona lato server: un refresh ritardato cattura l'esito nella maggior
+    // parte dei casi; per il resto c'e' il bottone di aggiornamento manuale
+    setTimeout(() => this.loadRuns(w.id), 1500);
   }
 
   // ── creazione ──────────────────────────────────────────────────────────────

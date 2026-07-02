@@ -66,6 +66,22 @@ export interface Workflow {
   updatedAt: string;
 }
 
+// entities/WorkflowRun.java — log di un'esecuzione (ultime 20 in WorkflowDetailResponse)
+export interface WorkflowRun {
+  id: string;
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  steps: Record<string, unknown>[] | null;
+}
+
+// dtos/WorkflowDetailResponse.java
+export interface WorkflowDetail {
+  workflow: Workflow;
+  runs: WorkflowRun[];
+}
+
 export type WebhookDirection = 'INBOUND' | 'OUTBOUND';
 
 // dtos/WebhookSummary.java — proiezione di lista, niente `secret` (visibile solo alla creazione).

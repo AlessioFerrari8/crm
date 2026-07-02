@@ -19,6 +19,31 @@
       Trascina i blocchi per spostarli. Clicca un handle (es. ● out) e poi un altro blocco per collegarli.
       Il trigger è il punto di partenza.
     </p>
+
+    <div class="mt-4">
+      <div class="flex items-center gap-2 mb-2">
+        <h3 class="font-semibold text-sm">Esecuzioni recenti</h3>
+        <button class="btn btn-ghost btn-xs rounded-sm" [disabled]="runsLoading()" (click)="loadRuns(wf.id)">
+          {{ runsLoading() ? '…' : 'Aggiorna' }}
+        </button>
+      </div>
+      @if (runs().length === 0 && !runsLoading()) {
+        <p class="text-xs text-base-content/50">Nessuna esecuzione registrata.</p>
+      } @else {
+        <table class="table table-xs border border-base-300 rounded-sm">
+          <thead><tr><th>Avviata</th><th>Stato</th><th>Errore</th></tr></thead>
+          <tbody>
+            @for (r of runs(); track r.id) {
+              <tr>
+                <td class="whitespace-nowrap">{{ runDate(r) }}</td>
+                <td><span class="badge badge-sm rounded-sm" [class]="runStatusClass(r)">{{ r.status }}</span></td>
+                <td class="text-xs text-error truncate max-w-md">{{ r.error ?? '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
   } @else {
     <!-- lista workflow -->
     <div class="flex items-center justify-between mb-3">

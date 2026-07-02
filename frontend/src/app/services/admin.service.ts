@@ -14,7 +14,8 @@ import {
   Webhook,
   WebhookCreated,
   WebhookDirection,
-  Workflow
+  Workflow,
+  WorkflowDetail
 } from '../models/admin';
 import { WfGraph } from '../models/workflow-graph';
 
@@ -70,6 +71,11 @@ export class AdminService {
   */
   listWorkflows(): Observable<Workflow[]> {
     return this.http.get<Workflow[]>(`${this.api}/workflows`);
+  }
+
+  // dettaglio con le ultime 20 esecuzioni (WorkflowDetailResponse)
+  getWorkflow(id: string): Observable<WorkflowDetail> {
+    return this.http.get<WorkflowDetail>(`${this.api}/workflows/${id}`);
   }
 
   // nuovo workflow vuoto: solo il nodo trigger nel grafo, da configurare poi nell'editor
