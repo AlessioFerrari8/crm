@@ -141,6 +141,14 @@ export class RecordList {
         this.page.set(1);
       }
     });
+    // ?new=1 (dalla command palette "Nuovo <tipo>"): apre il drawer di creazione e pulisce
+    // subito il parametro dall'URL, così un refresh non lo riapre
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((q) => {
+      if (q.get('new') === '1') {
+        this.drawerOpen.set(true);
+        this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+      }
+    });
   }
 
   // filtri avanzati (AND/OR annidati). Vuoto = nessun filtro.

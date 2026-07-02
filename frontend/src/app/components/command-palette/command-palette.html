@@ -1,0 +1,44 @@
+@if (open()) {
+  <div class="fixed inset-0 z-[100] bg-black/40 flex items-start justify-center p-4 pt-24" (click)="close()">
+    <div class="w-full max-w-xl bg-base-100 border border-base-300 rounded-sm shadow-xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-2 border-b border-base-300 px-3">
+        <lucide-icon [img]="SearchIcon" [size]="16" class="opacity-50 shrink-0" />
+        <input #paletteInput class="w-full bg-transparent outline-none py-3 text-sm"
+               placeholder="Cerca record, vai a una sezione, crea…"
+               [value]="query()" (input)="query.set($any($event.target).value)"
+               (keydown)="onInputKeydown($event)" />
+        <kbd class="kbd kbd-xs">Esc</kbd>
+      </div>
+
+      <ul class="max-h-80 overflow-y-auto p-1">
+        @for (it of items(); track $index) {
+          @if (it.header) {
+            <li class="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/40">
+              {{ it.section }}
+            </li>
+          }
+          <li>
+            <button class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left"
+                    [class.bg-base-200]="index() === $index"
+                    (mouseenter)="index.set($index)"
+                    (click)="run(it)">
+              <lucide-icon [img]="$any(it.icon)" [size]="15" class="shrink-0" [style.color]="it.color || null" />
+              <span class="truncate">{{ it.label }}</span>
+              @if (it.sublabel) {
+                <span class="ml-auto shrink-0 badge badge-ghost badge-xs rounded-sm">{{ it.sublabel }}</span>
+              }
+            </button>
+          </li>
+        } @empty {
+          <li class="p-4 text-center text-sm text-base-content/40">Nessun risultato.</li>
+        }
+      </ul>
+
+      <div class="border-t border-base-300 px-3 py-1.5 text-[10px] text-base-content/40 flex gap-3">
+        <span><kbd class="kbd kbd-xs">↑</kbd> <kbd class="kbd kbd-xs">↓</kbd> naviga</span>
+        <span><kbd class="kbd kbd-xs">Invio</kbd> apri</span>
+        <span><kbd class="kbd kbd-xs">Ctrl</kbd>+<kbd class="kbd kbd-xs">K</kbd> apri/chiudi</span>
+      </div>
+    </div>
+  </div>
+}

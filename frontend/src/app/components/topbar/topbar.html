@@ -11,6 +11,7 @@
       <lucide-icon [img]="SearchIcon" [size]="17" class="shrink-0 text-gray-500" />
       <input #topSearch type="text" placeholder="Cerca" class="w-full h-full outline-none text-gray-500 bg-transparent placeholder-gray-500 text-sm"
              (keyup.enter)="goSearch(topSearch.value); topSearch.value = ''" />
+      <kbd class="kbd kbd-xs mr-2 hidden sm:inline-flex whitespace-nowrap">Ctrl K</kbd>
     </div>
   </div>
 
