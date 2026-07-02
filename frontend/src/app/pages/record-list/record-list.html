@@ -106,7 +106,7 @@
   } @else if (records().length === 0) {
     <div class="text-center py-12 text-base-content/50">Nessun record. Creane uno con "+ Nuovo".</div>
   } @else if (view() === 'board' && statusField()) {
-    <app-record-board [items]="records()" [statusField]="statusField()!" [objectKey]="objectKey()" />
+    <app-record-board [items]="records()" [statusField]="statusField()!" [objectKey]="objectKey()" (changed)="refresh()" />
   } @else if (view() === 'calendar' && dateField()) {
     <app-record-calendar [items]="records()" [dateField]="dateField()!" [objectKey]="objectKey()" />
   } @else {

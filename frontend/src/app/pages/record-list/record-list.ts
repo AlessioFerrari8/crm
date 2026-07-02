@@ -403,6 +403,11 @@ export class RecordList {
     this.filterGroup.set({ combinator: 'and', conditions: [] });
   }
 
+  // ricarica richiesta da un figlio (es. la board dopo un drag & drop di stato)
+  protected refresh(): void {
+    this.reload$.next();
+  }
+
   protected openRecord(rec: RecordItem): void {
     this.router.navigate(['/o', this.objectKey(), rec.id]);
   }
