@@ -44,23 +44,83 @@
       }
     </dl>
 
-    @if (outgoing().length > 0 || incoming().length > 0) {
-      <div class="mt-6">
-        <h2 class="font-semibold mb-2">Collegamenti</h2>
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Collegamenti</h2>
+        <button class="btn btn-ghost btn-sm rounded-sm" (click)="linkFormOpen.set(!linkFormOpen())">
+          {{ linkFormOpen() ? 'Annulla' : '+ Collega record' }}
+        </button>
+      </div>
+
+      @if (linkFormOpen()) {
+        <div class="border border-base-300 rounded-sm p-3 mb-3 space-y-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs mb-1">Tipo di record</label>
+              <select class="select select-sm rounded-sm w-full" [value]="linkTargetKey()"
+                      (change)="onTargetType($any($event.target).value)">
+                <option value="">—</option>
+                @for (o of allObjects(); track o.id) { <option [value]="o.key">{{ o.pluralLabel }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs mb-1">Tipo di relazione</label>
+              <input class="input input-sm rounded-sm w-full" placeholder="related"
+                     [value]="linkRelationKey()" (input)="linkRelationKey.set($any($event.target).value)" />
+            </div>
+          </div>
+          @if (linkTargetKey()) {
+            <div>
+              <label class="block text-xs mb-1">Cerca il record da collegare</label>
+              <input class="input input-sm rounded-sm w-full" placeholder="Cerca per titolo…"
+                     (input)="onLinkSearch($any($event.target).value)" />
+            </div>
+            <ul class="divide-y divide-base-200 border border-base-300 rounded-sm max-h-48 overflow-y-auto">
+              @for (r of linkResults(); track r.id) {
+                <li>
+                  <button class="w-full text-left p-2 text-sm hover:bg-base-200" (click)="addLink(r)">
+                    {{ r.title || '(senza titolo)' }}
+                  </button>
+                </li>
+              } @empty {
+                <li class="p-2 text-xs text-base-content/40">Cerca per titolo e scegli il record.</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      @if (outgoing().length === 0 && incoming().length === 0) {
+        <p class="text-sm text-base-content/50">Nessun collegamento.</p>
+      } @else {
         <ul class="space-y-1">
           @for (link of outgoing(); track link.id) {
-            <li class="text-sm">
-              <span class="text-base-content/50">{{ link.relationKey }} →</span> {{ link.target.title }}
+            <li class="flex items-center gap-2 text-sm">
+              <span class="badge badge-ghost badge-sm rounded-sm">{{ link.relationKey }} →</span>
+              @if (routeFor(link.target); as route) {
+                <a [routerLink]="route" class="link link-hover">{{ link.target.title }}</a>
+              } @else {
+                <span>{{ link.target.title }}</span>
+              }
+              <button class="ml-auto p-1 text-base-content/30 hover:text-error" title="Rimuovi collegamento"
+                      (click)="removeLink(link.id)">✕</button>
             </li>
           }
           @for (link of incoming(); track link.id) {
-            <li class="text-sm">
-              <span class="text-base-content/50">← {{ link.relationKey }}</span> {{ link.source.title }}
+            <li class="flex items-center gap-2 text-sm">
+              <span class="badge badge-ghost badge-sm rounded-sm">← {{ link.relationKey }}</span>
+              @if (routeFor(link.source); as route) {
+                <a [routerLink]="route" class="link link-hover">{{ link.source.title }}</a>
+              } @else {
+                <span>{{ link.source.title }}</span>
+              }
+              <button class="ml-auto p-1 text-base-content/30 hover:text-error" title="Rimuovi collegamento"
+                      (click)="removeLink(link.id)">✕</button>
             </li>
           }
         </ul>
-      </div>
-    }
+      }
+    </div>
 
     <div class="mt-6">
       <div class="flex items-center justify-between mb-2">

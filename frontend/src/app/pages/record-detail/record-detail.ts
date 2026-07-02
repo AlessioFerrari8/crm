@@ -1,15 +1,26 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
+import {
+  Subject,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  of,
+  startWith,
+  switchMap,
+  tap
+} from 'rxjs';
 
 import { Drawer } from '../../components/drawer/drawer';
 import { DynamicForm } from '../../components/dynamic-form/dynamic-form';
 import { UiButton } from '../../components/ui/button';
 import { UiSpinner } from '../../components/ui/spinner';
 import { FieldCell, fieldCell } from '../../core/field-format';
-import { FieldDef } from '../../models/object-type';
+import { FieldDef, ObjectType } from '../../models/object-type';
 import { FileObject } from '../../models/file-object';
+import { RecordItem } from '../../models/record';
 import { FileService } from '../../services/file.service';
 import { ObjectTypeService } from '../../services/object-type.service';
 import { RecordsService } from '../../services/records.service';
@@ -95,6 +106,67 @@ export class RecordDetail {
         },
         error: () => this.submitting.set(false)
       });
+  }
+
+  // ── collegamenti (aggiungi/rimuovi) ─────────────────────────────────────────
+  protected readonly linkFormOpen = signal(false);
+  protected readonly linkTargetKey = signal('');
+  protected readonly linkRelationKey = signal('related');
+
+  // tutti i tipi, per la select del target (inclusi i disabilitati: un collegamento resta lecito)
+  protected readonly allObjects = toSignal(
+    this.objectTypeService.load().pipe(catchError(() => of<ObjectType[]>([]))),
+    { initialValue: [] as ObjectType[] }
+  );
+
+  // ricerca del record da collegare: per titolo, dentro il tipo scelto, con debounce
+  private readonly linkQuery$ = new Subject<string>();
+  protected readonly linkResults = toSignal(
+    this.linkQuery$.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((q) => {
+        const key = this.linkTargetKey();
+        if (!key || q.trim().length < 1) return of<RecordItem[]>([]);
+        return this.recordsService.query(key, { q: q.trim(), pageSize: 8 }).pipe(
+          map((r) => r.items),
+          catchError(() => of<RecordItem[]>([]))
+        );
+      })
+    ),
+    { initialValue: [] as RecordItem[] }
+  );
+
+  protected onLinkSearch(q: string): void {
+    this.linkQuery$.next(q);
+  }
+
+  protected onTargetType(key: string): void {
+    this.linkTargetKey.set(key);
+    this.linkQuery$.next(''); // svuota i risultati del tipo precedente
+  }
+
+  protected addLink(target: RecordItem): void {
+    this.recordsService
+      .addLink(this.recordId, target.id, this.linkRelationKey().trim() || 'related')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.linkFormOpen.set(false);
+        this.reload$.next();
+      });
+  }
+
+  protected removeLink(linkId: string): void {
+    if (!confirm('Rimuovere il collegamento?')) return;
+    this.recordsService
+      .removeLink(this.recordId, linkId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reload$.next());
+  }
+
+  // rotta verso l'altro record del collegamento (se il backend ha annidato objectType)
+  protected routeFor(rec: RecordItem): string[] | null {
+    return rec.objectType?.key ? ['/o', rec.objectType.key, rec.id] : null;
   }
 
   protected downloadUrl(file: FileObject): string {

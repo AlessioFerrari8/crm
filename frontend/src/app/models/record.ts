@@ -2,6 +2,8 @@ import { FilterGroup } from './filter';
 import { ObjectType } from './object-type';
 
 // entities/Record.java — il motore metadata-driven: i valori dei campi dinamici stanno in `data`.
+// objectType è presente quando il backend serializza il Record con la relazione annidata (es.
+// nei RecordLink del dettaglio e nella ricerca globale): serve per costruire la rotta /o/{key}/{id}.
 export interface RecordItem {
   id: string;
   title: string;
@@ -10,6 +12,7 @@ export interface RecordItem {
   data: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+  objectType?: { key: string; label: string };
 }
 
 // entities/RecordLink.java (forma usata in RecordDetailResponse outgoing/incoming)

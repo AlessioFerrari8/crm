@@ -9,6 +9,7 @@ import {
   QueryRecordsDto,
   RecordDetailResponse,
   RecordItem,
+  RecordLink,
   RecordQueryResponse,
   SearchResult,
   UpsertRecordDto
@@ -61,5 +62,15 @@ export class RecordsService {
   search(q: string): Observable<SearchResult[]> {
     const params = new HttpParams().set('q', q);
     return this.http.get<SearchResult[]>(`${this.base}/search`, { params });
+  }
+
+  // collegamenti tra record (RelationsController). Il backend fa upsert su
+  // (source, target, relationKey): ricollegare la stessa coppia non duplica.
+  addLink(recordId: string, targetId: string, relationKey: string): Observable<RecordLink> {
+    return this.http.post<RecordLink>(`${this.base}/${recordId}/links`, { targetId, relationKey });
+  }
+
+  removeLink(recordId: string, linkId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${recordId}/links/${linkId}`);
   }
 }
