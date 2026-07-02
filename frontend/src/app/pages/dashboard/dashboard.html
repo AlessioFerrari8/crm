@@ -17,6 +17,25 @@
     </div>
   }
 
+  <!-- prossime scadenze (7 giorni), da qualunque tipo con un campo data -->
+  @if (upcoming().length > 0) {
+    <ui-card class="block mb-6">
+      <h2 class="font-semibold mb-2">Prossime scadenze <span class="text-xs font-normal text-base-content/50">(7 giorni)</span></h2>
+      <ul class="divide-y divide-base-200">
+        @for (item of upcoming(); track item.id) {
+          <li>
+            <a [routerLink]="['/o', item.typeKey, item.id]" class="flex items-center gap-3 py-2 hover:bg-base-200 rounded-sm px-2">
+              <span class="badge badge-ghost badge-sm rounded-sm w-16 shrink-0 justify-center">{{ dueDate(item) }}</span>
+              <span class="inline-block w-2 h-2 rounded-full shrink-0" [style.background-color]="item.color || 'currentColor'"></span>
+              <span class="truncate text-sm">{{ item.title }}</span>
+              <span class="ml-auto text-xs text-base-content/40 shrink-0">{{ item.typeLabel }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </ui-card>
+  }
+
   <!-- grafici -->
   @if (loadingCharts()) {
     <div class="flex justify-center py-8"><ui-spinner /></div>

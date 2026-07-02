@@ -1,8 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
-import { catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { catchError, filter, forkJoin, map, of, switchMap, tap } from 'rxjs';
 
 import { ChartComponent } from '../../components/chart/chart';
 import { UiCard } from '../../components/ui/card';
@@ -19,6 +19,16 @@ import { AnalyticsService } from '../../services/analytics.service';
 interface Kpi {
   object: ObjectType;
   count: number;
+}
+
+// voce del widget "Prossime scadenze": record di qualunque tipo con un campo data nei prossimi giorni
+interface DueItem {
+  id: string;
+  title: string;
+  date: string;
+  typeKey: string;
+  typeLabel: string;
+  color: string | null;
 }
 
 interface AnalyticsData {
@@ -78,6 +88,62 @@ export class Dashboard {
     ),
     { initialValue: null as AnalyticsData | null }
   );
+
+  // "Prossime scadenze": metadata-driven, pesca dai primi 4 tipi abilitati che hanno un campo
+  // DATE/DATETIME i record con quel campo nei prossimi 7 giorni (between + sort asc lato
+  // backend), fonde e ordina. Si aggancia al signal objects già popolato dal load() dei KPI.
+  protected readonly upcoming = toSignal(
+    toObservable(this.objectTypeService.objects).pipe(
+      filter((objs): objs is ObjectType[] => objs !== null),
+      switchMap((objs) => {
+        const today = new Date();
+        const end = new Date(today.getTime() + 7 * 86_400_000);
+        const from = today.toISOString().slice(0, 10);
+        const to = end.toISOString().slice(0, 10);
+
+        const withDate = objs
+          .filter((o) => o.enabled)
+          .map((o) => ({ obj: o, dateField: o.fields.find((f) => f.type === 'DATE' || f.type === 'DATETIME') }))
+          .filter((x): x is { obj: ObjectType; dateField: NonNullable<typeof x.dateField> } => !!x.dateField)
+          .slice(0, 4);
+
+        if (withDate.length === 0) return of<DueItem[]>([]);
+
+        return forkJoin(
+          withDate.map(({ obj, dateField }) =>
+            this.recordsService
+              .queryAdvanced(obj.key, {
+                pageSize: 20,
+                filter: {
+                  combinator: 'and',
+                  conditions: [{ field: dateField.key, op: 'between', value: from, value2: to }]
+                },
+                sort: [{ field: dateField.key, dir: 'asc' }]
+              })
+              .pipe(
+                map((r) =>
+                  r.items.map((rec) => ({
+                    id: rec.id,
+                    title: rec.title || '(senza titolo)',
+                    date: String(rec.data[dateField.key] ?? ''),
+                    typeKey: obj.key,
+                    typeLabel: obj.label,
+                    color: obj.color
+                  }))
+                ),
+                catchError(() => of<DueItem[]>([]))
+              )
+          )
+        ).pipe(map((lists) => lists.flat().sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10)));
+      })
+    ),
+    { initialValue: [] as DueItem[] }
+  );
+
+  protected dueDate(item: DueItem): string {
+    const d = new Date(item.date);
+    return Number.isNaN(d.getTime()) ? item.date : d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+  }
 
   // ogni chart config deriva dai dati con un computed
   protected readonly revenueChart = computed<ChartConfiguration | null>(() => {
