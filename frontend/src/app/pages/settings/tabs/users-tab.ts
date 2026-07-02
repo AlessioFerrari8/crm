@@ -26,6 +26,19 @@ export class UsersTab {
   protected readonly error = signal<string | null>(null);
   // token mostrato una sola volta dopo l'invito (il backend non manda email in questo porting)
   protected readonly inviteToken = signal<string | null>(null);
+  protected readonly copied = signal(false);
+
+  // link completo alla pagina di accettazione (/invite), da passare all'invitato
+  protected inviteLink(token: string): string {
+    return `${location.origin}/invite?token=${token}`;
+  }
+
+  protected copyInviteLink(token: string): void {
+    navigator.clipboard.writeText(this.inviteLink(token)).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
 
   private readonly reload$ = new Subject<void>();
 

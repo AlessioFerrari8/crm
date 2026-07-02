@@ -1,0 +1,36 @@
+<div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+  <div class="card bg-base-100 border border-base-300 rounded-sm w-full max-w-md p-6">
+    <h1 class="text-xl font-semibold mb-1">Accetta l'invito</h1>
+
+    @if (!token()) {
+      <p class="text-sm text-base-content/60">
+        Link non valido: manca il token dell'invito. Chiedi all'amministratore di generarne uno nuovo.
+      </p>
+    } @else if (done()) {
+      <div class="alert alert-success rounded-sm py-2 text-sm my-3">
+        Account creato! Ora puoi accedere con la tua email e la password scelta.
+      </div>
+      <a routerLink="/login" class="btn btn-primary rounded-sm w-full">Vai al login</a>
+    } @else {
+      <p class="text-sm text-base-content/60 mb-4">Scegli nome e password per completare la registrazione.</p>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+        <div>
+          <label class="block text-sm mb-1">Nome <span class="text-error">*</span></label>
+          <input formControlName="name" class="input rounded-sm w-full" placeholder="Mario Rossi" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Password <span class="text-error">*</span> <span class="text-xs text-base-content/40">(min 8 caratteri)</span></label>
+          <input type="password" formControlName="password" class="input rounded-sm w-full" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Conferma password <span class="text-error">*</span></label>
+          <input type="password" formControlName="confirm" class="input rounded-sm w-full" />
+        </div>
+        @if (error()) {
+          <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
+        }
+        <ui-button type="submit" variant="primary" [loading]="submitting()" class="w-full">Crea account</ui-button>
+      </form>
+    }
+  </div>
+</div>

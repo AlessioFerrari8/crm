@@ -52,6 +52,12 @@ export class AuthService {
       .pipe(switchMap(() => this.load()));
   }
 
+  // accettazione invito (endpoint pubblico): l'invitato sceglie nome e password col token
+  // ricevuto dall'admin. Non logga: dopo il successo si passa dal login normale.
+  acceptInvite(token: string, name: string, password: string): Observable<unknown> {
+    return this.http.post<unknown>(`${API_BASE_URL}/api/users/accept-invite`, { token, name, password });
+  }
+
   // usata internamente dall'interceptor su 401/403; nessun refresh token nel body, viaggia
   // come cookie automaticamente
   refresh(): Observable<IAuthResponse> {

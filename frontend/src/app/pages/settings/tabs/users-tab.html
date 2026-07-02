@@ -17,9 +17,14 @@
     <div class="alert alert-error rounded-sm py-2 text-sm mb-4">{{ error() }}</div>
   }
   @if (inviteToken(); as token) {
-    <div class="alert alert-info rounded-sm py-2 text-sm mb-4 flex-col items-start">
-      <p class="font-medium">Invito creato. Token (mostrato una sola volta):</p>
-      <code class="break-all">{{ token }}</code>
+    <div class="alert alert-info rounded-sm py-2 text-sm mb-4 flex-col items-start gap-2">
+      <p class="font-medium">Invito creato. Manda questo link all'invitato (mostrato una sola volta):</p>
+      <div class="flex items-center gap-2 w-full">
+        <code class="break-all flex-1 text-xs">{{ inviteLink(token) }}</code>
+        <button class="btn btn-xs rounded-sm shrink-0" (click)="copyInviteLink(token)">
+          {{ copied() ? 'Copiato ✓' : 'Copia' }}
+        </button>
+      </div>
     </div>
   }
 

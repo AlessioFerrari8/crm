@@ -15,6 +15,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/onboarding/onboarding').then((m) => m.Onboarding)
   },
   {
+    // pubblica: l'invitato arriva qui dal link /invite?token=... copiato dall'admin
+    path: 'invite',
+    loadComponent: () => import('./pages/accept-invite/accept-invite').then((m) => m.AcceptInvite)
+  },
+  {
     path: '',
     canActivate: [authGuard],
     children: [
