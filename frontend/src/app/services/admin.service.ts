@@ -44,6 +44,11 @@ export class AdminService {
     return this.http.delete<void>(`${this.api}/users/${id}`);
   }
 
+  // reset password lato admin: imposta la nuova e revoca le sessioni attive dell'utente
+  resetPassword(id: string, password: string): Observable<void> {
+    return this.http.patch<void>(`${this.api}/users/${id}/password`, { password });
+  }
+
   // api keys
   /*
     lista di api-keys

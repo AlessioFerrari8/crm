@@ -89,4 +89,26 @@ export class UsersTab {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.reload$.next());
   }
+
+  // feedback "password aggiornata" sull'utente appena resettato
+  protected readonly resetDoneId = signal<string | null>(null);
+
+  protected resetPassword(user: UserSummary): void {
+    const password = prompt(`Nuova password per ${user.email} (min 8 caratteri):`);
+    if (password == null) return;
+    if (password.length < 8) {
+      alert('La password deve avere almeno 8 caratteri.');
+      return;
+    }
+    this.admin
+      .resetPassword(user.id, password)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.resetDoneId.set(user.id);
+          setTimeout(() => this.resetDoneId.set(null), 2500);
+        },
+        error: (err) => this.error.set(err?.error?.message ?? 'Errore nel reset della password')
+      });
+  }
 }

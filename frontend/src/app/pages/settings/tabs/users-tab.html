@@ -45,8 +45,12 @@
               @if (u.isActive) { <span class="badge badge-success badge-sm rounded-sm">attivo</span> }
               @else { <span class="badge badge-error badge-sm rounded-sm">disattivo</span> }
             </td>
-            <td>
+            <td class="text-right whitespace-nowrap">
+              @if (resetDoneId() === u.id) {
+                <span class="text-success text-xs mr-2">password aggiornata ✓</span>
+              }
               @if (u.isActive) {
+                <button class="btn btn-ghost btn-xs rounded-sm" (click)="resetPassword(u)">Reset password</button>
                 <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="deactivate(u)">Disattiva</button>
               }
             </td>
