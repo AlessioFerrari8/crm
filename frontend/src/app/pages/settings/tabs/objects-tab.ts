@@ -2,7 +2,7 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
+import { Subject, catchError, forkJoin, of, startWith, switchMap, tap } from 'rxjs';
 
 import { ICON_KEYS, resolveObjectIcon } from '../../../core/object-icons';
 import { UiButton } from '../../../components/ui/button';
@@ -280,6 +280,75 @@ export class ObjectsTab {
     if (!confirm(`Eliminare l'oggetto "${obj.label}" e tutti i suoi record?`)) return;
     this.objectTypeService
       .remove(obj.key)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reload$.next());
+  }
+
+  // ── modifica oggetto esistente (label/plurale/colore/icona) ────────────────
+  protected readonly editingObjectKey = signal<string | null>(null);
+  protected readonly editSubmitting = signal(false);
+
+  protected readonly editForm = this.fb.nonNullable.group({
+    label: ['', Validators.required],
+    pluralLabel: ['', Validators.required],
+    icon: [''],
+    color: ['#2563eb']
+  });
+
+  protected startEditObject(obj: ObjectType): void {
+    this.editForm.reset({
+      label: obj.label,
+      pluralLabel: obj.pluralLabel,
+      icon: obj.icon ?? '',
+      color: obj.color ?? '#2563eb'
+    });
+    this.editingObjectKey.set(obj.key);
+    this.expanded.set(obj.key);
+  }
+
+  protected cancelEditObject(): void {
+    this.editingObjectKey.set(null);
+  }
+
+  protected saveObject(key: string): void {
+    if (this.editForm.invalid || this.editSubmitting()) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+    this.editSubmitting.set(true);
+    this.objectTypeService
+      .update(key, this.editForm.getRawValue())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.editSubmitting.set(false);
+          this.editingObjectKey.set(null);
+          this.reload$.next();
+        },
+        error: () => this.editSubmitting.set(false)
+      });
+  }
+
+  // mostra/nasconde il tipo nella sidebar (e ovunque si filtri su enabled)
+  protected toggleEnabled(obj: ObjectType): void {
+    this.objectTypeService
+      .update(obj.key, { isEnabled: !obj.enabled })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reload$.next());
+  }
+
+  // riordino: scambia la posizione col vicino, rinumerando per indice (i sortOrder seminati
+  // possono avere duplicati: lo scambio secco dei valori non basterebbe)
+  protected moveObject(obj: ObjectType, delta: -1 | 1): void {
+    const list = this.objects();
+    const idx = list.findIndex((o) => o.key === obj.key);
+    const swapIdx = idx + delta;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return;
+    const other = list[swapIdx];
+    forkJoin([
+      this.objectTypeService.update(obj.key, { sortOrder: swapIdx }),
+      this.objectTypeService.update(other.key, { sortOrder: idx })
+    ])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.reload$.next());
   }

@@ -62,6 +62,15 @@ export class ObjectTypeService {
     return this.http.post<ObjectType>(`${API_BASE_URL}/api/objects`, dto);
   }
 
+  // modifica un oggetto esistente (la chiave non si cambia). NB il DTO backend usa isEnabled,
+  // ma la risposta serializza il boolean come `enabled` (getter Lombok senza prefisso is)
+  update(
+    key: string,
+    dto: { label?: string; pluralLabel?: string; icon?: string; color?: string; isEnabled?: boolean; sortOrder?: number }
+  ) {
+    return this.http.patch<ObjectType>(`${API_BASE_URL}/api/objects/${key}`, dto);
+  }
+
   // metodo che toglie un oggetto
   remove(key: string) {
     return this.http.delete<void>(`${API_BASE_URL}/api/objects/${key}`);

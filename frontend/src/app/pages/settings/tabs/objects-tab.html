@@ -56,18 +56,65 @@
       @for (obj of objects(); track obj.id) {
         <div>
           <div class="flex items-center justify-between p-3">
-            <button class="flex items-center gap-2 text-left" (click)="toggle(obj.key)">
+            <button class="flex items-center gap-2 text-left" [class.opacity-40]="!obj.enabled" (click)="toggle(obj.key)">
               <span class="w-2 h-2 rounded-full" [style.backgroundColor]="obj.color"></span>
               <span class="font-medium">{{ obj.pluralLabel }}</span>
               <span class="text-xs text-base-content/40">{{ obj.fields.length }} campi · {{ obj.key }}</span>
               @if (obj.system) { <span class="badge badge-ghost badge-xs rounded-sm">sistema</span> }
+              @if (!obj.enabled) { <span class="badge badge-ghost badge-xs rounded-sm">disabilitato</span> }
             </button>
-            @if (!obj.system) {
-              <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="remove(obj)">Elimina</button>
-            }
+            <div class="flex items-center gap-1">
+              <button class="btn btn-ghost btn-xs rounded-sm px-1" title="Sposta su" (click)="moveObject(obj, -1)">↑</button>
+              <button class="btn btn-ghost btn-xs rounded-sm px-1" title="Sposta giù" (click)="moveObject(obj, 1)">↓</button>
+              <input type="checkbox" class="toggle toggle-primary toggle-xs mx-1" [checked]="obj.enabled"
+                     (change)="toggleEnabled(obj)" title="Visibile nella sidebar" />
+              <button class="btn btn-ghost btn-xs rounded-sm" (click)="startEditObject(obj)">Modifica</button>
+              @if (!obj.system) {
+                <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="remove(obj)">Elimina</button>
+              }
+            </div>
           </div>
           @if (expanded() === obj.key) {
             <div class="px-3 pb-3">
+              @if (editingObjectKey() === obj.key) {
+                <form [formGroup]="editForm" (ngSubmit)="saveObject(obj.key)"
+                      class="border border-base-300 rounded-sm p-3 mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs mb-1">Etichetta <span class="text-error">*</span></label>
+                    <input formControlName="label" class="input input-sm rounded-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="block text-xs mb-1">Etichetta plurale <span class="text-error">*</span></label>
+                    <input formControlName="pluralLabel" class="input input-sm rounded-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="block text-xs mb-1">Colore</label>
+                    <input type="color" formControlName="color" class="input input-sm rounded-sm w-full h-9 p-1" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs mb-1">Icona</label>
+                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5">
+                      <button type="button" (click)="editForm.controls.icon.setValue('')" title="Nessuna"
+                              class="w-8 h-8 flex items-center justify-center rounded-sm border transition text-xs text-base-content/40"
+                              [class.border-primary]="!editForm.controls.icon.value"
+                              [class.border-base-300]="!!editForm.controls.icon.value">∅</button>
+                      @for (k of iconKeys; track k) {
+                        <button type="button" (click)="editForm.controls.icon.setValue(k)" [title]="k"
+                                class="w-8 h-8 flex items-center justify-center rounded-sm border transition"
+                                [class.border-primary]="editForm.controls.icon.value === k"
+                                [class.text-primary]="editForm.controls.icon.value === k"
+                                [class.border-base-300]="editForm.controls.icon.value !== k">
+                          <lucide-icon [img]="resolveIcon(k)" [size]="16" />
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="sm:col-span-2 flex justify-end gap-2">
+                    <button type="button" class="btn btn-ghost btn-sm rounded-sm" (click)="cancelEditObject()">Annulla</button>
+                    <ui-button type="submit" variant="primary" [loading]="editSubmitting()">Salva</ui-button>
+                  </div>
+                </form>
+              }
               <table class="table table-xs">
                 <thead><tr><th>Campo</th><th>Chiave</th><th>Tipo</th><th>Obbl.</th><th></th></tr></thead>
                 <tbody>
