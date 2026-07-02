@@ -1,6 +1,8 @@
 package it.northleap.backend.services;
 
 import it.northleap.backend.dtos.UpsertRecordDto;
+import it.northleap.backend.entities.FieldDef;
+import it.northleap.backend.entities.FieldType;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.entities.PermScope;
 import it.northleap.backend.entities.Record;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import it.northleap.backend.exceptions.RbacDeniedException;
+import it.northleap.backend.exceptions.RecordValidationException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -200,5 +203,68 @@ class RecordsServiceTest {
         service.remove(actor(actorId), "lead", existing.getId(), null);
 
         assertTrue(existing.isDeleted());
+    }
+
+    // ── enforcement di FieldDef.isUnique ─────────────────────────────────────
+
+    private void givenUniqueEmailField() {
+        FieldDef email = new FieldDef();
+        email.setKey("email");
+        email.setLabel("Email");
+        email.setType(FieldType.TEXT);
+        email.setUnique(true);
+        objectType.setFields(List.of(email));
+    }
+
+    @Test
+    void createRejectsDuplicateValueOnUniqueField() {
+        givenUniqueEmailField();
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordQueryService.hasDuplicateValue(objectType.getId(), "email", "a@b.it", null)).thenReturn(true);
+
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("email", "a@b.it"));
+
+        assertThrows(RecordValidationException.class,
+                () -> service.create(actor(UUID.randomUUID()), "lead", dto, null));
+        verify(recordRepository, never()).save(any(Record.class));
+    }
+
+    @Test
+    void createAllowsUniqueValueWhenNoDuplicateExists() {
+        givenUniqueEmailField();
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordQueryService.hasDuplicateValue(objectType.getId(), "email", "a@b.it", null)).thenReturn(false);
+
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("email", "a@b.it"));
+
+        Record created = service.create(actor(UUID.randomUUID()), "lead", dto, null);
+
+        assertEquals("a@b.it", created.getData().get("email"));
+    }
+
+    @Test
+    void updateExcludesTheRecordItselfFromTheDuplicateCheck() {
+        givenUniqueEmailField();
+        UUID actorId = UUID.randomUUID();
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setOwnerId(actorId);
+        existing.setData(Map.of("email", "a@b.it"));
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+        // il check di duplicato deve escludere il record stesso: risalvare lo stesso valore e' lecito
+        when(recordQueryService.hasDuplicateValue(objectType.getId(), "email", "a@b.it", existing.getId()))
+                .thenReturn(false);
+
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("email", "a@b.it"));
+
+        Record updated = service.update(actor(actorId), "lead", existing.getId(), dto, null);
+
+        assertEquals("a@b.it", updated.getData().get("email"));
+        verify(recordQueryService).hasDuplicateValue(objectType.getId(), "email", "a@b.it", existing.getId());
     }
 }

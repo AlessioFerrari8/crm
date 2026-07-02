@@ -7,6 +7,7 @@ import it.northleap.backend.dtos.QueryRecordsDto;
 import it.northleap.backend.dtos.RecordDetailResponse;
 import it.northleap.backend.dtos.RecordQueryResponse;
 import it.northleap.backend.dtos.UpsertRecordDto;
+import it.northleap.backend.entities.FieldDef;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.entities.PermScope;
 import it.northleap.backend.entities.Record;
@@ -16,6 +17,7 @@ import it.northleap.backend.events.RecordDeletedEvent;
 import it.northleap.backend.events.RecordUpdatedEvent;
 import it.northleap.backend.exceptions.NotFoundException;
 import it.northleap.backend.exceptions.RbacDeniedException;
+import it.northleap.backend.exceptions.RecordValidationException;
 import it.northleap.backend.repositories.ObjectTypeRepository;
 import it.northleap.backend.repositories.RecordLinkRepository;
 import it.northleap.backend.repositories.RecordRepository;
@@ -73,6 +75,7 @@ public class RecordsService {
         PermScope scope = authorize(actor, key, PermAction.WRITE);
         ObjectType obj = objectOrThrow(key);
         Map<String, Object> data = recordValidator.validate(obj.getFields(), dto.getData());
+        assertUniqueConstraints(obj, data, null);
 
         Record record = new Record();
         record.setObjectType(obj);
@@ -100,6 +103,7 @@ public class RecordsService {
         Map<String, Object> merged = new LinkedHashMap<>(existing.getData());
         merged.putAll(dto.getData());
         Map<String, Object> data = recordValidator.validate(obj.getFields(), merged);
+        assertUniqueConstraints(obj, data, existing.getId());
 
         Map<String, Object> before = existing.getData();
         String beforeStatus = existing.getStatus();
@@ -158,6 +162,9 @@ public class RecordsService {
                 merged.putAll(req.getSet());
             }
             Map<String, Object> data = recordValidator.validate(obj.getFields(), merged);
+            // anche in bulk: impostare un campo unico allo stesso valore su piu' record deve
+            // fallire dal secondo in poi, non creare duplicati in silenzio
+            assertUniqueConstraints(obj, data, r.getId());
             r.setData(data);
             r.setTitle(recordValidator.deriveTitle(obj.getFields(), data));
             r.setStatus(recordValidator.deriveStatus(obj.getFields(), data));
@@ -201,6 +208,24 @@ public class RecordsService {
     // l'ownerId è sempre forzato all'attore stesso, qualunque cosa il client mandi. Per scope
     // ALL/TEAM il comportamento resta quello originale (un admin/manager può assegnare/riassegnare
     // la proprietà di un record ad altri, es. assegnare un lead a un agente specifico).
+    // rende effettivo FieldDef.isUnique (prima era un flag solo dichiarativo): nessun altro
+    // record non cancellato dello stesso tipo puo' avere lo stesso valore. Confronto testuale
+    // via data->>key (vedi RecordQueryService.hasDuplicateValue); i null/vuoti non contano.
+    private void assertUniqueConstraints(ObjectType obj, Map<String, Object> data, UUID excludeId) {
+        for (FieldDef f : obj.getFields()) {
+            if (!f.isUnique()) {
+                continue;
+            }
+            Object value = data.get(f.getKey());
+            if (value == null || (value instanceof String s && s.isBlank())) {
+                continue;
+            }
+            if (recordQueryService.hasDuplicateValue(obj.getId(), f.getKey(), String.valueOf(value), excludeId)) {
+                throw new RecordValidationException(f.getLabel() + ": valore già esistente");
+            }
+        }
+    }
+
     private UUID resolveOwnerId(Actor actor, PermScope scope, UUID requestedOwnerId, UUID currentOwnerId) {
         if (scope == PermScope.OWN && actor.type() == ActorType.USER) {
             return actor.id();

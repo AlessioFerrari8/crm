@@ -75,6 +75,23 @@ public class RecordQueryService {
         return new QueryResult(items, total, page, pageSize);
     }
 
+    // esiste un altro record (non cancellato) dello stesso tipo con lo stesso valore per il
+    // campo? Enforcement di FieldDef.isUnique (RecordsService). Confronto testuale su data->>key:
+    // esatto per i tipi su cui "unico" ha senso (TEXT/EMAIL/VARCHAR/PHONE/...); anche la chiave
+    // viaggia come parametro JDBC, zero testo non validato nella SQL.
+    public boolean hasDuplicateValue(UUID objectTypeId, String fieldKey, String value, UUID excludeId) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM record WHERE object_type_id = ? AND is_deleted = false AND data->>? = ?");
+        List<Object> params = new ArrayList<>(List.of(objectTypeId, fieldKey, value));
+        if (excludeId != null) {
+            sql.append(" AND id <> ?");
+            params.add(excludeId);
+        }
+        Query query = entityManager.createNativeQuery(sql.toString());
+        bindParams(query, params);
+        return ((Number) query.getSingleResult()).longValue() > 0;
+    }
+
     private void bindParams(Query query, List<Object> params) {
         for (int i = 0; i < params.size(); i++) {
             query.setParameter(i + 1, params.get(i));
