@@ -11,6 +11,7 @@
         }
       </div>
       <div class="flex gap-2">
+        <ui-button variant="ghost" [loading]="duplicating()" (click)="duplicate()">Duplica</ui-button>
         <ui-button variant="ghost" (click)="editOpen.set(true)">Modifica</ui-button>
         <ui-button variant="danger" (click)="remove()">Elimina</ui-button>
       </div>
@@ -121,6 +122,57 @@
         </ul>
       }
     </div>
+
+    <div class="mt-6">
+      <h2 class="font-semibold mb-2">Note</h2>
+      <div class="flex gap-2 mb-3">
+        <textarea class="textarea textarea-sm rounded-sm flex-1" rows="2" placeholder="Scrivi una nota…"
+                  [value]="noteBody()" (input)="noteBody.set($any($event.target).value)"></textarea>
+        <button class="btn btn-primary btn-sm rounded-sm self-end" [disabled]="!noteBody().trim() || noteSaving()"
+                (click)="addNote()">Aggiungi</button>
+      </div>
+      @if (notes().length === 0) {
+        <p class="text-sm text-base-content/50">Nessuna nota.</p>
+      } @else {
+        <ul class="space-y-2">
+          @for (n of notes(); track n.id) {
+            <li class="border border-base-300 rounded-sm p-3">
+              <div class="flex items-center gap-2 text-xs text-base-content/50 mb-1">
+                <span class="font-medium text-base-content/80">{{ n.authorName }}</span>
+                <span>{{ noteDate(n) }}</span>
+                @if (isMyNote(n)) {
+                  <button class="ml-auto p-0.5 text-base-content/30 hover:text-error" title="Elimina nota"
+                          (click)="deleteNote(n)">✕</button>
+                }
+              </div>
+              <p class="text-sm whitespace-pre-wrap">{{ n.body }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    @if (history(); as h) {
+      <div class="mt-6">
+        <h2 class="font-semibold mb-2">Cronologia</h2>
+        @if (h.length === 0) {
+          <p class="text-sm text-base-content/50">Nessuna modifica registrata.</p>
+        } @else {
+          <ul class="border border-base-300 rounded-sm divide-y divide-base-300">
+            @for (e of h; track $index) {
+              <li class="flex flex-wrap items-center gap-2 p-2 text-sm">
+                <span class="badge badge-ghost badge-sm rounded-sm">{{ e.action }}</span>
+                <span>{{ e.author }}</span>
+                @if (e.fields.length > 0) {
+                  <span class="text-xs text-base-content/50">campi: {{ e.fields.join(', ') }}</span>
+                }
+                <span class="ml-auto text-xs text-base-content/40">{{ e.date }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
 
     <div class="mt-6">
       <div class="flex items-center justify-between mb-2">

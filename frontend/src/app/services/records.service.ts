@@ -10,6 +10,7 @@ import {
   RecordDetailResponse,
   RecordItem,
   RecordLink,
+  RecordNote,
   RecordQueryResponse,
   SearchResult,
   UpsertRecordDto
@@ -72,5 +73,18 @@ export class RecordsService {
 
   removeLink(recordId: string, linkId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${recordId}/links/${linkId}`);
+  }
+
+  // note sulla timeline del record (NotesController). Eliminabili solo dall'autore (403 altrimenti).
+  listNotes(recordId: string): Observable<RecordNote[]> {
+    return this.http.get<RecordNote[]>(`${this.base}/${recordId}/notes`);
+  }
+
+  addNote(recordId: string, body: string): Observable<RecordNote> {
+    return this.http.post<RecordNote>(`${this.base}/${recordId}/notes`, { body });
+  }
+
+  removeNote(recordId: string, noteId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${recordId}/notes/${noteId}`);
   }
 }

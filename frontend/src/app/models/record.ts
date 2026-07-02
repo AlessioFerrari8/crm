@@ -24,6 +24,16 @@ export interface RecordLink {
   data: Record<string, unknown> | null;
 }
 
+// entities/RecordNote.java — nota/commento sulla timeline di un record
+export interface RecordNote {
+  id: string;
+  recordId: string;
+  authorId: string | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
 // FilterGroup/FilterCondition vivono in models/filter.ts (allineati al RecordFilterCompiler).
 
 export interface SortSpec {
