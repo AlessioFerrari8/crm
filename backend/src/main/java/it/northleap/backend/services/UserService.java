@@ -145,7 +145,25 @@ public class UserService {
         user.setActive(false);
         userRepository.save(user);
 
-        List<Session> sessions = sessionRepository.findByUser_IdAndRevokedAtIsNull(id);
+        revokeActiveSessions(id);
+    }
+
+    // reset password lato admin (non c'è flusso self-service "password dimenticata" via email in
+    // questo porting): imposta la nuova password e revoca le sessioni attive, così eventuali
+    // refresh token in mano a terzi smettono di valere subito.
+    @Transactional
+    public void resetPassword(Actor actor, UUID id, String newPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Utente non trovato"));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        revokeActiveSessions(id);
+        auditService.log(actor, "password_reset", "user", id.toString(), null, null);
+    }
+
+    private void revokeActiveSessions(UUID userId) {
+        List<Session> sessions = sessionRepository.findByUser_IdAndRevokedAtIsNull(userId);
         Instant now = Instant.now();
         sessions.forEach(s -> s.setRevokedAt(now));
         sessionRepository.saveAll(sessions);

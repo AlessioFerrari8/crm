@@ -4,6 +4,7 @@ import it.northleap.backend.dtos.AcceptInviteDto;
 import it.northleap.backend.dtos.AcceptedUserResponse;
 import it.northleap.backend.dtos.InviteCreatedResponse;
 import it.northleap.backend.dtos.InviteUserDto;
+import it.northleap.backend.dtos.ResetPasswordDto;
 import it.northleap.backend.dtos.UpdateUserDto;
 import it.northleap.backend.dtos.UserSummary;
 import it.northleap.backend.security.Actor;
@@ -58,6 +59,17 @@ public class UserController {
     @RequirePerm(resource = "user", action = PermAction.WRITE)
     public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
         userService.deactivate(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/password")
+    @RequirePerm(resource = "user", action = PermAction.WRITE)
+    public ResponseEntity<Void> resetPassword(
+            @CurrentActor Actor actor,
+            @PathVariable UUID id,
+            @Valid @RequestBody ResetPasswordDto dto
+    ) {
+        userService.resetPassword(actor, id, dto.getPassword());
         return ResponseEntity.noContent().build();
     }
 }
