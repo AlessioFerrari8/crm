@@ -72,6 +72,17 @@ export class Topbar {
     this.notificationService.markAllRead().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
+  // click su una notifica: la segna letta e, se ha un link interno (es. /o/task/{id} generato
+  // dall'azione notify_user dei workflow), ci naviga. I link esterni vengono ignorati.
+  protected openNotification(n: { id: string; readAt: string | null; link: string | null }): void {
+    if (!n.readAt) {
+      this.notificationService.markRead(n.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    }
+    if (n.link?.startsWith('/')) {
+      this.router.navigateByUrl(n.link);
+    }
+  }
+
   protected logout(): void {
     this.auth
       .logout()

@@ -39,11 +39,13 @@
         </div>
         <ul class="max-h-80 overflow-y-auto">
           @for (n of notifications(); track n.id) {
-            <li class="p-3 border-b border-base-200 last:border-0" [class.bg-base-200]="!n.readAt">
-              <p class="text-sm font-medium">{{ n.title }}</p>
-              @if (n.body) {
-                <p class="text-xs text-base-content/60">{{ n.body }}</p>
-              }
+            <li class="border-b border-base-200 last:border-0" [class.bg-base-200]="!n.readAt">
+              <button class="w-full text-left p-3" [class.cursor-pointer]="true" (click)="openNotification(n)">
+                <p class="text-sm font-medium">{{ n.title }}</p>
+                @if (n.body) {
+                  <p class="text-xs text-base-content/60">{{ n.body }}</p>
+                }
+              </button>
             </li>
           } @empty {
             <li class="p-4 text-center text-sm text-base-content/50">{{ i18n.t('notifications.empty') }}</li>
