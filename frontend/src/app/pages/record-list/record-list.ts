@@ -21,7 +21,7 @@ import { DynamicForm } from '../../components/dynamic-form/dynamic-form';
 import { UiButton } from '../../components/ui/button';
 import { UiSpinner } from '../../components/ui/spinner';
 import { FilterGroup } from '../../models/filter';
-import { FieldCell, fieldCell } from '../../core/field-format';
+import { FieldCell, fieldCell, formatFieldValue } from '../../core/field-format';
 import { FieldDef } from '../../models/object-type';
 import { RecordItem, SortSpec } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
@@ -35,6 +35,7 @@ import {
   Bookmark,
   Calendar,
   Columns3,
+  Download,
   LayoutList,
   LucideAngularModule,
   Search,
@@ -42,6 +43,19 @@ import {
 } from 'lucide-angular';
 
 type RecordView = 'table' | 'board' | 'calendar';
+
+// quoting CSV + guardia formula-injection (celle che iniziano con =,+,-,@ aprirebbero come
+// formule in Excel/LibreOffice: si prefissa un apostrofo)
+function csvCell(value: string): string {
+  let v = value;
+  if (/^[=+\-@]/.test(v)) {
+    v = "'" + v;
+  }
+  if (/[";\n\r]/.test(v)) {
+    v = '"' + v.replace(/"/g, '""') + '"';
+  }
+  return v;
+}
 
 @Component({
   selector: 'app-record-list',
@@ -74,6 +88,7 @@ export class RecordList {
   protected readonly SearchIcon = Search;
   protected readonly TrashIcon = Trash2;
   protected readonly BookmarkIcon = Bookmark;
+  protected readonly DownloadIcon = Download;
 
   // ricerca testuale (q, debounced), ordinamento singolo per colonna (asc/desc/nessuno)
   protected readonly search = signal('');
@@ -280,6 +295,34 @@ export class RecordList {
         },
         error: () => this.bulkPending.set(false)
       });
+  }
+
+  // ── export CSV ──────────────────────────────────────────────────────────────
+  // esporta la pagina corrente (filtri/ordinamento/ricerca applicati), separatore ';' e BOM
+  // per Excel. I valori che iniziano con =,+,-,@ vengono prefissati con ' (formula injection).
+  protected exportCsv(): void {
+    const cols = this.columns();
+    const rows = this.records();
+    if (rows.length === 0) return;
+    const header = ['Titolo', ...cols.map((c) => c.label)];
+    const lines = rows.map((r) => [
+      r.title ?? '',
+      ...cols.map((c) => {
+        const raw = c.key === 'status' ? r.status : r.data[c.key];
+        const text = formatFieldValue(c, raw);
+        return text === '—' ? '' : text;
+      })
+    ]);
+    const csv =
+      '\uFEFF' +
+      [header, ...lines].map((row) => row.map((v) => csvCell(v)).join(';')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.objectKey()}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── viste salvate ───────────────────────────────────────────────────────────

@@ -32,6 +32,10 @@
       <button class="btn btn-ghost btn-sm rounded-sm" (click)="showFilters.set(!showFilters())">
         Filtri @if (activeFilterCount() > 0) { <span class="badge badge-primary badge-xs">{{ activeFilterCount() }}</span> }
       </button>
+      <button class="btn btn-ghost btn-sm rounded-sm gap-1.5" [disabled]="records().length === 0"
+              title="Esporta la pagina corrente in CSV (filtri e ordinamento applicati)" (click)="exportCsv()">
+        <lucide-icon [img]="DownloadIcon" [size]="14" /> Esporta
+      </button>
       @if (statusField() || dateField()) {
         <div class="join">
           <button class="join-item btn btn-sm" [class.btn-active]="view() === 'table'"
