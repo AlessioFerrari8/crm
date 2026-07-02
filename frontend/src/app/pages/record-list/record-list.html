@@ -166,6 +166,14 @@
       </table>
     </div>
   }
+
+  @if (!loading() && pageCount() > 1) {
+    <div class="flex items-center justify-center gap-3 mt-3 text-sm">
+      <button class="btn btn-ghost btn-xs rounded-sm" [disabled]="page() === 1" (click)="page.set(page() - 1)">← Prec</button>
+      <span class="text-base-content/60">Pagina {{ page() }} di {{ pageCount() }}</span>
+      <button class="btn btn-ghost btn-xs rounded-sm" [disabled]="page() === pageCount()" (click)="page.set(page() + 1)">Succ →</button>
+    </div>
+  }
 </div>
 
 <app-drawer [open]="drawerOpen()" [title]="'Nuovo ' + (object()?.label ?? 'record')" (close)="drawerOpen.set(false)">

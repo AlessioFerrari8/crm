@@ -79,6 +79,9 @@ export class RecordList {
   protected readonly search = signal('');
   protected readonly sort = signal<SortSpec[]>([]);
 
+  // paginazione: senza, oltre PAGE_SIZE record la lista veniva semplicemente troncata
+  protected readonly page = signal(1);
+
   // selezione righe + stato del pannello azioni di massa
   protected readonly selected = signal<Set<string>>(new Set());
   protected readonly bulkField = signal('');
@@ -109,6 +112,20 @@ export class RecordList {
       this.bulkValue.set('');
       this.activeView.set(null);
     });
+    // cambiando filtri/ricerca/ordinamento si riparte dalla prima pagina (l'eventuale doppia
+    // emissione criteri+pagina viene annullata dallo switchMap dello stream dati)
+    effect(() => {
+      this.filterGroup();
+      this.search();
+      this.sort();
+      this.page.set(1);
+    });
+    // pagina rimasta oltre l'ultima (es. filtro ristretto o record eliminati): torna alla prima
+    effect(() => {
+      if (!this.loading() && this.records().length === 0 && this.page() > 1) {
+        this.page.set(1);
+      }
+    });
   }
 
   // filtri avanzati (AND/OR annidati). Vuoto = nessun filtro.
@@ -127,6 +144,8 @@ export class RecordList {
   // stream dati: a ogni cambio di key, reload o filtro, interroga il backend via queryAdvanced
   // (POST col body filter+sort). switchMap annulla la richiesta precedente. Il filtro vuoto è
   // innocuo lato backend (nessuna WHERE). Risultato in un signal via toSignal.
+  private static readonly PAGE_SIZE = 200;
+
   private readonly result = toSignal(
     combineLatest([
       this.key$,
@@ -135,7 +154,8 @@ export class RecordList {
       // startWith('') emette subito così il primo caricamento non aspetta i 300ms del debounce;
       // distinctUntilChanged dopo lo startWith evita la query doppia iniziale (due '' consecutivi)
       toObservable(this.search).pipe(debounceTime(300), startWith(''), distinctUntilChanged()),
-      toObservable(this.sort)
+      toObservable(this.sort),
+      toObservable(this.page)
     ]).pipe(
       map(([key]) => key),
       filter((key): key is string => key.length > 0),
@@ -143,7 +163,8 @@ export class RecordList {
       switchMap((key) =>
         this.recordsService
           .queryAdvanced(key, {
-            pageSize: 200,
+            page: this.page(),
+            pageSize: RecordList.PAGE_SIZE,
             filter: this.filterGroup(),
             q: this.search().trim() || undefined,
             sort: this.sort().length ? this.sort() : undefined
@@ -153,6 +174,10 @@ export class RecordList {
       tap(() => this.loading.set(false))
     ),
     { initialValue: null }
+  );
+
+  protected readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.total() / RecordList.PAGE_SIZE))
   );
 
   // stato derivato dalla risposta
