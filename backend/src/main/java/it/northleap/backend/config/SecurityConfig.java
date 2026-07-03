@@ -89,7 +89,11 @@ public class SecurityConfig {
         if (request.getHeader("X-Api-Key") != null) {
             return false;
         }
-        return !request.getRequestURI().startsWith(request.getContextPath() + "/api/webhooks/in/");
+        // webhook esterni (generico + Cal.com): chiamati da server, protetti da firma HMAC propria
+        String uri = request.getRequestURI();
+        String ctx = request.getContextPath();
+        return !uri.startsWith(ctx + "/api/webhooks/in/")
+                && !uri.startsWith(ctx + "/api/integrations/calcom/");
     }
 
     // richieste http al login
@@ -142,6 +146,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/accept-invite").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/in/*").permitAll()
+                        // webhook Cal.com: pubblico, protetto dalla firma HMAC nel service (e
+                        // spento del tutto finche' CALCOM_WEBHOOK_SECRET non e' configurato)
+                        .requestMatchers(HttpMethod.POST, "/api/integrations/calcom/webhook").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

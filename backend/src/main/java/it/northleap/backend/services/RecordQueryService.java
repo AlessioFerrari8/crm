@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 // Esegue contro Postgres, via EntityManager, le query compilate da RecordFilterCompiler (la
@@ -90,6 +91,17 @@ public class RecordQueryService {
         Query query = entityManager.createNativeQuery(sql.toString());
         bindParams(query, params);
         return ((Number) query.getSingleResult()).longValue() > 0;
+    }
+
+    // primo record (non cancellato) del tipo con quel valore testuale per il campo: usato dalle
+    // integrazioni per l'upsert via ID esterno (es. Cal.com booking uid -> calendar_event.externalId)
+    public Optional<UUID> findIdByFieldValue(UUID objectTypeId, String fieldKey, String value) {
+        Query query = entityManager.createNativeQuery(
+                "SELECT CAST(id AS text) FROM record WHERE object_type_id = ? AND is_deleted = false AND data->>? = ? LIMIT 1");
+        bindParams(query, List.of(objectTypeId, fieldKey, value));
+        @SuppressWarnings("unchecked")
+        List<String> ids = query.getResultList();
+        return ids.isEmpty() ? Optional.empty() : Optional.of(UUID.fromString(ids.get(0)));
     }
 
     private void bindParams(Query query, List<Object> params) {
