@@ -38,6 +38,19 @@
 
   <div class="mt-auto p-1 border-t border-base-300 flex flex-col gap-1">
     <a
+      routerLink="/calendar"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Calendario"
+    >
+      <lucide-icon [img]="CalendarIcon" [size]="20" />
+      @if (showLabels()) {
+        <span>Calendario</span>
+      }
+    </a>
+    <a
       routerLink="/charts"
       routerLinkActive="active"
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"

@@ -12,6 +12,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import {
+  CalendarDays,
   ChartLine,
   FileText,
   LayoutDashboard,
@@ -113,6 +114,7 @@ export class CommandPalette {
         color: o.color,
         route: ['/o', o.key]
       })),
+      { section: 'Vai a', label: 'Calendario', icon: CalendarDays, route: ['/calendar'] },
       { section: 'Vai a', label: 'Grafici', icon: ChartLine, route: ['/charts'] },
       { section: 'Vai a', label: 'Impostazioni', icon: Settings, route: ['/settings'] }
     ].filter((i) => !q || i.label.toLowerCase().includes(q));

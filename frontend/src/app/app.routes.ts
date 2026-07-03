@@ -40,6 +40,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/charts/charts').then((m) => m.Charts)
       },
       {
+        path: 'calendar',
+        loadComponent: () => import('./pages/calendar/calendar').then((m) => m.Calendar)
+      },
+      {
         path: 'search',
         loadComponent: () => import('./pages/search/search').then((m) => m.Search)
       },

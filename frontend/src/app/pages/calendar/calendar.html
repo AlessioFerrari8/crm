@@ -1,0 +1,95 @@
+<div>
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">Calendario</h1>
+    <div class="flex items-center gap-1">
+      <button class="btn btn-ghost btn-sm rounded-sm" (click)="prevMonth()" aria-label="Mese precedente">
+        <lucide-icon [img]="PrevIcon" [size]="16" />
+      </button>
+      <button class="btn btn-ghost btn-sm rounded-sm" (click)="goToday()">Oggi</button>
+      <button class="btn btn-ghost btn-sm rounded-sm" (click)="nextMonth()" aria-label="Mese successivo">
+        <lucide-icon [img]="NextIcon" [size]="16" />
+      </button>
+      <span class="font-medium capitalize ml-2 w-40">{{ monthLabel() }}</span>
+    </div>
+  </div>
+
+  @if (legend().length > 0) {
+    <div class="flex flex-wrap gap-3 mb-3 text-xs text-base-content/60">
+      @for (l of legend(); track l.typeKey) {
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block w-2 h-2 rounded-full" [style.background-color]="l.color || 'currentColor'"></span>
+          {{ l.typeLabel }}
+        </span>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="flex justify-center py-10"><ui-spinner /></div>
+  } @else {
+    <div class="grid grid-cols-7 gap-px bg-base-300 border border-base-300 rounded-sm overflow-hidden">
+      @for (w of weekdays; track w) {
+        <div class="bg-base-200 px-2 py-1.5 text-xs font-semibold text-base-content/60">{{ w }}</div>
+      }
+      @for (cell of cells(); track $index) {
+        <div class="bg-base-100 min-h-24 p-1.5" [class.bg-base-200]="cell.day === null">
+          @if (cell.day !== null) {
+            <div class="text-xs mb-1"
+                 [class.font-bold]="isToday(cell.day)">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full"
+                    [class.bg-primary]="isToday(cell.day)"
+                    [class.text-primary-content]="isToday(cell.day)">{{ cell.day }}</span>
+            </div>
+            <div class="space-y-0.5">
+              @for (e of cell.events.slice(0, 3); track e.id) {
+                <a [routerLink]="['/o', e.typeKey, e.id]"
+                   class="block truncate rounded-sm px-1 py-0.5 text-[11px] leading-tight bg-base-200 hover:bg-base-300"
+                   [title]="e.typeLabel + ': ' + e.title">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle"
+                        [style.background-color]="e.color || 'currentColor'"></span>{{ e.title }}
+                </a>
+              }
+              @if (cell.events.length > 3) {
+                <div class="text-[10px] text-base-content/40 px-1">+{{ cell.events.length - 3 }} altri</div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- prenotazioni Cal.com -->
+  <div class="mt-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold">Prenota un appuntamento</h2>
+      @if (calcomUrl(); as url) {
+        <a [href]="url" target="_blank" rel="noopener" class="btn btn-ghost btn-sm rounded-sm gap-1.5">
+          <lucide-icon [img]="ExternalIcon" [size]="14" /> Apri Cal.com
+        </a>
+      }
+    </div>
+
+    @if (calcomEmbedUrl(); as safeUrl) {
+      <div class="border border-base-300 rounded-sm overflow-hidden bg-base-100">
+        <iframe [src]="safeUrl" class="w-full" style="height: 620px; border: 0;"
+                title="Prenotazione Cal.com" loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      </div>
+      <p class="mt-1 text-xs text-base-content/40">
+        Se il calendario non si carica qui, usa "Apri Cal.com" qui sopra.
+      </p>
+    } @else if (calcomUrl()) {
+      <p class="text-sm text-base-content/60">
+        Il link configurato non è su cal.com: per sicurezza non viene incorporato.
+        <a [href]="calcomUrl()" target="_blank" rel="noopener" class="link link-primary">Aprilo in una nuova scheda</a>.
+      </p>
+    } @else {
+      <div class="border border-dashed border-base-300 rounded-sm p-6 text-center text-sm text-base-content/50">
+        Collega il tuo <span class="font-medium">Cal.com</span> per far prenotare appuntamenti direttamente da qui:
+        imposta il link in <a routerLink="/settings" class="link link-primary">Impostazioni → Azienda</a>
+        (es. <code>https://cal.com/tuonome</code>).
+      </div>
+    }
+  </div>
+</div>

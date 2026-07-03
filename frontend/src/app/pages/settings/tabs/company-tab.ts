@@ -26,7 +26,9 @@ export class CompanyTab {
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     brandColor: ['#0A84FF', [Validators.required, Validators.pattern(/^#[0-9a-fA-F]{6}$/)]],
-    logoUrl: ['', [Validators.maxLength(500)]]
+    logoUrl: ['', [Validators.maxLength(500)]],
+    // link di prenotazione Cal.com (pagina Calendario); vuoto = integrazione spenta
+    calcomUrl: ['', [Validators.maxLength(500), Validators.pattern(/^$|^https:\/\/.+/)]]
   });
 
   constructor() {
@@ -37,7 +39,7 @@ export class CompanyTab {
       .subscribe((p) => {
         if (p) {
           this.form.setValue(
-            { name: p.name, brandColor: p.brandColor, logoUrl: p.logoUrl ?? '' },
+            { name: p.name, brandColor: p.brandColor, logoUrl: p.logoUrl ?? '', calcomUrl: p.calcomUrl ?? '' },
             { emitEvent: false }
           );
         }
@@ -54,7 +56,7 @@ export class CompanyTab {
     this.saved.set(false);
     const v = this.form.getRawValue();
     this.workspaceService
-      .updateBrand({ name: v.name, brandColor: v.brandColor, logoUrl: v.logoUrl.trim() || null })
+      .updateBrand({ name: v.name, brandColor: v.brandColor, logoUrl: v.logoUrl.trim() || null, calcomUrl: v.calcomUrl.trim() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

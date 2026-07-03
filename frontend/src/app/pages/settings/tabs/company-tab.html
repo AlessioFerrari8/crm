@@ -19,6 +19,14 @@
       <input type="text" formControlName="logoUrl" class="input rounded-sm w-full" placeholder="https://.../logo.png" />
     </div>
 
+    <div>
+      <label class="block text-sm mb-1">Link Cal.com</label>
+      <input type="text" formControlName="calcomUrl" class="input rounded-sm w-full" placeholder="https://cal.com/tuonome" />
+      <p class="text-xs text-base-content/50 mt-1">
+        Il tuo link di prenotazione: appare nella pagina Calendario per fissare appuntamenti. Vuoto = disattivato.
+      </p>
+    </div>
+
     <ui-button type="submit" variant="primary" [loading]="submitting()">Salva</ui-button>
   </form>
 
