@@ -32,6 +32,10 @@ public class Workspace {
 
     private String logoUrl;
 
+    // link pubblico di prenotazione Cal.com (es. https://cal.com/tuonome): mostrato nella pagina
+    // Calendario come embed per fissare appuntamenti con persone esterne
+    private String calcomUrl;
+
     @Column(nullable = false)
     private boolean onboarded = false;
 

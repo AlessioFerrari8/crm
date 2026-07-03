@@ -4,6 +4,7 @@ import it.northleap.backend.dtos.UpdateWorkspaceDto;
 import it.northleap.backend.dtos.WorkspaceBrandResponse;
 import it.northleap.backend.dtos.WorkspaceProfileResponse;
 import it.northleap.backend.entities.Workspace;
+import it.northleap.backend.exceptions.BadRequestException;
 import it.northleap.backend.exceptions.NotFoundException;
 import it.northleap.backend.repositories.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class WorkspaceService {
     // vista profilo (solo admin): per ora i campi brand, la Fase 1 vi aggiungera' l'anagrafica org
     public WorkspaceProfileResponse getProfile() {
         Workspace ws = currentWorkspace();
-        return new WorkspaceProfileResponse(ws.getName(), ws.getBrandColor(), ws.getLogoUrl());
+        return new WorkspaceProfileResponse(ws.getName(), ws.getBrandColor(), ws.getLogoUrl(), ws.getCalcomUrl());
     }
 
     @Transactional
@@ -41,6 +42,14 @@ public class WorkspaceService {
         if (dto.getLogoUrl() != null) {
             workspace.setLogoUrl(dto.getLogoUrl());
         }
+        // calcomUrl: null = non toccare, vuoto = rimuovere; se presente deve essere https
+        if (dto.getCalcomUrl() != null) {
+            String url = dto.getCalcomUrl().trim();
+            if (!url.isEmpty() && !url.startsWith("https://")) {
+                throw new BadRequestException("Il link Cal.com deve iniziare con https://");
+            }
+            workspace.setCalcomUrl(url.isEmpty() ? null : url);
+        }
         workspaceRepository.save(workspace);
         return toResponse(workspace);
     }
@@ -51,6 +60,7 @@ public class WorkspaceService {
     }
 
     private WorkspaceBrandResponse toResponse(Workspace workspace) {
-        return new WorkspaceBrandResponse(workspace.getName(), workspace.getBrandColor(), workspace.getLogoUrl());
+        return new WorkspaceBrandResponse(
+                workspace.getName(), workspace.getBrandColor(), workspace.getLogoUrl(), workspace.getCalcomUrl());
     }
 }

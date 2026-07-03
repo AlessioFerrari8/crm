@@ -16,4 +16,7 @@ public class UpdateWorkspaceDto {
     // predisposti per dopo (logo/colore brand): se null, non vengono toccati dall'update
     private String brandColor;
     private String logoUrl;
+
+    // link Cal.com per la pagina Calendario: null = non toccare, stringa vuota = rimuovere
+    private String calcomUrl;
 }
