@@ -20,6 +20,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/accept-invite/accept-invite').then((m) => m.AcceptInvite)
   },
   {
+    // pubblica: web form di lead capture, condivisibile/incorporabile (tipi con publicForm attivo)
+    path: 'f/:objectKey',
+    loadComponent: () => import('./pages/public-form/public-form').then((m) => m.PublicForm)
+  },
+  {
     path: '',
     canActivate: [authGuard],
     children: [

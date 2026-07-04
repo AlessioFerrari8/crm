@@ -11,6 +11,8 @@ export interface ObjectType {
   color: string | null;
   system: boolean;
   enabled: boolean;
+  // modulo pubblico di lead capture attivo per questo tipo (/f/{key})
+  publicForm: boolean;
   sortOrder: number;
   fields: FieldDef[];
 }

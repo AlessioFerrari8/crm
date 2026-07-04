@@ -337,6 +337,27 @@ export class ObjectsTab {
       .subscribe(() => this.reload$.next());
   }
 
+  // ── modulo pubblico di lead capture (/f/{key}) ──────────────────────────────
+  protected readonly formLinkCopied = signal<string | null>(null);
+
+  protected togglePublicForm(obj: ObjectType): void {
+    this.objectTypeService
+      .update(obj.key, { publicForm: !obj.publicForm })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reload$.next());
+  }
+
+  protected publicFormLink(obj: ObjectType): string {
+    return `${location.origin}/f/${obj.key}`;
+  }
+
+  protected copyFormLink(obj: ObjectType): void {
+    navigator.clipboard.writeText(this.publicFormLink(obj)).then(() => {
+      this.formLinkCopied.set(obj.key);
+      setTimeout(() => this.formLinkCopied.set(null), 2000);
+    });
+  }
+
   // riordino: scambia la posizione col vicino, rinumerando per indice (i sortOrder seminati
   // possono avere duplicati: lo scambio secco dei valori non basterebbe)
   protected moveObject(obj: ObjectType, delta: -1 | 1): void {

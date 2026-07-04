@@ -68,7 +68,9 @@
   }
 
   <div class="flex gap-2 justify-end pt-2">
-    <ui-button type="button" variant="ghost" (click)="cancel.emit()">Annulla</ui-button>
-    <ui-button type="submit" variant="primary" [loading]="submitting()">Salva</ui-button>
+    @if (showCancel()) {
+      <ui-button type="button" variant="ghost" (click)="cancel.emit()">Annulla</ui-button>
+    }
+    <ui-button type="submit" variant="primary" [loading]="submitting()">{{ submitLabel() }}</ui-button>
   </div>
 </form>

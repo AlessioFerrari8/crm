@@ -76,6 +76,18 @@
           </div>
           @if (expanded() === obj.key) {
             <div class="px-3 pb-3">
+              <div class="flex flex-wrap items-center gap-2 border border-base-300 rounded-sm px-3 py-2 mb-3 text-sm">
+                <span class="font-medium">Modulo pubblico</span>
+                <span class="text-xs text-base-content/40">(lead capture: chiunque col link può creare un record di questo tipo)</span>
+                <input type="checkbox" class="toggle toggle-primary toggle-xs" [checked]="obj.publicForm"
+                       (change)="togglePublicForm(obj)" />
+                @if (obj.publicForm) {
+                  <code class="text-xs break-all">{{ publicFormLink(obj) }}</code>
+                  <button class="btn btn-xs rounded-sm" (click)="copyFormLink(obj)">
+                    {{ formLinkCopied() === obj.key ? 'Copiato ✓' : 'Copia link' }}
+                  </button>
+                }
+              </div>
               @if (editingObjectKey() === obj.key) {
                 <form [formGroup]="editForm" (ngSubmit)="saveObject(obj.key)"
                       class="border border-base-300 rounded-sm p-3 mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">

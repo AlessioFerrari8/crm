@@ -1,0 +1,41 @@
+<div class="min-h-screen flex items-start justify-center bg-base-200 p-4 pt-10">
+  <div class="card bg-base-100 border border-base-300 rounded-sm w-full max-w-lg p-6">
+    @if (loading()) {
+      <div class="flex justify-center py-10"><ui-spinner /></div>
+    } @else if (missing()) {
+      <h1 class="text-xl font-semibold mb-2">Modulo non disponibile</h1>
+      <p class="text-sm text-base-content/60">Il link potrebbe essere errato o il modulo è stato disattivato.</p>
+    } @else if (done()) {
+      <div class="text-center py-8 space-y-2">
+        <div class="text-4xl">✅</div>
+        <h1 class="text-xl font-semibold">Grazie!</h1>
+        <p class="text-sm text-base-content/60">Abbiamo ricevuto i tuoi dati e ti ricontatteremo al più presto.</p>
+      </div>
+    } @else if (def(); as d) {
+      <div class="mb-4 border-b border-base-300 pb-3">
+        <h1 class="text-xl font-semibold flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full" [style.background-color]="d.color || '#2563eb'"></span>
+          {{ d.label }}
+        </h1>
+        <p class="text-sm text-base-content/60">Compila il modulo: i campi con * sono obbligatori.</p>
+      </div>
+
+      <!-- honeypot anti-bot: invisibile agli umani, i bot lo compilano -->
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
+             class="absolute opacity-0 h-0 w-0 pointer-events-none"
+             [value]="honeypot()" (input)="honeypot.set($any($event.target).value)" />
+
+      @if (error()) {
+        <div class="alert alert-error rounded-sm py-2 text-sm mb-3">{{ error() }}</div>
+      }
+
+      <app-dynamic-form
+        [fields]="d.fields"
+        [submitting]="submitting()"
+        submitLabel="Invia"
+        [showCancel]="false"
+        (save)="submit($event)"
+      />
+    }
+  </div>
+</div>

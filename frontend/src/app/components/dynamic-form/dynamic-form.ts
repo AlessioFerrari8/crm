@@ -76,6 +76,9 @@ export class DynamicForm implements OnInit {
   readonly fields = input.required<FieldDef[]>();
   readonly initialData = input<Record<string, unknown>>({});
   readonly submitting = input(false);
+  // personalizzazioni per il riuso nel form pubblico (/f/{key}): etichetta submit e niente Annulla
+  readonly submitLabel = input('Salva');
+  readonly showCancel = input(true);
 
   readonly save = output<Record<string, unknown>>();
   readonly cancel = output<void>();

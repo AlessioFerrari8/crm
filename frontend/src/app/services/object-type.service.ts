@@ -66,7 +66,15 @@ export class ObjectTypeService {
   // ma la risposta serializza il boolean come `enabled` (getter Lombok senza prefisso is)
   update(
     key: string,
-    dto: { label?: string; pluralLabel?: string; icon?: string; color?: string; isEnabled?: boolean; sortOrder?: number }
+    dto: {
+      label?: string;
+      pluralLabel?: string;
+      icon?: string;
+      color?: string;
+      isEnabled?: boolean;
+      sortOrder?: number;
+      publicForm?: boolean;
+    }
   ) {
     return this.http.patch<ObjectType>(`${API_BASE_URL}/api/objects/${key}`, dto);
   }
