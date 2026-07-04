@@ -176,6 +176,36 @@ public class RecordsService {
         return new BulkResult(affected);
     }
 
+    // cestino: gli ultimi 50 record soft-deleted del tipo (sotto scope OWN solo i propri)
+    public List<Record> trash(Actor actor, String key) {
+        PermScope scope = authorize(actor, key, PermAction.READ);
+        ObjectType obj = objectOrThrow(key);
+        if (scope == PermScope.OWN && actor.type() == ActorType.USER) {
+            return recordRepository.findTop50ByObjectType_IdAndOwnerIdAndIsDeletedTrueOrderByUpdatedAtDesc(
+                    obj.getId(), actor.id());
+        }
+        return recordRepository.findTop50ByObjectType_IdAndIsDeletedTrueOrderByUpdatedAtDesc(obj.getId());
+    }
+
+    // ripristino dal cestino: inverso del soft-delete di remove(). Nessun evento pubblicato:
+    // ripristinare non e' creare (i workflow "record.created" non devono riscattare)
+    @Transactional
+    public Record restore(Actor actor, String key, UUID id, String ip) {
+        PermScope scope = authorize(actor, key, PermAction.WRITE);
+        ObjectType obj = objectOrThrow(key);
+        Record record = recordRepository.findById(id)
+                .filter(Record::isDeleted)
+                .filter(r -> r.getObjectType().getId().equals(obj.getId()))
+                .orElseThrow(() -> new NotFoundException("Record non trovato nel cestino"));
+
+        assertOwnership(scope, actor, record, "Puoi ripristinare solo i tuoi record");
+
+        record.setDeleted(false);
+        recordRepository.save(record);
+        auditService.log(actor, "restore", key, id.toString(), null, ip);
+        return record;
+    }
+
     public List<Record> globalSearch(Actor actor, String q) {
         if (q == null || q.length() < 2) {
             return List.of();

@@ -15,4 +15,7 @@ public interface RecordRepository extends JpaRepository<Record, UUID> {
     List<Record> findByIdInAndObjectType_IdAndIsDeletedFalse(List<UUID> ids, UUID objectTypeId);
     List<Record> findByIdInAndObjectType_IdAndOwnerIdAndIsDeletedFalse(List<UUID> ids, UUID objectTypeId, UUID ownerId);
     List<Record> findByObjectType_IdAndIsDeletedFalse(UUID objectTypeId);
+    // cestino: ultimi eliminati del tipo (variante con owner per lo scope OWN)
+    List<Record> findTop50ByObjectType_IdAndIsDeletedTrueOrderByUpdatedAtDesc(UUID objectTypeId);
+    List<Record> findTop50ByObjectType_IdAndOwnerIdAndIsDeletedTrueOrderByUpdatedAtDesc(UUID objectTypeId, UUID ownerId);
 }

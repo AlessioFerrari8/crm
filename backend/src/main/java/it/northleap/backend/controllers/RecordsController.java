@@ -63,6 +63,22 @@ public class RecordsController {
         return ResponseEntity.ok(recordsService.bulk(actor, key, body, request.getRemoteAddr()));
     }
 
+    // cestino del tipo (il segmento letterale "trash" vince su /{key}/{id} nel routing di Spring)
+    @GetMapping("/{key}/trash")
+    public ResponseEntity<List<Record>> trash(@CurrentActor Actor actor, @PathVariable String key) {
+        return ResponseEntity.ok(recordsService.trash(actor, key));
+    }
+
+    @PostMapping("/{key}/{id}/restore")
+    public ResponseEntity<Record> restore(
+            @CurrentActor Actor actor,
+            @PathVariable String key,
+            @PathVariable UUID id,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(recordsService.restore(actor, key, id, request.getRemoteAddr()));
+    }
+
     @GetMapping("/{key}/{id}")
     public ResponseEntity<RecordDetailResponse> findOne(
             @CurrentActor Actor actor,
