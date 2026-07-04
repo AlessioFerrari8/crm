@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -46,8 +47,12 @@ public class ObjectType {
     private boolean isEnabled = true;
 
     // modulo pubblico di lead capture (/f/{key} + /api/public/forms/{key}): spento di default,
-    // l'admin lo abilita per i tipi che vuole esporre (es. lead)
+    // l'admin lo abilita per i tipi che vuole esporre (es. lead).
+    // @ColumnDefault: senza, ddl-auto=update genera "ADD COLUMN ... NOT NULL" SENZA default e
+    // l'ALTER fallisce sulle tabelle già popolate -> seeders in errore -> app in crash-loop
+    // (successo davvero al primo deploy; il default Java new ObjectType() non finisce nel DDL)
     @Column(nullable = false)
+    @ColumnDefault("false")
     private boolean publicForm = false;
 
     @Column(name = "sort_order", nullable = false)
