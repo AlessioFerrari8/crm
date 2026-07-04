@@ -339,6 +339,47 @@ export class RecordList {
     URL.revokeObjectURL(url);
   }
 
+  // ── cestino (soft-delete + ripristino) ──────────────────────────────────────
+  protected readonly trashOpen = signal(false);
+  protected readonly trashItems = signal<RecordItem[]>([]);
+  protected readonly trashLoading = signal(false);
+
+  protected openTrash(): void {
+    this.trashOpen.set(true);
+    this.loadTrash();
+  }
+
+  private loadTrash(): void {
+    this.trashLoading.set(true);
+    this.recordsService
+      .listTrash(this.objectKey())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          this.trashItems.set(items);
+          this.trashLoading.set(false);
+        },
+        error: () => {
+          this.trashItems.set([]);
+          this.trashLoading.set(false);
+        }
+      });
+  }
+
+  protected restoreRecord(rec: RecordItem): void {
+    this.recordsService
+      .restore(this.objectKey(), rec.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.loadTrash();
+        this.reload$.next();
+      });
+  }
+
+  protected trashDate(rec: RecordItem): string {
+    return new Date(rec.updatedAt).toLocaleString('it-IT');
+  }
+
   // ── viste salvate ───────────────────────────────────────────────────────────
   private readonly viewsReload$ = new Subject<void>();
 

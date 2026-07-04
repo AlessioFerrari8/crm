@@ -54,6 +54,15 @@ export class RecordsService {
     return this.http.delete<void>(`${this.base}/${key}/${id}`);
   }
 
+  // cestino: ultimi record soft-deleted del tipo, e ripristino
+  listTrash(key: string): Observable<RecordItem[]> {
+    return this.http.get<RecordItem[]>(`${this.base}/${key}/trash`);
+  }
+
+  restore(key: string, id: string): Observable<RecordItem> {
+    return this.http.post<RecordItem>(`${this.base}/${key}/${id}/restore`, {});
+  }
+
   // azione di massa su più record (update di un campo o delete). Il backend applica RBAC + scope OWN
   // e cappa a 500 id lato server.
   bulk(key: string, body: BulkRecordsRequest): Observable<BulkResult> {

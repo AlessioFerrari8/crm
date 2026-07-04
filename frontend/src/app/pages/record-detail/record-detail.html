@@ -6,9 +6,23 @@
       <div>
         <a [routerLink]="['/o', objectKey]" class="text-sm link link-hover text-base-content/50">← {{ object()?.pluralLabel ?? objectKey }}</a>
         <h1 class="text-2xl font-semibold">{{ rec.title || '(senza titolo)' }}</h1>
-        @if (rec.status) {
-          <span class="badge badge-neutral rounded-sm mt-1">{{ rec.status }}</span>
-        }
+        <div class="flex items-center gap-2 mt-1">
+          @if (rec.status) {
+            <span class="badge badge-neutral rounded-sm">{{ rec.status }}</span>
+          }
+          @if (users(); as us) {
+            <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+              Proprietario
+              <select class="select select-xs rounded-sm" [value]="rec.ownerId ?? ''"
+                      (change)="setOwner($any($event.target).value)">
+                <option value="" disabled>—</option>
+                @for (u of us; track u.id) {
+                  <option [value]="u.id">{{ u.name || u.email }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
       </div>
       <div class="flex gap-2">
         <ui-button variant="ghost" [loading]="duplicating()" (click)="duplicate()">Duplica</ui-button>

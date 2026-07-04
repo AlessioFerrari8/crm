@@ -40,6 +40,10 @@
               (click)="importOpen.set(true)">
         <lucide-icon [img]="UploadIcon" [size]="14" /> Importa
       </button>
+      <button class="btn btn-ghost btn-sm rounded-sm gap-1.5" title="Record eliminati (ripristinabili)"
+              (click)="openTrash()">
+        <lucide-icon [img]="TrashIcon" [size]="14" /> Cestino
+      </button>
       @if (statusField() || dateField()) {
         <div class="join">
           <button class="join-item btn btn-sm" [class.btn-active]="view() === 'table'"
@@ -186,6 +190,35 @@
 </div>
 
 <app-record-import [(open)]="importOpen" [objectKey]="objectKey()" [fields]="formFields()" (imported)="refresh()" />
+
+@if (trashOpen()) {
+  <div class="fixed inset-0 z-[90] bg-black/40 flex items-start justify-center p-4 pt-20" (click)="trashOpen.set(false)">
+    <div class="w-full max-w-xl bg-base-100 border border-base-300 rounded-sm shadow-xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-base-300 px-4 py-3">
+        <h2 class="font-semibold">Cestino — {{ object()?.pluralLabel }}</h2>
+        <button class="btn btn-ghost btn-xs rounded-sm" (click)="trashOpen.set(false)">✕</button>
+      </div>
+      <div class="p-4 max-h-[60vh] overflow-y-auto">
+        @if (trashLoading()) {
+          <div class="flex justify-center py-6"><ui-spinner /></div>
+        } @else if (trashItems().length === 0) {
+          <p class="text-center text-sm text-base-content/50 py-6">Il cestino è vuoto.</p>
+        } @else {
+          <ul class="divide-y divide-base-200 border border-base-300 rounded-sm">
+            @for (rec of trashItems(); track rec.id) {
+              <li class="flex items-center gap-3 p-2 text-sm">
+                <span class="truncate flex-1">{{ rec.title || '(senza titolo)' }}</span>
+                <span class="text-xs text-base-content/40 shrink-0">{{ trashDate(rec) }}</span>
+                <button class="btn btn-ghost btn-xs rounded-sm shrink-0" (click)="restoreRecord(rec)">Ripristina</button>
+              </li>
+            }
+          </ul>
+          <p class="mt-2 text-[11px] text-base-content/40">Ultimi 50 eliminati. Il ripristino li riporta nella lista.</p>
+        }
+      </div>
+    </div>
+  </div>
+}
 
 <app-drawer [open]="drawerOpen()" [title]="'Nuovo ' + (object()?.label ?? 'record')" (close)="drawerOpen.set(false)">
   @if (drawerOpen()) {

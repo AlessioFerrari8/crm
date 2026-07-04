@@ -231,6 +231,22 @@ export class RecordDetail {
       });
   }
 
+  // ── proprietario del record ─────────────────────────────────────────────────
+  // lista utenti per la riassegnazione: richiede il permesso RBAC "user" READ; senza, la select
+  // non compare (il backend comunque ignora ownerId arbitrari sotto scope OWN)
+  protected readonly users = toSignal(
+    this.admin.listUsers().pipe(catchError(() => of(null))),
+    { initialValue: null }
+  );
+
+  protected setOwner(userId: string): void {
+    if (!userId) return;
+    this.recordsService
+      .update(this.objectKey, this.recordId, { data: {}, ownerId: userId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reload$.next());
+  }
+
   // ── collegamenti (aggiungi/rimuovi) ─────────────────────────────────────────
   protected readonly linkFormOpen = signal(false);
   protected readonly linkTargetKey = signal('');
