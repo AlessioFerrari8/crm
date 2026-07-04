@@ -1,9 +1,10 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { UiButton } from '../../components/ui/button';
+import { UiPasswordRules, passwordValid } from '../../components/ui/password-rules';
 import { UiCard } from '../../components/ui/card';
 import { UiLabel } from '../../components/ui/label';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, UiButton, UiCard, UiLabel],
+  imports: [ReactiveFormsModule, RouterLink, UiButton, UiCard, UiLabel, UiPasswordRules],
   templateUrl: './onboarding.html'
 })
 export class Onboarding {
@@ -34,6 +35,9 @@ export class Onboarding {
     password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
+  // valore live della password per la checklist dei requisiti (PasswordPolicy backend)
+  protected readonly pwValue = toSignal(this.form.controls.password.valueChanges, { initialValue: '' });
+
   protected next(): void {
     if (this.form.controls.workspaceName.invalid) {
       this.form.controls.workspaceName.markAsTouched();
@@ -49,6 +53,10 @@ export class Onboarding {
   protected submit(): void {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (!passwordValid(this.form.controls.password.value)) {
+      this.error.set('La password non rispetta tutti i requisiti elencati');
       return;
     }
     this.submitting.set(true);

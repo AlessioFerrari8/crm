@@ -66,8 +66,49 @@
       </button>
       <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-sm border border-base-300 z-30 w-48 p-1 shadow">
         <li><a routerLink="/settings"><lucide-icon [img]="SettingsIcon" [size]="16" /> {{ i18n.t('topbar.settings') }}</a></li>
+        <li><button (click)="openChangePassword()"><lucide-icon [img]="KeyIcon" [size]="16" /> Cambia password</button></li>
         <li><button (click)="logout()"><lucide-icon [img]="LogOutIcon" [size]="16" /> {{ i18n.t('topbar.logout') }}</button></li>
       </ul>
     </div>
   </div>
 </header>
+
+@if (changePwOpen()) {
+  <div class="fixed inset-0 z-[90] bg-black/40 flex items-start justify-center p-4 pt-24" (click)="changePwOpen.set(false)">
+    <div class="w-full max-w-sm bg-base-100 border border-base-300 rounded-sm shadow-xl p-4" (click)="$event.stopPropagation()">
+      <h3 class="font-semibold mb-3">Cambia password</h3>
+      @if (cpDone()) {
+        <div class="alert alert-success rounded-sm py-2 text-sm">Password aggiornata ✓ Le altre sessioni sono state disconnesse.</div>
+      } @else {
+        <div class="space-y-2">
+          <div>
+            <label class="block text-xs mb-1">Password attuale</label>
+            <input type="password" class="input input-sm rounded-sm w-full" autocomplete="current-password"
+                   [value]="cpCurrent()" (input)="cpCurrent.set($any($event.target).value)" />
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Nuova password</label>
+            <input type="password" class="input input-sm rounded-sm w-full" autocomplete="new-password"
+                   [value]="cpNew()" (input)="cpNew.set($any($event.target).value)" />
+            <ui-password-rules [password]="cpNew()" />
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Conferma nuova password</label>
+            <input type="password" class="input input-sm rounded-sm w-full" autocomplete="new-password"
+                   [value]="cpConfirm()" (input)="cpConfirm.set($any($event.target).value)"
+                   (keyup.enter)="submitChangePassword()" />
+          </div>
+          @if (cpError()) {
+            <div class="alert alert-error rounded-sm py-1.5 text-xs">{{ cpError() }}</div>
+          }
+          <div class="flex justify-end gap-2 pt-1">
+            <button class="btn btn-ghost btn-sm rounded-sm" (click)="changePwOpen.set(false)">Annulla</button>
+            <button class="btn btn-primary btn-sm rounded-sm"
+                    [disabled]="!cpCurrent() || !cpNewOk() || cpSubmitting()"
+                    (click)="submitChangePassword()">Aggiorna</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

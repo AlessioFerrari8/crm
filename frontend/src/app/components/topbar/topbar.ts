@@ -1,9 +1,10 @@
-import { Component, DestroyRef, computed, inject } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Bell, Languages, LogOut, LucideAngularModule, Moon, Search, Settings, Sun } from 'lucide-angular';
+import { Bell, KeyRound, Languages, LogOut, LucideAngularModule, Moon, Search, Settings, Sun } from 'lucide-angular';
 import { switchMap, timer } from 'rxjs';
 
+import { UiPasswordRules, passwordValid } from '../ui/password-rules';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ThemeService } from '../../services/theme.service';
@@ -19,7 +20,7 @@ const NOTIFICATION_POLL_MS = 60_000;
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule, UiPasswordRules],
   templateUrl: './topbar.html',
   styles: ':host { display: contents; }'
 })
@@ -47,6 +48,7 @@ export class Topbar {
   protected readonly LogOutIcon = LogOut;
   protected readonly Languages = Languages;
   protected readonly SearchIcon = Search;
+  protected readonly KeyIcon = KeyRound;
 
   constructor() {
     this.workspace.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
@@ -88,5 +90,48 @@ export class Topbar {
       .logout()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.router.navigate(['/login']));
+  }
+
+  // ── cambio password self-service (modal) ───────────────────────────────────
+  protected readonly changePwOpen = signal(false);
+  protected readonly cpCurrent = signal('');
+  protected readonly cpNew = signal('');
+  protected readonly cpConfirm = signal('');
+  protected readonly cpSubmitting = signal(false);
+  protected readonly cpError = signal<string | null>(null);
+  protected readonly cpDone = signal(false);
+  protected readonly cpNewOk = computed(() => passwordValid(this.cpNew()));
+
+  protected openChangePassword(): void {
+    this.cpCurrent.set('');
+    this.cpNew.set('');
+    this.cpConfirm.set('');
+    this.cpError.set(null);
+    this.cpDone.set(false);
+    this.changePwOpen.set(true);
+  }
+
+  protected submitChangePassword(): void {
+    if (!this.cpCurrent() || !this.cpNewOk() || this.cpSubmitting()) return;
+    if (this.cpNew() !== this.cpConfirm()) {
+      this.cpError.set('Le nuove password non coincidono');
+      return;
+    }
+    this.cpSubmitting.set(true);
+    this.cpError.set(null);
+    this.auth
+      .changePassword(this.cpCurrent(), this.cpNew())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cpSubmitting.set(false);
+          this.cpDone.set(true);
+          setTimeout(() => this.changePwOpen.set(false), 1500);
+        },
+        error: (err) => {
+          this.cpSubmitting.set(false);
+          this.cpError.set(err?.error?.message ?? 'Cambio password non riuscito');
+        }
+      });
   }
 }

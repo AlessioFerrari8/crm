@@ -41,7 +41,8 @@
 
           <div>
             <ui-label [required]="true">Password</ui-label>
-            <input type="password" formControlName="password" class="input rounded-sm w-full" placeholder="min. 8 caratteri" />
+            <input type="password" formControlName="password" class="input rounded-sm w-full" />
+            <ui-password-rules [password]="pwValue()" />
             @if (form.controls.password.touched && form.controls.password.invalid) {
               <p class="text-error text-xs mt-1">Almeno 8 caratteri</p>
             }

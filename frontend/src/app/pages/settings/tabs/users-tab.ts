@@ -1,9 +1,10 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
 
 import { UiButton } from '../../../components/ui/button';
+import { UiPasswordRules, passwordValid } from '../../../components/ui/password-rules';
 import { UiSpinner } from '../../../components/ui/spinner';
 import { ROLE_KEYS } from '../../../core/roles';
 import { UserSummary } from '../../../models/admin';
@@ -12,7 +13,7 @@ import { AdminService } from '../../../services/admin.service';
 @Component({
   selector: 'app-users-tab',
   standalone: true,
-  imports: [ReactiveFormsModule, UiButton, UiSpinner],
+  imports: [ReactiveFormsModule, UiButton, UiSpinner, UiPasswordRules],
   templateUrl: './users-tab.html'
 })
 export class UsersTab {
@@ -93,22 +94,35 @@ export class UsersTab {
   // feedback "password aggiornata" sull'utente appena resettato
   protected readonly resetDoneId = signal<string | null>(null);
 
-  protected resetPassword(user: UserSummary): void {
-    const password = prompt(`Nuova password per ${user.email} (min 8 caratteri):`);
-    if (password == null) return;
-    if (password.length < 8) {
-      alert('La password deve avere almeno 8 caratteri.');
-      return;
-    }
+  // modal di reset con checklist dei requisiti (stessa PasswordPolicy del backend)
+  protected readonly resetTarget = signal<UserSummary | null>(null);
+  protected readonly resetPw = signal('');
+  protected readonly resetSubmitting = signal(false);
+  protected readonly resetPwOk = computed(() => passwordValid(this.resetPw()));
+
+  protected openReset(user: UserSummary): void {
+    this.resetPw.set('');
+    this.resetTarget.set(user);
+  }
+
+  protected confirmReset(): void {
+    const user = this.resetTarget();
+    if (!user || !this.resetPwOk() || this.resetSubmitting()) return;
+    this.resetSubmitting.set(true);
     this.admin
-      .resetPassword(user.id, password)
+      .resetPassword(user.id, this.resetPw())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
+          this.resetSubmitting.set(false);
+          this.resetTarget.set(null);
           this.resetDoneId.set(user.id);
           setTimeout(() => this.resetDoneId.set(null), 2500);
         },
-        error: (err) => this.error.set(err?.error?.message ?? 'Errore nel reset della password')
+        error: (err) => {
+          this.resetSubmitting.set(false);
+          this.error.set(err?.error?.message ?? 'Errore nel reset della password');
+        }
       });
   }
 }

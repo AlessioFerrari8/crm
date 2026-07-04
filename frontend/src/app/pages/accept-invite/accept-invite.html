@@ -19,8 +19,9 @@
           <input formControlName="name" class="input rounded-sm w-full" placeholder="Mario Rossi" />
         </div>
         <div>
-          <label class="block text-sm mb-1">Password <span class="text-error">*</span> <span class="text-xs text-base-content/40">(min 8 caratteri)</span></label>
+          <label class="block text-sm mb-1">Password <span class="text-error">*</span></label>
           <input type="password" formControlName="password" class="input rounded-sm w-full" />
+          <ui-password-rules [password]="pwValue()" />
         </div>
         <div>
           <label class="block text-sm mb-1">Conferma password <span class="text-error">*</span></label>

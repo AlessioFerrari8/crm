@@ -1,9 +1,10 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { UiButton } from '../../components/ui/button';
+import { UiPasswordRules, passwordValid } from '../../components/ui/password-rules';
 import { AuthService } from '../../services/auth.service';
 
 // Accettazione invito (pagina pubblica, /invite?token=...): l'invitato sceglie nome e password
@@ -11,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-accept-invite',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, UiButton],
+  imports: [ReactiveFormsModule, RouterLink, UiButton, UiPasswordRules],
   templateUrl: './accept-invite.html'
 })
 export class AcceptInvite {
@@ -31,12 +32,19 @@ export class AcceptInvite {
     confirm: ['', Validators.required]
   });
 
+  // valore live della password per la checklist dei requisiti
+  protected readonly pwValue = toSignal(this.form.controls.password.valueChanges, { initialValue: '' });
+
   protected submit(): void {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
       return;
     }
     const { name, password, confirm } = this.form.getRawValue();
+    if (!passwordValid(password)) {
+      this.error.set('La password non rispetta tutti i requisiti elencati');
+      return;
+    }
     if (password !== confirm) {
       this.error.set('Le password non coincidono');
       return;

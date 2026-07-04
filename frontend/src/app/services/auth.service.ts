@@ -58,6 +58,11 @@ export class AuthService {
     return this.http.post<unknown>(`${API_BASE_URL}/api/users/accept-invite`, { token, name, password });
   }
 
+  // cambio password self-service: la sessione corrente resta viva, le altre vengono revocate
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.patch<void>(`${API_BASE_URL}/api/auth/password`, { currentPassword, newPassword });
+  }
+
   // usata internamente dall'interceptor su 401/403; nessun refresh token nel body, viaggia
   // come cookie automaticamente
   refresh(): Observable<IAuthResponse> {

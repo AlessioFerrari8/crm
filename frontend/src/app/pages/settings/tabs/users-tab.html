@@ -50,7 +50,7 @@
                 <span class="text-success text-xs mr-2">password aggiornata ✓</span>
               }
               @if (u.isActive) {
-                <button class="btn btn-ghost btn-xs rounded-sm" (click)="resetPassword(u)">Reset password</button>
+                <button class="btn btn-ghost btn-xs rounded-sm" (click)="openReset(u)">Reset password</button>
                 <button class="btn btn-ghost btn-xs text-error rounded-sm" (click)="deactivate(u)">Disattiva</button>
               }
             </td>
@@ -58,5 +58,25 @@
         }
       </tbody>
     </table>
+  }
+
+  @if (resetTarget(); as target) {
+    <div class="fixed inset-0 z-[90] bg-black/40 flex items-start justify-center p-4 pt-24" (click)="resetTarget.set(null)">
+      <div class="w-full max-w-sm bg-base-100 border border-base-300 rounded-sm shadow-xl p-4" (click)="$event.stopPropagation()">
+        <h3 class="font-semibold mb-1">Reset password</h3>
+        <p class="text-xs text-base-content/60 mb-3">
+          Nuova password per <span class="font-medium">{{ target.email }}</span>. Le sue sessioni attive verranno disconnesse.
+        </p>
+        <input type="password" class="input input-sm rounded-sm w-full" placeholder="Nuova password" autofocus
+               [value]="resetPw()" (input)="resetPw.set($any($event.target).value)"
+               (keyup.enter)="confirmReset()" />
+        <ui-password-rules [password]="resetPw()" />
+        <div class="flex justify-end gap-2 mt-3">
+          <button class="btn btn-ghost btn-sm rounded-sm" (click)="resetTarget.set(null)">Annulla</button>
+          <button class="btn btn-primary btn-sm rounded-sm" [disabled]="!resetPwOk() || resetSubmitting()"
+                  (click)="confirmReset()">Imposta password</button>
+        </div>
+      </div>
+    </div>
   }
 </div>
