@@ -67,6 +67,18 @@ public class AuthController {
         return ResponseEntity.ok(authService.me(principal));
     }
 
+    // cambio password self-service (richiede la password attuale); la sessione corrente resta
+    // viva (individuata dal cookie refresh), le altre vengono revocate
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @CookieValue(name = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            @Valid @RequestBody ChangePasswordDto dto
+    ) {
+        authService.changePassword(principal, dto.getCurrentPassword(), dto.getNewPassword(), refreshToken);
+        return ResponseEntity.noContent().build();
+    }
+
     private ResponseEntity<AuthResponse> withTokenCookies(IssuedTokens tokens) {
         ResponseCookie accessCookie = authCookieService.accessTokenCookie(tokens.accessToken());
         ResponseCookie refreshCookie = authCookieService.refreshTokenCookie(tokens.refreshToken());

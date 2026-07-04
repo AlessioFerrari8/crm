@@ -61,6 +61,7 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.email());
         user.setName(request.name());
+        PasswordPolicy.assertValid(request.password());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setActive(true);
         userRepository.save(user);
@@ -132,6 +133,33 @@ public class AuthService {
                 sessionRepository.save(session);
             }
         });
+    }
+
+    // cambio password self-service: verifica la password attuale, applica la policy, revoca
+    // tutte le sessioni TRANNE quella corrente (individuata dal cookie refresh, che viaggia su
+    // questo path /api/auth) - eventuali sessioni rubate/altrui muoiono, l'utente resta loggato
+    @Transactional
+    public void changePassword(UserPrincipal principal, String currentPassword, String newPassword, String refreshToken) {
+        if (principal == null) {
+            throw new BadRequestException("Questo endpoint richiede un utente autenticato via JWT, non una API key");
+        }
+        User user = principal.getUser();
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new BadRequestException("La password attuale non è corretta");
+        }
+        PasswordPolicy.assertValid(newPassword);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        String keepHash = refreshToken != null ? jwtService.hashToken(refreshToken) : null;
+        Instant now = Instant.now();
+        List<Session> sessions = sessionRepository.findByUser_IdAndRevokedAtIsNull(user.getId());
+        for (Session session : sessions) {
+            if (keepHash == null || !keepHash.equals(session.getRefreshHash())) {
+                session.setRevokedAt(now);
+            }
+        }
+        sessionRepository.saveAll(sessions);
     }
 
     public MeResponse me(UserPrincipal principal) {

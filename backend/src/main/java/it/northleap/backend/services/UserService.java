@@ -94,6 +94,7 @@ public class UserService {
         User user = new User();
         user.setEmail(invite.getEmail());
         user.setName(dto.getName());
+        PasswordPolicy.assertValid(dto.getPassword());
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         user.setActive(true);
         userRepository.save(user);
@@ -155,6 +156,7 @@ public class UserService {
     public void resetPassword(Actor actor, UUID id, String newPassword) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato"));
+        PasswordPolicy.assertValid(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
