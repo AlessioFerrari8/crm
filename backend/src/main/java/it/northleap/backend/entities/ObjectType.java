@@ -45,6 +45,11 @@ public class ObjectType {
     @Column(nullable = false)
     private boolean isEnabled = true;
 
+    // modulo pubblico di lead capture (/f/{key} + /api/public/forms/{key}): spento di default,
+    // l'admin lo abilita per i tipi che vuole esporre (es. lead)
+    @Column(nullable = false)
+    private boolean publicForm = false;
+
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;
 

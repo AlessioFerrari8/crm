@@ -33,7 +33,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain
     ) throws ServletException, IOException {
-        if (!"POST".equalsIgnoreCase(request.getMethod()) || !LIMITED_PATHS.contains(request.getServletPath())) {
+        boolean limited = LIMITED_PATHS.contains(request.getServletPath())
+                // form pubblici di lead capture: path dinamico, match per prefisso
+                || request.getServletPath().startsWith("/api/public/forms/");
+        if (!"POST".equalsIgnoreCase(request.getMethod()) || !limited) {
             filterChain.doFilter(request, response);
             return;
         }
