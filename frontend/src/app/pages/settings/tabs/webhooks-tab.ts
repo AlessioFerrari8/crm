@@ -8,6 +8,7 @@ import { UiButton } from '../../../components/ui/button';
 import { UiSpinner } from '../../../components/ui/spinner';
 import { Webhook, WebhookDirection } from '../../../models/admin';
 import { AdminService } from '../../../services/admin.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 const DIRECTIONS: WebhookDirection[] = ['OUTBOUND', 'INBOUND'];
 
@@ -20,6 +21,7 @@ const DIRECTIONS: WebhookDirection[] = ['OUTBOUND', 'INBOUND'];
 export class WebhooksTab {
   private readonly fb = inject(FormBuilder);
   private readonly admin = inject(AdminService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly directions = DIRECTIONS;
@@ -78,10 +80,12 @@ export class WebhooksTab {
   }
 
   protected remove(webhook: Webhook): void {
-    if (!confirm(`Eliminare il webhook "${webhook.name}"?`)) return;
-    this.admin
-      .removeWebhook(webhook.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Eliminare il webhook "${webhook.name}"?`).then((ok) => {
+      if (!ok) return;
+      this.admin
+        .removeWebhook(webhook.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 }

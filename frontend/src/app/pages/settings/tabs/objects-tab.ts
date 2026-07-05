@@ -9,6 +9,7 @@ import { UiButton } from '../../../components/ui/button';
 import { UiSpinner } from '../../../components/ui/spinner';
 import { FIELD_TYPES, FieldDef, FieldOption, FieldType, ObjectType } from '../../../models/object-type';
 import { FieldUpsert, ObjectTypeService } from '../../../services/object-type.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-objects-tab',
@@ -19,6 +20,7 @@ import { FieldUpsert, ObjectTypeService } from '../../../services/object-type.se
 export class ObjectsTab {
   private readonly fb = inject(FormBuilder);
   private readonly objectTypeService = inject(ObjectTypeService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(true);
@@ -241,14 +243,16 @@ export class ObjectsTab {
 
   protected removeField(objKey: string, field: FieldDef): void {
     if (field.required) return; // bloccati, non eliminabili
-    if (!confirm(`Eliminare il campo "${field.label}"?`)) return;
-    this.objectTypeService
-      .removeField(objKey, field.key)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => this.reload$.next(),
-        error: (err) => this.fieldError.set(err?.error?.message ?? 'Errore nella rimozione del campo')
-      });
+    this.confirmService.ask(`Eliminare il campo "${field.label}"?`).then((ok) => {
+      if (!ok) return;
+      this.objectTypeService
+        .removeField(objKey, field.key)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => this.reload$.next(),
+          error: (err) => this.fieldError.set(err?.error?.message ?? 'Errore nella rimozione del campo')
+        });
+    });
   }
 
   protected create(): void {
@@ -277,11 +281,13 @@ export class ObjectsTab {
 
   protected remove(obj: ObjectType): void {
     if (obj.system) return;
-    if (!confirm(`Eliminare l'oggetto "${obj.label}" e tutti i suoi record?`)) return;
-    this.objectTypeService
-      .remove(obj.key)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Eliminare l'oggetto "${obj.label}" e tutti i suoi record?`).then((ok) => {
+      if (!ok) return;
+      this.objectTypeService
+        .remove(obj.key)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 
   // ── modifica oggetto esistente (label/plurale/colore/icona) ────────────────

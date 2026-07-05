@@ -9,6 +9,7 @@ import { UiSpinner } from '../../../components/ui/spinner';
 import { ROLE_KEYS } from '../../../core/roles';
 import { UserSummary } from '../../../models/admin';
 import { AdminService } from '../../../services/admin.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-users-tab',
@@ -19,6 +20,7 @@ import { AdminService } from '../../../services/admin.service';
 export class UsersTab {
   private readonly fb = inject(FormBuilder);
   private readonly admin = inject(AdminService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly roleKeys = ROLE_KEYS;
@@ -84,11 +86,13 @@ export class UsersTab {
   }
 
   protected deactivate(user: UserSummary): void {
-    if (!confirm(`Disattivare ${user.email}?`)) return;
-    this.admin
-      .deactivateUser(user.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Disattivare ${user.email}?`).then((ok) => {
+      if (!ok) return;
+      this.admin
+        .deactivateUser(user.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 
   // feedback "password aggiornata" sull'utente appena resettato

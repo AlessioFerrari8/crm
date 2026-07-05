@@ -7,6 +7,7 @@ import { WorkflowEditor } from '../../../components/workflow-editor/workflow-edi
 import { Workflow, WorkflowRun } from '../../../models/admin';
 import { WfGraph, synthGraph } from '../../../models/workflow-graph';
 import { AdminService } from '../../../services/admin.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-workflows-tab',
@@ -16,6 +17,7 @@ import { AdminService } from '../../../services/admin.service';
 })
 export class WorkflowsTab {
   private readonly admin = inject(AdminService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(true);
@@ -69,11 +71,13 @@ export class WorkflowsTab {
   }
 
   protected remove(w: Workflow): void {
-    if (!confirm(`Eliminare il workflow "${w.name}"?`)) return;
-    this.admin
-      .removeWorkflow(w.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Eliminare il workflow "${w.name}"?`).then((ok) => {
+      if (!ok) return;
+      this.admin
+        .removeWorkflow(w.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 
   // ── editor ───────────────────────────────────────────────────────────────

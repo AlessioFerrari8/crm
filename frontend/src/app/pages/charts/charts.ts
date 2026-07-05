@@ -10,6 +10,7 @@ import { ObjectType } from '../../models/object-type';
 import { ChartService } from '../../services/chart.service';
 import { ObjectTypeService } from '../../services/object-type.service';
 import { ChartCard } from './chart-card';
+import { ConfirmService } from '../../services/confirm.service';
 
 @Component({
   selector: 'app-charts',
@@ -22,6 +23,7 @@ export class Charts {
   private readonly fb = inject(FormBuilder);
   private readonly chartService = inject(ChartService);
   private readonly objectTypeService = inject(ObjectTypeService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly chartTypes = CHART_TYPES;
@@ -87,10 +89,12 @@ export class Charts {
   }
 
   protected remove(chart: Chart): void {
-    if (!confirm(`Eliminare il grafico "${chart.label}"?`)) return;
-    this.chartService
-      .remove(chart.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Eliminare il grafico "${chart.label}"?`).then((ok) => {
+      if (!ok) return;
+      this.chartService
+        .remove(chart.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 }

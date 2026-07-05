@@ -8,6 +8,7 @@ import { Permission, PermScope, Role } from '../../../models/admin';
 import { ObjectType } from '../../../models/object-type';
 import { AdminService } from '../../../services/admin.service';
 import { ObjectTypeService } from '../../../services/object-type.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 // risorse di sistema fisse (oltre alle key degli ObjectType), come nel riferimento
 const SYS_RESOURCES = ['page', 'chart', 'workflow', 'user', 'apikey'];
@@ -23,6 +24,7 @@ const SYS_RESOURCES = ['page', 'chart', 'workflow', 'user', 'apikey'];
 export class RolesTab {
   private readonly admin = inject(AdminService);
   private readonly objectTypeService = inject(ObjectTypeService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(true);
@@ -157,14 +159,16 @@ export class RolesTab {
 
   protected remove(role: Role): void {
     if (role.system) return;
-    if (!confirm(`Eliminare il ruolo "${role.label}"?`)) return;
-    this.admin
-      .removeRole(role.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (this.openRole() === role.id) this.openRole.set(null);
-        this.reload$.next();
-      });
+    this.confirmService.ask(`Eliminare il ruolo "${role.label}"?`).then((ok) => {
+      if (!ok) return;
+      this.admin
+        .removeRole(role.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
+          if (this.openRole() === role.id) this.openRole.set(null);
+          this.reload$.next();
+        });
+    });
   }
 
   protected val(e: Event): string {
