@@ -9,6 +9,7 @@ import { UiSpinner } from '../../../components/ui/spinner';
 import { ROLE_KEYS } from '../../../core/roles';
 import { ApiKeySummary } from '../../../models/admin';
 import { AdminService } from '../../../services/admin.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-apikeys-tab',
@@ -19,6 +20,7 @@ import { AdminService } from '../../../services/admin.service';
 export class ApiKeysTab {
   private readonly fb = inject(FormBuilder);
   private readonly admin = inject(AdminService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly roleKeys = ROLE_KEYS;
@@ -66,10 +68,12 @@ export class ApiKeysTab {
   }
 
   protected revoke(key: ApiKeySummary): void {
-    if (!confirm(`Revocare la chiave "${key.name}"?`)) return;
-    this.admin
-      .revokeApiKey(key.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask(`Revocare la chiave "${key.name}"?`).then((ok) => {
+      if (!ok) return;
+      this.admin
+        .revokeApiKey(key.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 }
