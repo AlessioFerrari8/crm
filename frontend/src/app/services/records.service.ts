@@ -1,8 +1,9 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
+import { SKIP_ERROR_TOAST } from '../core/error-toast.interceptor';
 import {
   BulkRecordsRequest,
   BulkResult,
@@ -42,8 +43,11 @@ export class RecordsService {
     return this.http.get<RecordDetailResponse>(`${this.base}/${key}/${id}`);
   }
 
-  create(key: string, dto: UpsertRecordDto): Observable<RecordItem> {
-    return this.http.post<RecordItem>(`${this.base}/${key}`, dto);
+  // silentErrors: niente toast automatico sugli errori (per chi li gestisce riga per riga,
+  // es. l'import CSV che colleziona i fallimenti nel proprio riepilogo)
+  create(key: string, dto: UpsertRecordDto, options?: { silentErrors?: boolean }): Observable<RecordItem> {
+    const context = options?.silentErrors ? new HttpContext().set(SKIP_ERROR_TOAST, true) : undefined;
+    return this.http.post<RecordItem>(`${this.base}/${key}`, dto, { context });
   }
 
   update(key: string, id: string, dto: UpsertRecordDto): Observable<RecordItem> {

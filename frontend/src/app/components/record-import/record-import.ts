@@ -123,7 +123,7 @@ export class RecordImport {
             this.skipped.update((n) => n + 1);
             return of(null);
           }
-          return this.recordsService.create(this.objectKey(), { data }).pipe(
+          return this.recordsService.create(this.objectKey(), { data }, { silentErrors: true }).pipe(
             map(() => {
               this.okCount.update((n) => n + 1);
               return null;

@@ -1,4 +1,5 @@
 import { Component, DestroyRef, WritableSignal, computed, effect, inject, signal } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -26,9 +27,11 @@ import { FieldDef } from '../../models/object-type';
 import { RecordItem, SortSpec } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
 import { SavedView, SavedViewService } from '../../services/saved-view.service';
+import { ToastService } from '../../services/toast.service';
 import { RecordBoard } from '../../components/record-board/record-board';
 import { RecordCalendar } from '../../components/record-calendar/record-calendar';
 import { RecordImport } from '../../components/record-import/record-import';
+import { ConfirmService } from '../../services/confirm.service';
 import {
   ArrowDown,
   ArrowUp,
@@ -71,6 +74,9 @@ export class RecordList {
   private readonly router = inject(Router);
   private readonly recordsService = inject(RecordsService);
   private readonly savedViewService = inject(SavedViewService);
+  private readonly toasts = inject(ToastService);
+  private readonly title = inject(Title);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading: WritableSignal<boolean> = signal(true);
@@ -140,6 +146,11 @@ export class RecordList {
       this.search();
       this.sort();
       this.page.set(1);
+    });
+    // titolo della tab del browser: il plurale del tipo corrente
+    effect(() => {
+      const label = this.object()?.pluralLabel;
+      if (label) this.title.setTitle(`${label} · NorthLeap`);
     });
     // pagina rimasta oltre l'ultima (es. filtro ristretto o record eliminati): torna alla prima
     effect(() => {
@@ -371,6 +382,7 @@ export class RecordList {
       .restore(this.objectKey(), rec.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
+        this.toasts.success('Record ripristinato');
         this.loadTrash();
         this.reload$.next();
       });
@@ -420,38 +432,43 @@ export class RecordList {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((v) => {
         this.activeView.set(v.id);
+        this.toasts.success('Vista salvata');
         this.viewsReload$.next();
       });
   }
 
   protected deleteView(v: SavedView, event: Event): void {
     event.stopPropagation();
-    if (!confirm(`Eliminare la vista "${v.name}"?`)) return;
-    this.savedViewService
-      .remove(v.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (this.activeView() === v.id) this.activeView.set(null);
-        this.viewsReload$.next();
-      });
+    this.confirmService.ask(`Eliminare la vista "${v.name}"?`).then((ok) => {
+      if (!ok) return;
+      this.savedViewService
+        .remove(v.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
+          if (this.activeView() === v.id) this.activeView.set(null);
+          this.viewsReload$.next();
+        });
+    });
   }
 
   protected deleteBulk(): void {
     const ids = [...this.selected()];
     if (ids.length === 0 || this.bulkPending()) return;
-    if (!confirm(`Eliminare ${ids.length} record?`)) return;
-    this.bulkPending.set(true);
-    this.recordsService
-      .bulk(this.objectKey(), { ids, action: 'DELETE' })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.bulkPending.set(false);
-          this.clearSelection();
-          this.reload$.next();
-        },
-        error: () => this.bulkPending.set(false)
-      });
+    this.confirmService.ask(`Eliminare ${ids.length} record?`).then((ok) => {
+      if (!ok) return;
+      this.bulkPending.set(true);
+      this.recordsService
+        .bulk(this.objectKey(), { ids, action: 'DELETE' })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.bulkPending.set(false);
+            this.clearSelection();
+            this.reload$.next();
+          },
+          error: () => this.bulkPending.set(false)
+        });
+    });
   }
 
   protected resetFilter(): void {
@@ -477,6 +494,7 @@ export class RecordList {
         next: () => {
           this.submitting.set(false);
           this.drawerOpen.set(false);
+          this.toasts.success('Record creato');
           this.reload$.next();
         },
         error: () => this.submitting.set(false)

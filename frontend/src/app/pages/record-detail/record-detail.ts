@@ -1,4 +1,5 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -27,6 +28,8 @@ import { AuthService } from '../../services/auth.service';
 import { FileService } from '../../services/file.service';
 import { ObjectTypeService } from '../../services/object-type.service';
 import { RecordsService } from '../../services/records.service';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmService } from '../../services/confirm.service';
 
 @Component({
   selector: 'app-record-detail',
@@ -42,6 +45,9 @@ export class RecordDetail {
   private readonly fileService = inject(FileService);
   private readonly admin = inject(AdminService);
   private readonly auth = inject(AuthService);
+  private readonly toasts = inject(ToastService);
+  private readonly title = inject(Title);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   // NON readonly: navigando verso un altro record della stessa route (duplica, link tra record)
@@ -69,6 +75,11 @@ export class RecordDetail {
   private readonly reload$ = new Subject<void>();
 
   constructor() {
+    // titolo della tab del browser: il titolo del record corrente
+    effect(() => {
+      const t = this.record()?.title;
+      if (t) this.title.setTitle(`${t} · NorthLeap`);
+    });
     // stessa route, altro record: aggiorna i campi e rilancia gli stream dipendenti
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((p) => {
       const key = p.get('objectKey') ?? '';
@@ -132,6 +143,7 @@ export class RecordDetail {
         next: () => {
           this.submitting.set(false);
           this.editOpen.set(false);
+          this.toasts.success('Modifiche salvate');
           this.reload$.next();
         },
         error: () => this.submitting.set(false)
@@ -174,11 +186,13 @@ export class RecordDetail {
   }
 
   protected deleteNote(n: RecordNote): void {
-    if (!confirm('Eliminare questa nota?')) return;
-    this.recordsService
-      .removeNote(this.recordId, n.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.notesReload$.next());
+    this.confirmService.ask('Eliminare questa nota?').then((ok) => {
+      if (!ok) return;
+      this.recordsService
+        .removeNote(this.recordId, n.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.notesReload$.next());
+    });
   }
 
   protected noteDate(n: RecordNote): string {
@@ -225,6 +239,7 @@ export class RecordDetail {
       .subscribe({
         next: (created) => {
           this.duplicating.set(false);
+          this.toasts.success('Record duplicato');
           this.router.navigate(['/o', this.objectKey, created.id]);
         },
         error: () => this.duplicating.set(false)
@@ -296,11 +311,13 @@ export class RecordDetail {
   }
 
   protected removeLink(linkId: string): void {
-    if (!confirm('Rimuovere il collegamento?')) return;
-    this.recordsService
-      .removeLink(this.recordId, linkId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reload$.next());
+    this.confirmService.ask('Rimuovere il collegamento?').then((ok) => {
+      if (!ok) return;
+      this.recordsService
+        .removeLink(this.recordId, linkId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.reload$.next());
+    });
   }
 
   // rotta verso l'altro record del collegamento (se il backend ha annidato objectType)
@@ -334,11 +351,16 @@ export class RecordDetail {
   }
 
   protected remove(): void {
-    if (!confirm('Eliminare questo record?')) return;
-    this.recordsService
-      .remove(this.objectKey, this.recordId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.router.navigate(['/o', this.objectKey]));
+    this.confirmService.ask('Eliminare questo record?').then((ok) => {
+      if (!ok) return;
+      this.recordsService
+        .remove(this.objectKey, this.recordId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
+          this.toasts.success('Record eliminato');
+          this.router.navigate(['/o', this.objectKey]);
+        });
+    });
   }
 }
 
