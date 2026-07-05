@@ -8,20 +8,24 @@ import { authGuard } from './core/auth.guard';
 export const routes: Routes = [
   {
     path: 'login',
+    title: 'Accedi · NorthLeap',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login)
   },
   {
     path: 'onboarding',
+    title: 'Benvenuto · NorthLeap',
     loadComponent: () => import('./pages/onboarding/onboarding').then((m) => m.Onboarding)
   },
   {
     // pubblica: l'invitato arriva qui dal link /invite?token=... copiato dall'admin
     path: 'invite',
+    title: 'Invito · NorthLeap',
     loadComponent: () => import('./pages/accept-invite/accept-invite').then((m) => m.AcceptInvite)
   },
   {
     // pubblica: web form di lead capture, condivisibile/incorporabile (tipi con publicForm attivo)
     path: 'f/:objectKey',
+    title: 'Modulo · NorthLeap',
     loadComponent: () => import('./pages/public-form/public-form').then((m) => m.PublicForm)
   },
   {
@@ -30,6 +34,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        title: 'Dashboard · NorthLeap',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard)
       },
       {
@@ -42,18 +47,22 @@ export const routes: Routes = [
       },
       {
         path: 'charts',
+        title: 'Grafici · NorthLeap',
         loadComponent: () => import('./pages/charts/charts').then((m) => m.Charts)
       },
       {
         path: 'calendar',
+        title: 'Calendario · NorthLeap',
         loadComponent: () => import('./pages/calendar/calendar').then((m) => m.Calendar)
       },
       {
         path: 'search',
+        title: 'Ricerca · NorthLeap',
         loadComponent: () => import('./pages/search/search').then((m) => m.Search)
       },
       {
         path: 'settings',
+        title: 'Impostazioni · NorthLeap',
         loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings)
       }
     ]
