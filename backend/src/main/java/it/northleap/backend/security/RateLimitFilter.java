@@ -13,19 +13,32 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Set;
 
-// Applica RateLimiter ai 3 endpoint pubblici più esposti a brute-force/spam: login, refresh,
-// accept-invite. Tutti gli altri endpoint pubblici (status, onboarding, webhook inbound) non
-// sono qui - onboarding si auto-blocca dopo il primo uso, status è sola lettura senza side
-// effect, webhook inbound è già protetto dalla verifica HMAC.
+// Applica RateLimiter agli endpoint più esposti a brute-force/spam: login, refresh,
+// accept-invite, form pubblici, webhook Cal.com e cambio password (quest'ultimo è PATCH
+// autenticato: senza limite, una sessione rubata può forzare la password attuale a tentativi).
+// Non qui: onboarding (si auto-blocca dopo il primo uso), status (sola lettura), webhook
+// generico inbound (già protetto dalla verifica HMAC).
 @Component
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final Set<String> LIMITED_PATHS = Set.of(
-            "/api/auth/login", "/api/auth/refresh", "/api/users/accept-invite"
+    private static final Set<String> LIMITED_POST_PATHS = Set.of(
+            "/api/auth/login", "/api/auth/refresh", "/api/users/accept-invite",
+            "/api/integrations/calcom/webhook"
     );
 
     private final RateLimiter rateLimiter;
+
+    private boolean isLimited(HttpServletRequest request) {
+        String method = request.getMethod();
+        String path = request.getServletPath();
+        if ("POST".equalsIgnoreCase(method)) {
+            // form pubblici: path dinamico, match per prefisso
+            return LIMITED_POST_PATHS.contains(path) || path.startsWith("/api/public/forms/");
+        }
+        // brute-force della password attuale via cambio password self-service
+        return "PATCH".equalsIgnoreCase(method) && "/api/auth/password".equals(path);
+    }
 
     @Override
     protected void doFilterInternal(
@@ -33,10 +46,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain
     ) throws ServletException, IOException {
-        boolean limited = LIMITED_PATHS.contains(request.getServletPath())
-                // form pubblici di lead capture: path dinamico, match per prefisso
-                || request.getServletPath().startsWith("/api/public/forms/");
-        if (!"POST".equalsIgnoreCase(request.getMethod()) || !limited) {
+        if (!isLimited(request)) {
             filterChain.doFilter(request, response);
             return;
         }
