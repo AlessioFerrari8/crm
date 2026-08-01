@@ -25,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import it.northleap.backend.exceptions.ErrorCodes;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -69,7 +70,7 @@ public class UserService {
                 .orElseThrow(() -> new BadRequestException("Ruolo inesistente"));
         String email = dto.getEmail().toLowerCase();
         if (userRepository.existsByEmail(email)) {
-            throw new BadRequestException("Utente già esistente");
+            throw new BadRequestException("Utente già esistente", ErrorCodes.EMAIL_TAKEN);
         }
 
         byte[] bytes = new byte[24];
@@ -105,7 +106,7 @@ public class UserService {
     public AcceptedUserResponse accept(AcceptInviteDto dto) {
         Invite invite = inviteRepository.findByTokenHash(HashUtil.sha256Hex(dto.getToken())).orElse(null);
         if (invite == null || invite.getAcceptedAt() != null || invite.getExpiresAt().isBefore(Instant.now())) {
-            throw new BadRequestException("Invito non valido o scaduto");
+            throw new BadRequestException("Invito non valido o scaduto", ErrorCodes.INVITE_INVALID);
         }
 
         User user = new User();

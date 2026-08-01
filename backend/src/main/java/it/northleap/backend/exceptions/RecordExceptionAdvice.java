@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 // @Order(0): vedi nota in GlobalExceptionAdvice - deve avere precedenza sul catch-all
@@ -38,12 +39,16 @@ public class RecordExceptionAdvice {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                Map.of(
-                        "timestamp", Instant.now().toString(),
-                        "status", 400,
-                        "message", ex.getMessage()
-                )
-        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", 400);
+        body.put("message", ex.getMessage());
+        // il codice è opzionale, solo gli errori che il frontend deve tradurre ce l'hanno
+        if (ex.getCode() != null) {
+            body.put("code", ex.getCode());
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
+
 }

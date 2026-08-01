@@ -8,6 +8,7 @@ import it.northleap.backend.entities.UserRole;
 import it.northleap.backend.entities.UserRoleId;
 import it.northleap.backend.entities.Workspace;
 import it.northleap.backend.exceptions.BadRequestException;
+import it.northleap.backend.exceptions.ErrorCodes;
 import it.northleap.backend.exceptions.InvalidRefreshTokenException;
 import it.northleap.backend.exceptions.WorkspaceAlreadyOnboardedException;
 import it.northleap.backend.repositories.RoleRepository;
@@ -145,7 +146,7 @@ public class AuthService {
         }
         User user = principal.getUser();
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new BadRequestException("La password attuale non è corretta");
+            throw new BadRequestException("La password attuale non è corretta", ErrorCodes.CURRENT_PASSWORD_INVALID);
         }
         PasswordPolicy.assertValid(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));

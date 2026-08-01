@@ -1,6 +1,7 @@
 package it.northleap.backend.services;
 
 import it.northleap.backend.exceptions.BadRequestException;
+import it.northleap.backend.exceptions.ErrorCodes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,8 @@ public final class PasswordPolicy {
     public static void assertValid(String password) {
         List<String> unmet = unmetRules(password);
         if (!unmet.isEmpty()) {
-            throw new BadRequestException("Password troppo debole: manca " + String.join(", ", unmet));
+            throw new BadRequestException("Password troppo debole: manca " + String.join(", ", unmet),
+                    ErrorCodes.PASSWORD_TOO_WEAK);
         }
     }
 }
