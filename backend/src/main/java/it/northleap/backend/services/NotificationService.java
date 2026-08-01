@@ -6,19 +6,21 @@ import it.northleap.backend.security.Actor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import it.northleap.backend.events.NotifyEvent;
+import org.springframework.context.ApplicationEventPublisher;
+
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-// Porting di NotificationsService (notifications.module.ts). Niente realtime (vedi nota nel
-// piano/CLAUDE.md - 04-RESTO-MODULI.md propone esplicitamente di partire senza per l'MVP):
-// solo lista + mark-read, frontend farà polling.
+// Porting di NotificationsService (notifications.module.ts). Frontend farà polling
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final ApplicationEventPublisher events;
 
     public List<Notification> list(Actor actor) {
         return notificationRepository.findTop50ByUserIdOrderByCreatedAtDesc(actor.id());
@@ -42,5 +44,17 @@ public class NotificationService {
         Instant now = Instant.now();
         unread.forEach(n -> n.setReadAt(now));
         notificationRepository.saveAll(unread);
+    }
+
+    @Transactional
+    public Notification create(UUID userId, String title, String body, String link) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setTitle(title);
+        notification.setBody(body);
+        notification.setLink(link);
+        notificationRepository.save(notification);
+        events.publishEvent(new NotifyEvent(userId, notification));
+        return notification;
     }
 }
