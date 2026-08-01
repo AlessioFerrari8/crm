@@ -117,7 +117,7 @@ class UserServiceTest {
         AcceptInviteDto dto = new AcceptInviteDto();
         dto.setToken("nope");
         dto.setName("Mario");
-        dto.setPassword("password123");
+        dto.setPassword("Password123!");
 
         assertThrows(BadRequestException.class, () -> service.accept(dto));
     }
@@ -133,7 +133,7 @@ class UserServiceTest {
         AcceptInviteDto dto = new AcceptInviteDto();
         dto.setToken("tok");
         dto.setName("Mario");
-        dto.setPassword("password123");
+        dto.setPassword("Password123!");
 
         assertThrows(BadRequestException.class, () -> service.accept(dto));
     }
@@ -150,7 +150,7 @@ class UserServiceTest {
         AcceptInviteDto dto = new AcceptInviteDto();
         dto.setToken("tok");
         dto.setName("Mario");
-        dto.setPassword("password123");
+        dto.setPassword("Password123!");
 
         assertThrows(BadRequestException.class, () -> service.accept(dto));
     }
@@ -163,12 +163,12 @@ class UserServiceTest {
         invite.setRole(agentRole);
         invite.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
         when(inviteRepository.findByTokenHash(any())).thenReturn(Optional.of(invite));
-        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(passwordEncoder.encode("Password123!")).thenReturn("hashed");
 
         AcceptInviteDto dto = new AcceptInviteDto();
         dto.setToken("tok");
         dto.setName("Mario");
-        dto.setPassword("password123");
+        dto.setPassword("Password123!");
         var result = service.accept(dto);
 
         assertEquals("x@test.com", result.email());
