@@ -8,6 +8,7 @@ import { UiPasswordRules, passwordValid } from '../ui/password-rules';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ThemeService } from '../../services/theme.service';
+import { errorKey } from '../../core/error-message';
 import { I18nService } from '../../services/i18n';
 import { Workspace } from '../../services/workspace';
 
@@ -134,7 +135,9 @@ export class Topbar {
         },
         error: (err) => {
           this.cpSubmitting.set(false);
-          this.cpError.set(err?.error?.message ?? 'Cambio password non riuscito');
+          // /api/auth/* e' escluso da errorToastInterceptor: traduzione per codice qui
+          const key = errorKey(err);
+          this.cpError.set(key ? this.i18n.t(key) : (err?.error?.message ?? 'Cambio password non riuscito'));
         }
       });
   }

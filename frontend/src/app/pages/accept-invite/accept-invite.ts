@@ -5,7 +5,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { UiButton } from '../../components/ui/button';
 import { UiPasswordRules, passwordValid } from '../../components/ui/password-rules';
+import { errorKey } from '../../core/error-message';
 import { AuthService } from '../../services/auth.service';
+import { I18nService } from '../../services/i18n';
 
 // Accettazione invito (pagina pubblica, /invite?token=...): l'invitato sceglie nome e password
 // e diventa un utente attivo. Il token arriva dal link che l'admin copia dalla users-tab.
@@ -20,6 +22,7 @@ export class AcceptInvite {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(I18nService);
 
   protected readonly token = signal(this.route.snapshot.queryParamMap.get('token') ?? '');
   protected readonly submitting = signal(false);
@@ -61,7 +64,10 @@ export class AcceptInvite {
         },
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err?.error?.message ?? 'Invito non valido o scaduto');
+          // questo endpoint e' escluso da errorToastInterceptor (UI di errore inline), quindi
+          // la traduzione per codice va fatta qui
+          const key = errorKey(err);
+          this.error.set(key ? this.i18n.t(key) : (err?.error?.message ?? 'Invito non valido o scaduto'));
         }
       });
   }

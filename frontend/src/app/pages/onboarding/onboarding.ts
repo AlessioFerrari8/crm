@@ -7,7 +7,9 @@ import { UiButton } from '../../components/ui/button';
 import { UiPasswordRules, passwordValid } from '../../components/ui/password-rules';
 import { UiCard } from '../../components/ui/card';
 import { UiLabel } from '../../components/ui/label';
+import { errorKey } from '../../core/error-message';
 import { AuthService } from '../../services/auth.service';
+import { I18nService } from '../../services/i18n';
 
 @Component({
   selector: 'app-onboarding',
@@ -20,6 +22,7 @@ export class Onboarding {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(I18nService);
 
   // due step come l'originale React: workspace+brand color, poi owner+password
   protected readonly step = signal(1);
@@ -72,7 +75,9 @@ export class Onboarding {
         },
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err?.error?.message ?? 'Errore durante la configurazione');
+          // /api/auth/* e' escluso da errorToastInterceptor: traduzione per codice qui
+          const key = errorKey(err);
+          this.error.set(key ? this.i18n.t(key) : (err?.error?.message ?? 'Errore durante la configurazione'));
         }
       });
   }
