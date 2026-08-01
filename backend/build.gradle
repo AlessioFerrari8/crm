@@ -42,6 +42,7 @@ dependencies {
     // La linea 3.0.x e' quella allineata a Spring Boot 4 / Spring Framework 7 / Jackson 3.
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
 tasks.named('test') {
