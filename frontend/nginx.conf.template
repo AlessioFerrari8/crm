@@ -1,0 +1,59 @@
+# Header di sicurezza per la SPA (l'API ha i suoi via Spring Security). NB nginx: un add_header
+# dentro una location SOSTITUISCE tutti quelli ereditati dal blocco server - per questo i base
+# header sono ripetuti nelle location che ne aggiungono altri.
+#
+# CSP: script solo dal bundle ('self') + l'hash dello script inline anti-flash del tema
+# in index.html (ricalcolarlo se quello script cambia: sha256 base64 del contenuto buildato); style con 'unsafe-inline' (obbligatorio per gli stili
+# dei componenti Angular); connect-src include l'API via ${API_ORIGIN}; frame-src consente
+# l'embed Cal.com nella pagina Calendario.
+#
+# QUESTO FILE E' UN TEMPLATE, non una conf gia' pronta. L'immagine nginx lo legge da
+# /etc/nginx/templates/ e ci passa envsubst all'avvio, scrivendo /etc/nginx/conf.d/default.conf.
+# ${API_ORIGIN} e' l'origin del backend: era cablato su http://localhost:8080, che in produzione
+# impediva alla SPA di parlare con l'API e di aprire l'SSE (EventSource e' governato proprio da
+# connect-src). NGINX_ENVSUBST_FILTER nel compose limita la sostituzione ad API_ORIGIN: senza,
+# envsubst tratterebbe come variabili anche $uri e $host di nginx, svuotandoli.
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # form pubblico di lead capture: DEVE restare incorporabile via iframe da siti terzi
+    # (frame-ancestors *), a differenza del resto dell'app
+    location /f/ {
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-cSbqQyUlm50kEtNX2ujzgNMdR4Bu/UJUXzXH8cy3e1Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ${API_ORIGIN}; frame-ancestors *" always;
+        try_files $uri /index.html;
+    }
+
+    # SPA Angular: ogni rotta lato client (es. /o/contact, /settings) deve servire index.html,
+    # il router Angular si occupa del resto. Senza questo, un refresh su una rotta profonda
+    # darebbe 404 da nginx.
+    location / {
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-cSbqQyUlm50kEtNX2ujzgNMdR4Bu/UJUXzXH8cy3e1Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ${API_ORIGIN}; frame-src https://cal.com https://*.cal.com; frame-ancestors 'self'" always;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # asset con hash nel nome: cache lunga
+    location ~* \.(?:js|css|woff2?|png|jpg|jpeg|gif|svg|ico)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    # Pronte per quando il backend finira' dietro questo nginx: senza proxy_buffering off gli
+    # eventi SSE restano nel buffer e arrivano a blocchi invece che uno alla volta. Oggi sono
+    # INERTI, non esiste ancora nessuna location con proxy_pass - vanno spostate dentro quella
+    # location nel momento in cui la si crea.
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_set_header X-Accel-Buffering no;
+} 

@@ -14,7 +14,10 @@ RUN npm run build
 
 FROM nginx:alpine AS runtime
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# /etc/nginx/templates/*.template: l'entrypoint dell'immagine nginx ci passa envsubst all'avvio e
+# scrive il risultato in /etc/nginx/conf.d/. Serve per ${API_ORIGIN} nella CSP, che non puo'
+# essere cablato al build (cambia fra sviluppo e produzione).
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

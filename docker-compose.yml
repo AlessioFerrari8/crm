@@ -48,6 +48,12 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    environment:
+      # origin del backend, finisce nella connect-src della CSP di nginx.conf.template.
+      # In produzione va l'origin reale, altrimenti la SPA non parla con l'API e l'SSE non apre.
+      API_ORIGIN: ${API_ORIGIN:-http://localhost:8080}
+      # limita envsubst alla sola API_ORIGIN: senza, sostituirebbe anche $uri e $host di nginx
+      NGINX_ENVSUBST_FILTER: "^API_ORIGIN$$"
     # nginx serve il bundle statico sulla 80, mappata sulla 4200 dell'host
     ports:
       - "4200:80"
