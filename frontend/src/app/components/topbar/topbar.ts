@@ -11,10 +11,11 @@ import { ThemeService } from '../../services/theme.service';
 import { I18nService } from '../../services/i18n';
 import { Workspace } from '../../services/workspace';
 
-const NOTIFICATION_POLL_MS = 60_000;
+const NOTIFICATION_POLL_MS = 300_000;
 
 // Barra superiore: logo, hamburger (toggle del drawer in app.html via id), tema, campanella
-// notifiche, menu utente. Possiede il polling delle notifiche (niente realtime lato backend).
+// notifiche, menu utente. Possiede lo stream SSE delle notifiche piu' un polling di riserva a
+// 5 minuti, che copre il caso in cui l'SSE si rompa in silenzio (es. buffering di un proxy).
 // :host display:contents -> il <header> diventa figlio diretto del flex .drawer-content, layout
 // identico a prima della scomposizione.
 @Component({
@@ -58,6 +59,9 @@ export class Topbar {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe();
+
+    this.notificationService.openConnection();
+    this.destroyRef.onDestroy(() => this.notificationService.closeConnection());
   }
 
   protected toggleTheme(): void {
