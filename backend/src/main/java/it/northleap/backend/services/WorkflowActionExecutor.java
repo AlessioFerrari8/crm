@@ -1,16 +1,12 @@
 package it.northleap.backend.services;
 
-import it.northleap.backend.entities.Notification;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.entities.Record;
 import it.northleap.backend.entities.RecordLink;
-import it.northleap.backend.events.NotifyEvent;
-import it.northleap.backend.repositories.NotificationRepository;
 import it.northleap.backend.repositories.ObjectTypeRepository;
 import it.northleap.backend.repositories.RecordLinkRepository;
 import it.northleap.backend.repositories.RecordRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,14 +34,13 @@ public class WorkflowActionExecutor {
     private final ObjectTypeRepository objectTypeRepository;
     private final RecordRepository recordRepository;
     private final RecordLinkRepository recordLinkRepository;
-    private final NotificationRepository notificationRepository;
     private final RecordValidator recordValidator;
     private final ConditionEvaluator conditionEvaluator;
-    private final ApplicationEventPublisher events;
+    // niente ApplicationEventPublisher qui: NotifyEvent lo pubblica NotificationService.create()
     private final RestClient restClient = RestClient.create();
     private final ObjectMapper objectMapper;
-
-    private final org.springframework.core.env.Environment env;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Transactional
     public Map<String, Object> execute(Map<String, Object> action, Record record) {
@@ -192,36 +187,27 @@ public class WorkflowActionExecutor {
         if (userId == null) {
             return Map.of("skipped", true);
         }
-        Notification notification = new Notification();
-        notification.setUserId(userId);
-        notification.setTitle(conditionEvaluator.interpolate(String.valueOf(action.getOrDefault("title", "Notifica")), record));
-        notification.setLink(action.get("link") != null ? String.valueOf(action.get("link")) : null);
-        notificationRepository.save(notification);
-        events.publishEvent(new NotifyEvent(userId, notification));
+        notificationService.create(
+                userId, conditionEvaluator.interpolate(String.valueOf(action.getOrDefault("title", "Notifica")), record),
+                action.get("body") != null
+                        ? conditionEvaluator.interpolate(String.valueOf(action.get("body")), record) : null,
+                action.get("link") != null ? String.valueOf(action.get("link")) : null);
         return Map.of("notified", userId);
     }
 
     private Map<String, Object> sendEmail(Map<String, Object> action, Record record) {
         String to = action.get("to") != null ? conditionEvaluator.interpolate(String.valueOf(action.get("to")), record) : "";
-        String apiKey = env.getProperty("app.resend.api-key", "");
-        String fromEmail = env.getProperty("app.resend.from-email", "");
-        if (to.isBlank() || apiKey.isBlank() || fromEmail.isBlank()) {
+        if (to.isBlank() || !emailService.isConfigured()) {
             return Map.of("skipped", "no key/to");
         }
         String subject = conditionEvaluator.interpolate(String.valueOf(action.getOrDefault("subject", "NorthLeap CRM")), record);
         String html = action.get("html") != null
                 ? conditionEvaluator.interpolate(String.valueOf(action.get("html")), record)
                 : "<p>Template: " + action.getOrDefault("template", "default") + "</p>";
-        String from = action.get("from") != null ? String.valueOf(action.get("from")) : fromEmail;
+        String from = action.get("from") != null ? String.valueOf(action.get("from")) : null;
 
-        Map<String, Object> body = Map.of("from", from, "to", to, "subject", subject, "html", html);
-        int status = restClient.post()
-                .uri("https://api.resend.com/emails")
-                .header("Authorization", "Bearer " + apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .exchange((req, resp) -> resp.getStatusCode().value());
-        return Map.of("email", status);
+        boolean sent = emailService.send(from, to, subject, html);
+        return Map.of("email", sent);
     }
 
     private Map<String, Object> sendWebhook(Map<String, Object> action, Record record) {

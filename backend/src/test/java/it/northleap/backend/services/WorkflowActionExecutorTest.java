@@ -2,11 +2,8 @@ package it.northleap.backend.services;
 
 import it.northleap.backend.entities.FieldDef;
 import it.northleap.backend.entities.FieldType;
-import it.northleap.backend.entities.Notification;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.entities.Record;
-import it.northleap.backend.events.NotifyEvent;
-import it.northleap.backend.repositories.NotificationRepository;
 import it.northleap.backend.repositories.ObjectTypeRepository;
 import it.northleap.backend.repositories.RecordLinkRepository;
 import it.northleap.backend.repositories.RecordRepository;
@@ -15,8 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
@@ -29,7 +24,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,17 +40,14 @@ class WorkflowActionExecutorTest {
     @Mock
     private RecordLinkRepository recordLinkRepository;
     @Mock
-    private NotificationRepository notificationRepository;
+    private EmailService emailService;
     @Mock
-    private ApplicationEventPublisher events;
-    @Mock
-    private Environment env;
+    private NotificationService notificationService;
 
     private WorkflowActionExecutor executor;
 
     @BeforeEach
     void setUp() {
-        lenient().when(env.getProperty(any(), any(String.class))).thenAnswer(inv -> inv.getArgument(1));
         // simula la generazione UUID in-memory di Hibernate (GenerationType.UUID, popolata
         // subito al save senza bisogno di round-trip col DB) - il mock di RecordRepository non
         // lo fa da solo
@@ -67,8 +59,9 @@ class WorkflowActionExecutorTest {
             return r;
         });
         executor = new WorkflowActionExecutor(
-                objectTypeRepository, recordRepository, recordLinkRepository, notificationRepository,
-                new RecordValidator(), new ConditionEvaluator(), events, JsonMapper.builder().build(), env);
+                objectTypeRepository, recordRepository, recordLinkRepository,
+                new RecordValidator(), new ConditionEvaluator(), JsonMapper.builder().build(),
+                emailService, notificationService);
     }
 
     private ObjectType objectType(String key, FieldDef... fields) {
@@ -209,16 +202,17 @@ class WorkflowActionExecutorTest {
         assertEquals(true, result.get("skipped"));
     }
 
+    // il salvataggio e la pubblicazione di NotifyEvent stanno dentro NotificationService.create():
+    // qui si verifica solo che l'azione risolva il destinatario e deleghi con i valori giusti
     @Test
-    void notifyUserResolvesOwnerTargetAndPublishesEvent() {
+    void notifyUserResolvesOwnerTargetAndDelegatesToNotificationService() {
         UUID ownerId = UUID.randomUUID();
         Record r = record(Map.of());
         r.setOwnerId(ownerId);
         Map<String, Object> action = Map.of("type", "notify_user", "target", "owner", "title", "Ciao");
         Map<String, Object> result = executor.execute(action, r);
         assertEquals(ownerId, result.get("notified"));
-        verify(notificationRepository).save(any(Notification.class));
-        verify(events).publishEvent(any(NotifyEvent.class));
+        verify(notificationService).create(eq(ownerId), eq("Ciao"), isNull(), isNull());
     }
 
     @Test
@@ -254,5 +248,20 @@ class WorkflowActionExecutorTest {
     void unknownActionTypeReturnsUnknown() {
         Map<String, Object> result = executor.execute(Map.of("type", "frobnicate"), null);
         assertEquals("frobnicate", result.get("unknown"));
+    }
+
+    @Test
+    void sendEmailDelegatesToEmailService() {
+        when(emailService.isConfigured()).thenReturn(true);
+        when(emailService.send(isNull(), eq("a@b.com"), eq("Oggetto"), eq("<p>Hi!</p>"))).thenReturn(true);
+
+        Map<String, Object> action = Map.of(
+                "type", "send_email", "to", "a@b.com", "subject", "Oggetto", "html", "<p>Hi!</p>"
+        );
+
+        Map<String, Object> result = executor.execute(action, record(Map.of()));
+
+        assertEquals(Boolean.TRUE, result.get("email"));
+        verify(emailService).send(isNull(), eq("a@b.com"), eq("Oggetto"), eq("<p>Hi!</p>"));
     }
 }
