@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -111,11 +112,14 @@ class RelationsServiceTest {
         UUID recordId = UUID.randomUUID();
         RecordLink out = new RecordLink();
         RecordLink in = new RecordLink();
-        when(recordLinkRepository.findBySource_Id(recordId)).thenReturn(List.of(out));
-        when(recordLinkRepository.findByTarget_Id(recordId)).thenReturn(List.of(in));
+        // finder filtrati: i link verso/da record cestinati non compaiono qui (restano a DB)
+        when(recordLinkRepository.findBySource_IdAndTarget_IsDeletedFalse(recordId)).thenReturn(List.of(out));
+        when(recordLinkRepository.findByTarget_IdAndSource_IsDeletedFalse(recordId)).thenReturn(List.of(in));
 
         List<RecordLink> result = service.list(recordId);
 
         assertEquals(2, result.size());
+        verify(recordLinkRepository, never()).findBySource_Id(recordId);
+        verify(recordLinkRepository, never()).findByTarget_Id(recordId);
     }
 }

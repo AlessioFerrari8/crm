@@ -28,9 +28,11 @@ public class RelationsService {
     private final RecordLinkRepository recordLinkRepository;
     private final RbacService rbacService;
 
+    // stesso filtro di RecordsService.findOne: i collegamenti verso record cestinati non si
+    // mostrano, ma restano a DB per il ripristino (vedi RecordLinkRepository)
     public List<RecordLink> list(UUID recordId) {
-        List<RecordLink> links = new ArrayList<>(recordLinkRepository.findBySource_Id(recordId));
-        links.addAll(recordLinkRepository.findByTarget_Id(recordId));
+        List<RecordLink> links = new ArrayList<>(recordLinkRepository.findBySource_IdAndTarget_IsDeletedFalse(recordId));
+        links.addAll(recordLinkRepository.findByTarget_IdAndSource_IsDeletedFalse(recordId));
         return links;
     }
 

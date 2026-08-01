@@ -7,11 +7,8 @@ import it.northleap.backend.dtos.QueryRecordsDto;
 import it.northleap.backend.dtos.RecordDetailResponse;
 import it.northleap.backend.dtos.RecordQueryResponse;
 import it.northleap.backend.dtos.UpsertRecordDto;
-import it.northleap.backend.entities.FieldDef;
-import it.northleap.backend.entities.ObjectType;
-import it.northleap.backend.entities.PermScope;
+import it.northleap.backend.entities.*;
 import it.northleap.backend.entities.Record;
-import it.northleap.backend.entities.RecordLink;
 import it.northleap.backend.events.RecordCreatedEvent;
 import it.northleap.backend.events.RecordDeletedEvent;
 import it.northleap.backend.events.RecordUpdatedEvent;
@@ -29,10 +26,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 // Porting di records.service.ts: CRUD generico su Record, qualunque sia l'ObjectType. L'RBAC qui
 // NON passa da @RequirePerm (la risorsa è il {key} dinamico, non noto a tempo di annotazione) —
@@ -65,8 +59,9 @@ public class RecordsService {
         Record record = recordRepository.findByIdAndIsDeletedFalse(id)
                 .filter(r -> r.getObjectType().getId().equals(obj.getId()))
                 .orElseThrow(() -> new NotFoundException("Record non trovato"));
-        List<RecordLink> outgoing = recordLinkRepository.findBySource_Id(id);
-        List<RecordLink> incoming = recordLinkRepository.findByTarget_Id(id);
+        // i link verso/da record cestinati restano a DB ma non si mostrano (vedi RecordLinkRepository)
+        List<RecordLink> outgoing = recordLinkRepository.findBySource_IdAndTarget_IsDeletedFalse(id);
+        List<RecordLink> incoming = recordLinkRepository.findByTarget_IdAndSource_IsDeletedFalse(id);
         return new RecordDetailResponse(record, outgoing, incoming);
     }
 
@@ -84,6 +79,7 @@ public class RecordsService {
         record.setOwnerId(resolveOwnerId(actor, scope, dto.getOwnerId(), null));
         record.setData(data);
         recordRepository.save(record);
+        syncRelationLinks(obj, record, data);
 
         auditService.log(actor, "create", key, record.getId().toString(), null, ip);
         events.publishEvent(new RecordCreatedEvent(key, record));
@@ -112,6 +108,7 @@ public class RecordsService {
         existing.setOwnerId(resolveOwnerId(actor, scope, dto.getOwnerId(), existing.getOwnerId()));
         existing.setData(data);
         recordRepository.save(existing);
+        syncRelationLinks(obj, existing, data);
 
         auditService.log(actor, "update", key, id.toString(), Map.of("before", before, "after", data), ip);
         events.publishEvent(new RecordUpdatedEvent(key, existing, before, beforeStatus));
@@ -188,7 +185,7 @@ public class RecordsService {
     }
 
     // ripristino dal cestino: inverso del soft-delete di remove(). Nessun evento pubblicato:
-    // ripristinare non e' creare (i workflow "record.created" non devono riscattare)
+    // ripristinare non è creare (i workflow "record.created" non devono riscattare)
     @Transactional
     public Record restore(Actor actor, String key, UUID id, String ip) {
         PermScope scope = authorize(actor, key, PermAction.WRITE);
@@ -290,4 +287,60 @@ public class RecordsService {
         return objectTypeRepository.findByKey(key)
                 .orElseThrow(() -> new NotFoundException("Object type '" + key + "' non trovato"));
     }
+
+    private void syncRelationLinks(ObjectType obj, Record record, Map<String, Object> data) {
+        for (FieldDef f : obj.getFields()) {
+            if (f.getType() != FieldType.RELATION) continue;
+
+            String relationKey = obj.getKey() + "." + f.getKey();
+            List<UUID> targets = extractIds(data.get(f.getKey()));
+
+            List<RecordLink> existing = recordLinkRepository.findBySource_Id(record.getId()).
+                    stream()
+                    .filter(l -> relationKey.equals(l.getRelationKey()))
+                    .toList();
+
+            existing.stream()
+                    .filter(l -> !targets.contains(l.getTarget().getId()))
+                    .forEach(recordLinkRepository::delete);
+
+            for (UUID targetId : targets) {
+                if (recordLinkRepository
+                        .findBySource_IdAndTarget_IdAndRelationKey(record.getId(), targetId, relationKey).isPresent()) {
+                    continue;
+                }
+
+                // target inesistente o cestinato
+                recordRepository.findByIdAndIsDeletedFalse(targetId).ifPresent(target -> {
+                    RecordLink link = new RecordLink();
+                    link.setSource(record);
+                    link.setTarget(target);
+                    link.setRelationKey(relationKey);
+                    recordLinkRepository.save(link);
+                });
+            }
+
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private List<UUID> extractIds(Object value) {
+        if (value == null) return List.of();
+
+        List<Object> raw = value instanceof List<?> list ? (List<Object>) list : List.of(value);
+        return raw.stream()
+                .map(String::valueOf)
+                .filter(s -> !s.isBlank())
+                .map(s -> {
+                    try {
+                        return UUID.fromString(s);
+                    } catch (IllegalArgumentException e) {
+                        return null; // valore non UUID in data
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
 }

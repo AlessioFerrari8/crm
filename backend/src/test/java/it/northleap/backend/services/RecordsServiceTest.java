@@ -6,6 +6,7 @@ import it.northleap.backend.entities.FieldType;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.entities.PermScope;
 import it.northleap.backend.entities.Record;
+import it.northleap.backend.entities.RecordLink;
 import it.northleap.backend.repositories.ObjectTypeRepository;
 import it.northleap.backend.repositories.RecordLinkRepository;
 import it.northleap.backend.repositories.RecordRepository;
@@ -266,5 +267,150 @@ class RecordsServiceTest {
 
         assertEquals("a@b.it", updated.getData().get("email"));
         verify(recordQueryService).hasDuplicateValue(objectType.getId(), "email", "a@b.it", existing.getId());
+    }
+
+    // --- B1: i campi RELATION devono allineare record_link al valore corrente del campo ---
+
+    private FieldDef field(String key, FieldType type) {
+        FieldDef f = new FieldDef();
+        f.setKey(key);
+        f.setLabel(key);
+        f.setType(type);
+        return f;
+    }
+
+    private FieldDef relationField(String key) {
+        return field(key, FieldType.RELATION);
+    }
+
+    private Record target(UUID id) {
+        Record r = new Record();
+        r.setId(id);
+        r.setObjectType(objectType);
+        return r;
+    }
+
+    private RecordLink link(Record source, Record target, String relationKey) {
+        RecordLink l = new RecordLink();
+        l.setId(UUID.randomUUID());
+        l.setSource(source);
+        l.setTarget(target);
+        l.setRelationKey(relationKey);
+        return l;
+    }
+
+    @Test
+    void createWithRelationWritesTheRecordLink() {
+        UUID targetId = UUID.randomUUID();
+        objectType.setFields(List.of(relationField("company")));
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(targetId)).thenReturn(Optional.of(target(targetId)));
+        when(recordLinkRepository.findBySource_Id(any())).thenReturn(List.of());
+        when(recordLinkRepository.findBySource_IdAndTarget_IdAndRelationKey(any(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("company", targetId.toString()));
+        Record created = service.create(actor(UUID.randomUUID()), "lead", dto, null);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(RecordLink.class);
+        verify(recordLinkRepository).save(captor.capture());
+        assertEquals(created.getId(), captor.getValue().getSource().getId());
+        assertEquals(targetId, captor.getValue().getTarget().getId());
+        // convenzione "<objectKey>.<fieldKey>", la stessa dei link creati dall'azione create_link
+        assertEquals("lead.company", captor.getValue().getRelationKey());
+    }
+
+    @Test
+    void updateChangingTheTargetReplacesTheLink() {
+        UUID oldTargetId = UUID.randomUUID();
+        UUID newTargetId = UUID.randomUUID();
+        objectType.setFields(List.of(relationField("company")));
+
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setData(Map.of("company", oldTargetId.toString()));
+        RecordLink oldLink = link(existing, target(oldTargetId), "lead.company");
+
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+        when(recordRepository.findByIdAndIsDeletedFalse(newTargetId)).thenReturn(Optional.of(target(newTargetId)));
+        when(recordLinkRepository.findBySource_Id(existing.getId())).thenReturn(List.of(oldLink));
+        when(recordLinkRepository.findBySource_IdAndTarget_IdAndRelationKey(any(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("company", newTargetId.toString()));
+        service.update(actor(UUID.randomUUID()), "lead", existing.getId(), dto, null);
+
+        verify(recordLinkRepository).delete(oldLink);
+        var captor = org.mockito.ArgumentCaptor.forClass(RecordLink.class);
+        verify(recordLinkRepository).save(captor.capture());
+        assertEquals(newTargetId, captor.getValue().getTarget().getId());
+    }
+
+    @Test
+    void updateClearingTheRelationRemovesTheLink() {
+        UUID oldTargetId = UUID.randomUUID();
+        objectType.setFields(List.of(relationField("company")));
+
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setData(Map.of("company", oldTargetId.toString()));
+        RecordLink oldLink = link(existing, target(oldTargetId), "lead.company");
+
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+        when(recordLinkRepository.findBySource_Id(existing.getId())).thenReturn(List.of(oldLink));
+
+        // il validator scarta i valori vuoti, quindi la chiave sparisce da data e il campo e' svuotato
+        UpsertRecordDto dto = new UpsertRecordDto();
+        dto.setData(Map.of("company", ""));
+        service.update(actor(UUID.randomUUID()), "lead", existing.getId(), dto, null);
+
+        verify(recordLinkRepository).delete(oldLink);
+        verify(recordLinkRepository, never()).save(any(RecordLink.class));
+    }
+
+
+    @Test
+    void detailReadsOnlyLinksTowardsRecordsNotInTheTrash() {
+        UUID id = UUID.randomUUID();
+        Record record = new Record();
+        record.setId(id);
+        record.setObjectType(objectType);
+        record.setData(Map.of());
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(record));
+        when(recordLinkRepository.findBySource_IdAndTarget_IsDeletedFalse(id)).thenReturn(List.of());
+        when(recordLinkRepository.findByTarget_IdAndSource_IsDeletedFalse(id)).thenReturn(List.of());
+
+        service.findOne(actor(UUID.randomUUID()), "lead", id);
+
+        // se qualcuno tornasse ai finder non filtrati, un record cestinato ricomparirebbe fra i
+        // collegamenti di chi lo punta: questo test e' la guardia contro quella regressione
+        verify(recordLinkRepository, never()).findBySource_Id(id);
+        verify(recordLinkRepository, never()).findByTarget_Id(id);
+    }
+
+    @Test
+    void removeSoftDeletesWithoutTouchingTheLinks() {
+        UUID actorId = UUID.randomUUID();
+        Record existing = new Record();
+        existing.setId(UUID.randomUUID());
+        existing.setObjectType(objectType);
+        existing.setOwnerId(actorId);
+        existing.setData(Map.of());
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdAndIsDeletedFalse(existing.getId())).thenReturn(Optional.of(existing));
+
+        service.remove(actor(actorId), "lead", existing.getId(), null);
+
+        assertTrue(existing.isDeleted());
+        // i link restano a DB: il ripristino dal cestino deve ritrovarli intatti
+        verify(recordLinkRepository, never()).delete(any(RecordLink.class));
+        verify(recordLinkRepository, never()).deleteAll(any());
     }
 }
