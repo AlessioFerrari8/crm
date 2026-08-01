@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,7 +32,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +57,8 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private AuditService auditService;
+    @Mock
+    private EmailService emailService;
 
     private UserService service;
     private Actor actor;
@@ -61,7 +66,10 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         service = new UserService(userRepository, roleRepository, inviteRepository, userRoleRepository,
-                sessionRepository, passwordEncoder, auditService);
+                sessionRepository, passwordEncoder, auditService, emailService);
+        // frontendBaseUrl e' iniettato con @Value: in un test Mockito puro resterebbe null e il
+        // link finirebbe "null/invite?token=..."
+        ReflectionTestUtils.setField(service, "frontendBaseUrl", "http://localhost:4200");
         actor = new Actor(UUID.randomUUID(), ActorType.USER, "admin@test.com", List.of());
     }
 
@@ -109,6 +117,43 @@ class UserServiceTest {
         verify(inviteRepository).save(captor.capture());
         assertEquals(HashUtil.sha256Hex(result.inviteToken()), captor.getValue().getTokenHash());
         verify(auditService).log(actor, "invite", "user", "new@test.com", null, null);
+    }
+
+    @Test
+    void inviteSendsEmailWithTheActivationLinkWhenMailIsConfigured() {
+        when(roleRepository.findByKey("agent")).thenReturn(Optional.of(role("agent")));
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        lenient().when(userRepository.getReferenceById(actor.id())).thenReturn(new User());
+        when(emailService.isConfigured()).thenReturn(true);
+
+        InviteUserDto dto = new InviteUserDto();
+        dto.setEmail("new@test.com");
+        dto.setRoleKey("agent");
+        var result = service.invite(actor, dto);
+
+        var html = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq("new@test.com"), eq("Invito a Northleap CRM"), html.capture());
+        // il link deve contenere il token in chiaro: e' l'unica volta che viene esposto
+        assertTrue(html.getValue().contains("http://localhost:4200/invite?token=" + result.inviteToken()));
+    }
+
+    // l'invito non deve mai fallire per un problema di posta: il token torna comunque
+    // nella response e l'admin puo' passare il link a mano
+    @Test
+    void inviteStillSucceedsWhenMailIsNotConfigured() {
+        when(roleRepository.findByKey("agent")).thenReturn(Optional.of(role("agent")));
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        lenient().when(userRepository.getReferenceById(actor.id())).thenReturn(new User());
+        when(emailService.isConfigured()).thenReturn(false);
+
+        InviteUserDto dto = new InviteUserDto();
+        dto.setEmail("new@test.com");
+        dto.setRoleKey("agent");
+        var result = service.invite(actor, dto);
+
+        assertNotNull(result.inviteToken());
+        verify(inviteRepository).save(any(Invite.class));
+        verify(emailService, never()).send(any(), any(), any());
     }
 
     @Test

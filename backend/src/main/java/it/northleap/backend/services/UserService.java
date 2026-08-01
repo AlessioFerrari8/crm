@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -47,6 +48,11 @@ public class UserService {
     private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+
+    private final EmailService emailService;
+
+    @Value("${app.frontend.base-url:http://localhost:4200}")
+    private String frontendBaseUrl;
 
     public List<UserSummary> list() {
         return userRepository.findAll().stream()
@@ -79,6 +85,17 @@ public class UserService {
         }
         invite.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
         inviteRepository.save(invite);
+
+        // email di invito
+        if (emailService.isConfigured()) {
+            String link = frontendBaseUrl + "/invite?token=" + token;
+            String html = """
+                    <p>Sei stato invitato su NorthLeap CRM</p>
+                    <p><a href="%s">Attiva il tuo account</a></p>
+                    <p>Il link scade tra 7 giorni</p>
+                    """.formatted(link);
+            emailService.send(email, "Invito a Northleap CRM", html);
+        }
 
         auditService.log(actor, "invite", "user", email, null, null);
         return new InviteCreatedResponse(token, email);
