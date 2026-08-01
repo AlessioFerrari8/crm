@@ -94,7 +94,7 @@ GET {{baseUrl}}/api/auth/me
 > {%
     client.test('non autenticato dopo logout', () => response.status === 401 || response.status === 403);
 %}
-
+ 
 
 ### 12. CSRF: una mutazione SENZA X-XSRF-TOKEN deve essere rifiutata (403)
 POST {{baseUrl}}/api/auth/login
@@ -108,3 +108,10 @@ Content-Type: application/json
 > {%
     client.test('CSRF rifiuta senza header', () => response.status === 403);
 %}
+
+
+### bulk update
+POST {{baseUrl}}/api/records/lead/bulk
+Content-Type: application/json
+
+{ "ids": ["<id1>", "<id2>"], "action": "UPDATE", "set": { "status": "won" } }

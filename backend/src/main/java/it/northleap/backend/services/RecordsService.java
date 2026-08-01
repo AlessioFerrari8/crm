@@ -22,6 +22,8 @@ import it.northleap.backend.security.Actor;
 import it.northleap.backend.security.ActorType;
 import it.northleap.backend.security.PermAction;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,11 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class RecordsService {
+
+    private static final Logger log = LoggerFactory.getLogger(RecordsService.class);
+
+    // tetto di id accettati da bulk(): oltre questo il resto viene scartato e contato in skipped
+    private static final int MAX_BULK_IDS = 500;
 
     private final ObjectTypeRepository objectTypeRepository;
     private final RecordRepository recordRepository;
@@ -138,7 +145,15 @@ public class RecordsService {
     public BulkResult bulk(Actor actor, String key, BulkRecordsRequest req, String ip) {
         PermScope scope = authorize(actor, key, PermAction.WRITE);
         ObjectType obj = objectOrThrow(key);
-        List<UUID> ids = req.getIds().size() > 500 ? req.getIds().subList(0, 500) : req.getIds();
+        // tetto anti-abuso: oltre 500 id il resto viene scartato. Il numero scartato torna nella
+        // risposta (BulkResult.skipped) invece di sparire, altrimenti chi chiama con 600 id vede
+        // "affected: 500" e non ha modo di capire che ne mancano 100.
+        int skipped = Math.max(0, req.getIds().size() - MAX_BULK_IDS);
+        List<UUID> ids = skipped > 0 ? req.getIds().subList(0, MAX_BULK_IDS) : req.getIds();
+        if (skipped > 0) {
+            log.warn("bulk su '{}': ricevuti {} id, tetto {} - {} scartati", key, req.getIds().size(),
+                    MAX_BULK_IDS, skipped);
+        }
         boolean ownScope = scope == PermScope.OWN && actor.type() == ActorType.USER;
 
         List<Record> records = ownScope
@@ -149,7 +164,7 @@ public class RecordsService {
             records.forEach(r -> r.setDeleted(true));
             recordRepository.saveAll(records);
             auditService.log(actor, "bulk_delete", key, null, Map.of("ids", ids), ip);
-            return new BulkResult(records.size());
+            return new BulkResult(records.size(), skipped);
         }
 
         int affected = 0;
@@ -170,7 +185,7 @@ public class RecordsService {
         }
         auditService.log(actor, "bulk_update", key, null,
                 Map.of("ids", records.stream().map(r -> r.getId().toString()).toList(), "set", req.getSet() != null ? req.getSet() : Map.of()), ip);
-        return new BulkResult(affected);
+        return new BulkResult(affected, skipped);
     }
 
     // cestino: gli ultimi 50 record soft-deleted del tipo (sotto scope OWN solo i propri)

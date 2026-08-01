@@ -1,5 +1,7 @@
 package it.northleap.backend.services;
 
+import it.northleap.backend.dtos.BulkAction;
+import it.northleap.backend.dtos.BulkRecordsRequest;
 import it.northleap.backend.dtos.UpsertRecordDto;
 import it.northleap.backend.entities.FieldDef;
 import it.northleap.backend.entities.FieldType;
@@ -413,4 +415,90 @@ class RecordsServiceTest {
         verify(recordLinkRepository, never()).delete(any(RecordLink.class));
         verify(recordLinkRepository, never()).deleteAll(any());
     }
+
+    @Test
+    void bulkUpdateUnderOwnScopeOnlyTouchesOwnRecords() {
+        UUID actorId = UUID.randomUUID();
+        List<UUID> ids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        when(rbacService.resolve(any(), any(), any()))
+                .thenReturn(new RbacService.Resolution(true, PermScope.OWN));
+        // solo 1 dei due id è dell'attore
+        Record mine = new Record();
+        mine.setId(ids.get(0));
+        mine.setObjectType(objectType);
+        mine.setOwnerId(actorId);
+        mine.setData(Map.of());
+        when(recordRepository.findByIdInAndObjectType_IdAndOwnerIdAndIsDeletedFalse(ids, objectType.getId(), actorId))
+                .thenReturn(List.of(mine));
+
+        BulkRecordsRequest req = new BulkRecordsRequest();
+        req.setIds(ids);
+        req.setAction(BulkAction.UPDATE);
+        req.setSet(Map.of("status", "won"));
+
+        var result = service.bulk(actor(actorId), "lead", req, null);
+
+        assertEquals(1, result.affected());
+
+        // la guardia vera
+        verify(recordRepository, never()).findByIdInAndObjectType_IdAndIsDeletedFalse(any(), any());
+    }
+
+    @Test
+    void bulkUpdateMergesTheSetIntoExistingData() {
+        UUID actorId = UUID.randomUUID();
+        // i campi vanno dichiarati: il validator ricostruisce data da zero tenendo solo quelli
+        // presenti in fields, quindi senza email nello schema il test passerebbe comunque, ma per
+        // il motivo sbagliato
+        objectType.setFields(List.of(field("email", FieldType.EMAIL), field("status", FieldType.TEXT)));
+
+        List<UUID> ids = List.of(UUID.randomUUID());
+        Record existing = new Record();
+        existing.setId(ids.get(0));
+        existing.setObjectType(objectType);
+        existing.setOwnerId(actorId);
+        existing.setData(Map.of("email", "a@b.it"));
+
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdInAndObjectType_IdAndIsDeletedFalse(ids, objectType.getId()))
+                .thenReturn(List.of(existing));
+
+        BulkRecordsRequest req = new BulkRecordsRequest();
+        req.setIds(ids);
+        req.setAction(BulkAction.UPDATE);
+        req.setSet(Map.of("status", "won"));
+
+        var result = service.bulk(actor(actorId), "lead", req, null);
+
+        assertEquals(1, result.affected());
+        // bulk() fonde (merged.putAll(set)) invece di sovrascrivere: un campo non toccato dal set
+        // deve sopravvivere. E' il bug classico di questo endpoint.
+        assertEquals("a@b.it", existing.getData().get("email"));
+        assertEquals("won", existing.getData().get("status"));
+    }
+
+    @Test
+    void bulkReportsHowManyIdsWereTruncated() {
+        UUID actorId = UUID.randomUUID();
+        // 600 id contro un tetto di 500: prima il troncamento era silenzioso
+        List<UUID> ids = java.util.stream.Stream.generate(UUID::randomUUID).limit(600).toList();
+        when(rbacService.resolve(any(), any(), any())).thenReturn(new RbacService.Resolution(true, PermScope.ALL));
+        when(recordRepository.findByIdInAndObjectType_IdAndIsDeletedFalse(any(), any())).thenReturn(List.of());
+
+        BulkRecordsRequest req = new BulkRecordsRequest();
+        req.setIds(ids);
+        req.setAction(BulkAction.UPDATE);
+        req.setSet(Map.of("status", "won"));
+
+        var result = service.bulk(actor(actorId), "lead", req, null);
+
+        assertEquals(100, result.skipped());
+        // e solo i primi 500 arrivano alla query
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(recordRepository).findByIdInAndObjectType_IdAndIsDeletedFalse(captor.capture(), any());
+        assertEquals(500, captor.getValue().size());
+    }
+
+
 }
+
