@@ -32,6 +32,16 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testCompileOnly 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Testcontainers: il solo test che carica il contesto Spring completo ha bisogno di un
+    // Postgres vero (l'engine metadata-driven usa jsonb ovunque, H2 non e' un'alternativa).
+    // Un container usa e getta al posto del DB del compose: la suite resta autonoma e la DDL
+    // di Hibernate + i seeder girano su uno schema vergine ad ogni run.
+    // il BOM di Spring Boot 4 non gestisce piu' le versioni di Testcontainers: va importato il loro
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    // Testcontainers 2.x ha rinominato i moduli: prima erano :junit-jupiter e :postgresql
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'

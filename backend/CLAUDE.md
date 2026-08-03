@@ -46,10 +46,26 @@ From the `backend/` directory, using the Gradle wrapper:
 ./gradlew test --tests "it.northleap.backend.BackendApplicationTests"   # single test class
 ```
 
-Requires a running PostgreSQL instance. `docker-compose.yml` (repo root) starts one on host port
-**5433** (`crm-postgres`, db `crm_db`, user/pass `user`/`user`), but `application.properties`
-currently points at `localhost:5432` — either run Postgres locally on 5432, or remap when using
-docker-compose.
+Running the app requires a PostgreSQL instance. `application.properties` points at
+`localhost:5433`, which is where `docker-compose.yml` (repo root) publishes it (`crm-postgres`,
+db `crm_db`, user/pass `user`/`user`) — note the compose credentials differ from the
+`postgres`/`postgres` default in `application.properties`, so `DB_USERNAME`/`DB_PASSWORD` have to
+be set accordingly when running `bootRun` against the compose database.
+
+Running the **tests** requires Docker, not a database: the one test that loads the full Spring
+context (`BackendApplicationTests`) extends `AbstractIntegrationTest`, which starts a throwaway
+`postgres:16-alpine` via Testcontainers and wires it in with `@ServiceConnection`. The container
+is `static`, so one starts per JVM and is reused across subclasses via the Spring test-context
+cache; the profile-specific `src/test/resources/application-test.properties` supplies the JWT
+secrets (which have no default in `application.properties`) and sets `ddl-auto=create`. Extend
+`AbstractIntegrationTest` for any future `@SpringBootTest`, most notably the MockMvc integration
+tests the hardening round showed this project needs. The other 205 tests are pure Mockito and
+need nothing.
+
+Testcontainers versions are **not** managed by the Spring Boot 4 BOM — `build.gradle` imports
+`org.testcontainers:testcontainers-bom` explicitly. Testcontainers 2.x also renamed the module
+coordinates (`testcontainers-junit-jupiter`/`testcontainers-postgresql`, not `junit-jupiter`/
+`postgresql`).
 
 Required env vars (see `.env`, gitignored): `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` (base64,
 used as HMAC-SHA256 keys), `DB_USERNAME`, `DB_PASSWORD`.
