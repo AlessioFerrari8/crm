@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
@@ -201,31 +205,44 @@ public class ObjectTypeSeeder implements ApplicationRunner {
     private final FieldDefRepository fieldDefRepository;
     private final PageGeneratorService pageGeneratorService;
 
+    // logger
+    private static final Logger log = LoggerFactory.getLogger(ObjectTypeSeeder.class);
+
+
+    // seeder idempotente: allinea il DB alla lista objects, senza mai distruggere niente
+    // - ObjectType assente -> lo crea con le sue pagine
+    // - ObjectType presente -> lasciato com'è (label/icona possono essere state personalizzate dall'user, il seed non deve sovrascriverle)
+    // - FieldDef assente su un tipo presente -> aggiunto in coda
+    // In questo modo il seed vale anche su database già popolati, che è il caso normale.
     @Override
     public void run(ApplicationArguments args) {
-        if (objectTypeRepository.count() > 0) {
-            return;
-        }
-
-        // popolamento db
-        int order = 0;
         for (ObjectSpec spec : OBJECTS) {
-            // creo un nuovo record object, tipo un azienda
-            ObjectType obj = new ObjectType();
-            // aggiungo i vari campi
-            obj.setKey(spec.key());
-            obj.setLabel(spec.label());
-            obj.setPluralLabel(spec.plural());
-            obj.setIcon(spec.icon());
-            obj.setColor(spec.color());
-            obj.setSystem(true);
-            obj.setSortOrder(order++);
-            objectTypeRepository.save(obj);
+            ObjectType obj = objectTypeRepository.findByKey(spec.key()).orElse(null);
+            boolean isNew = obj == null;
+
+            if (isNew) {
+                obj = new ObjectType();
+                obj.setKey(spec.key());
+                obj.setLabel(spec.label());
+                obj.setPluralLabel(spec.plural());
+                obj.setIcon(spec.icon());
+                obj.setColor(spec.color());
+                obj.setSystem(true);
+                // in coda ai tipi già presenti, non a indice fisso: così l'ordine
+                // scelto dall'utente sui tipi esistenti non si scombina
+                obj.setSortOrder((int) objectTypeRepository.count());
+                objectTypeRepository.save(obj);
+            }
 
 
-            // creo i record corrispondenti
-            int fieldOrder = 0;
-            for (FieldSpec fs : spec.fields()) {
+            // i campi mancanti si aggiungono anche ai tipi già esistenti
+            Set<String> existingKeys = fieldDefRepository.findByObjectTypeId(obj.getId())
+                    .stream().map(FieldDef::getKey).collect(Collectors.toSet());
+
+            int fieldOrder = existingKeys.size();
+            for(FieldSpec fs : spec.fields()) {
+                if (existingKeys.contains(fs.key())) continue;
+
                 FieldDef field = new FieldDef();
                 field.setObjectType(obj);
                 field.setKey(fs.key());
@@ -236,10 +253,16 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                 field.setOptions(fs.options());
                 field.setConfig(fs.config());
                 fieldDefRepository.save(field);
+                log.info("seed: added field {}.{}", spec.key(), fs.key());
             }
 
-            // creo le interfacce utente partendo da quell'oggetto
-            pageGeneratorService.generate(obj.getId(), true);
+
+            // le pagine si generano solo per i tipi nuovi: rigenerarle su un tipo esistente
+            // sovrascriverebbe il layout che l'utente ha sistemato a mano
+            if (isNew) {
+                pageGeneratorService.generate(obj.getId(), true);
+            }
         }
     }
+
 }
