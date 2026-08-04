@@ -1,9 +1,12 @@
 import { FieldDef, FieldOption } from '../models/object-type';
 
-// Formattazione type-aware dei valori dei campi, condivisa da record-list (testo nelle celle) e
-// record-detail (rendering ricco: badge colorati, link). Metadata-driven: usa options/type del
-// FieldDef per etichette, colori, valuta/percentuali/date in it-IT. Porting migliorato del
-// renderValue() del riferimento (React), qui riusabile e non duplicato tra le viste.
+import { DEFAULT_PREFERENCE, UserPreference } from '../models/user-preference';
+
+let currentPref: UserPreference = DEFAULT_PREFERENCE;
+
+export function setFormatPreference(pref: UserPreference): void {
+  currentPref = pref;
+}
 
 export interface Chip {
   label: string;
@@ -47,6 +50,11 @@ export function formatFieldValue(field: FieldDef, raw: unknown): string {
     case 'DATETIME':
     case 'TIMESTAMP':
       return formatDate(raw, true);
+    case 'NUMBER':
+    case 'DECIMAL':
+    case 'FLOAT': return formatNumber(Number(raw), currentPref.currencyDecimals);
+    case 'INTEGER':
+    case 'BIGINT': return formatNumber(Number(raw), 0);
     default:
       return String(raw);
   }
@@ -78,16 +86,53 @@ export function fieldCell(field: FieldDef, raw: unknown): FieldCell {
 function formatCurrency(raw: unknown): string {
   const n = Number(raw);
   if (Number.isNaN(n)) return String(raw);
-  return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+  return withSymbol(formatNumber(n, currentPref.currencyDecimals));
+}
+
+// simbolo dalla valuta preferita, ricavato da Intl invece che da una tabella
+// nostra: "EUR" -> "€", "USD" -> "$"; funziona per qualsiasi codice ISO 
+function currencySymbol(): string {
+  const parts = new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: currentPref.currency,
+  }).formatToParts(0);
+  return parts.find((p) => p.type === 'currency')?.value ?? currentPref.currency;
+}
+
+function withSymbol(formatted: string): string {
+  return currentPref.symbolPlacement === 'BEFORE'
+    ? `${currencySymbol()} ${formatted}`
+    : `${formatted} ${currencySymbol()}`;
 }
 
 // le DATE arrivano come 'YYYY-MM-DD': formattate a mano per evitare lo shift di fuso di new Date()
 function formatDate(raw: unknown, withTime: boolean): string {
   if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     const [y, m, d] = raw.split('-');
-    return `${d}/${m}/${y}`;
+    return currentPref.dateFormat
+      .replace('dd', d).replace('MM', m).replace('yyyy', y);
   }
   const dt = new Date(raw as string);
   if (Number.isNaN(dt.getTime())) return String(raw);
   return withTime ? dt.toLocaleString('it-IT') : dt.toLocaleDateString('it-IT');
 }
+
+
+// formattazione a mano e non con toLocaleString: i separatori
+// sono scelti dall'utente e possono non corrispondere a nessun locale esistente
+function formatNumber(n: number, decimals: number): string {
+  const fixed = Math.abs(n).toFixed(decimals);
+  let [intPart, decPart = ''] = fixed.split('.');
+
+  if (currentPref.truncateTrailingZeros && decPart) {
+    decPart = decPart.replace(/0+$/, '');
+  }
+
+  if (currentPref.groupSeparator) {
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, currentPref.groupSeparator);
+  }
+
+  const sign = n < 0 ? '-' : '';
+  return decPart ? `${sign}${intPart}${currentPref.decimalSeparator}${decPart}` : `${sign}${intPart}`;
+}
+
