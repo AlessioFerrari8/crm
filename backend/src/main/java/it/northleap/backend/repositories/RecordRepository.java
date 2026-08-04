@@ -18,4 +18,7 @@ public interface RecordRepository extends JpaRepository<Record, UUID> {
     // cestino: ultimi eliminati del tipo (variante con owner per lo scope OWN)
     List<Record> findTop50ByObjectType_IdAndIsDeletedTrueOrderByUpdatedAtDesc(UUID objectTypeId);
     List<Record> findTop50ByObjectType_IdAndOwnerIdAndIsDeletedTrueOrderByUpdatedAtDesc(UUID objectTypeId, UUID ownerId);
+
+    // per invetorySeeder
+    boolean existsByObjectTypeIdAndTitleAndIsDeletedFalse(UUID objectTypeId, String title);
 }
