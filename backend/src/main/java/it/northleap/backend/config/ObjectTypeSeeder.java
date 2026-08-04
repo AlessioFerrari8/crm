@@ -101,7 +101,21 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fOpts("status", "Stato", FieldType.STATUS, false, List.of(
                             opt("draft", "Bozza"), opt("sent", "Inviato"),
                             opt("accepted", "Accettato"), opt("rejected", "Rifiutato"))),
-                    f("validUntil", "Valido fino", FieldType.DATE)
+                    f("validUntil", "Valido fino", FieldType.DATE),
+                    f("subject", "Soggetto", FieldType.TEXT),
+                    fRelation("company", "Nome azienda", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("opportunity", "Nome opportunità", Map.of("targetObject", "opportunity", "multiple", false)),
+                    fRelation("contact", "Nome contatto", Map.of("targetObject", "contact", "multiple", false)),
+                    fRelation("paymentMethod", "Modalità di pagamento", Map.of("targetObject", "payment_method", "multiple", false)),
+
+                    // meccanismo revisioni, il figlio punta al padre
+                    fRelation("previousVersion", "Versione precedente", Map.of("targetObject", "quote", "multiple", false)),
+                    f("quoteDate", "Data preventivo", FieldType.DATE),
+                    f("subtotal", "Totale parziale", FieldType.CURRENCY),
+                    f("discountTotal", "Sconto", FieldType.CURRENCY),
+                    f("vatTotal", "IVA", FieldType.CURRENCY),
+                    f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
+                    f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
             )),
             new ObjectSpec("product", "Prodotto/Servizio", "Prodotti/Servizi", "box", "#6366F1", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
@@ -149,7 +163,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("file", "File", FieldType.FILE),
                     f("category", "Categoria", FieldType.TEXT)
             )),
-            new ObjectSpec("digital_asset", "Asset Digitale", "Asset Digitali", "image", "#A855F7", List.of(
+            new ObjectSpec("digital_asset", "Asset digitale", "Asset digitali", "image", "#A855F7", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
                     f("file", "File", FieldType.FILE),
                     f("tags", "Tag", FieldType.MULTISELECT)
@@ -162,7 +176,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("body", "Contenuto", FieldType.LONGTEXT),
                     f("date", "Data", FieldType.DATETIME)
             )),
-            new ObjectSpec("calendar_event", "Evento", "Calendario", "calendar", "#3B82F6", List.of(
+            new ObjectSpec("calendar_event", "Evento", "Eventi", "calendar", "#3B82F6", List.of(
                     fReq("title", "Titolo", FieldType.TEXT),
                     fReq("start", "Inizio", FieldType.DATETIME),
                     f("end", "Fine", FieldType.DATETIME),
@@ -185,7 +199,13 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                             opt("draft", "Bozza"), opt("sent", "Inviata"),
                             opt("paid", "Pagata"), opt("overdue", "Scaduta"))),
                     f("issueDate", "Emissione", FieldType.DATE),
-                    f("dueDate", "Scadenza", FieldType.DATE)
+                    f("dueDate", "Scadenza", FieldType.DATE),
+                    fRelation("company", "Nome azienda", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("salesOrder", "Ordine", Map.of("targetObject", "sales_order", "multiple", false)),
+                    fRelation("paymentMethod", "Modalità di pagamento", Map.of("targetObject", "payment_method", "multiple", false)),
+                    f("subtotal", "Imponibile", FieldType.CURRENCY),
+                    f("vatTotal", "IVA", FieldType.CURRENCY),
+                    f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT)
             )),
             new ObjectSpec("payment", "Pagamento", "Pagamenti", "credit-card", "#16A34A", List.of(
                     fReq("amount", "Importo", FieldType.CURRENCY),
@@ -196,7 +216,193 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fReq("title", "Titolo", FieldType.TEXT),
                     fReq("dueAt", "Quando", FieldType.DATETIME),
                     f("done", "Completato", FieldType.BOOLEAN)
+            )),
+            new ObjectSpec("supplier", "Fornitore", "Fornitori", "truck", "#78716C", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("vat", "P. IVA", FieldType.TEXT),
+                    f("email", "Email", FieldType.EMAIL),
+                    f("phone", "Telefono", FieldType.PHONE),
+                    f("website", "Sito web", FieldType.URL),
+                    f("address", "Indirizzo", FieldType.LONGTEXT),
+                    f("notes", "Note", FieldType.LONGTEXT)
+            )),
+            new ObjectSpec("sales_order", "Ordine di vendita", "Ordini di vendita", "clipboard-list", "#0284C7", List.of(
+                    fReq("subject", "Soggetto", FieldType.TEXT),
+                    f("number", "Ordine n.", FieldType.TEXT),
+                    fRelation("company", "Nome Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("contact", "Nome Contatto", Map.of("targetObject", "contact", "multiple", false)),
+                    // link della conversione: da quale preventivo nasce quest'ordine
+                    fRelation("quote", "Nome preventivo", Map.of("targetObject", "quote", "multiple", false)),
+                    fOpts("status", "Stato", FieldType.STATUS, true, List.of(
+                        opt("created", "Creato"), opt("confirmed", "Confermato"),
+                        opt("shipped", "Spedito"), opt("closed", "Chiuso"),
+                        opt("cancelled", "Annullato"))),
+                    f("orderDate", "Data ordine", FieldType.DATE),
+                    fRelation("paymentMethod", "Modalità di pagamento", Map.of("targetObject", "payment_method", "multiple", false)),
+                    // totali persistiti, ricalcolati dal service delle righe
+                    // devono essere colonne di lista filtrabili e ordinabili
+                    f("subtotal", "Sub totale", FieldType.CURRENCY),
+                    f("discountTotal", "Sconto", FieldType.CURRENCY),
+                    f("vatTotal", "IVA", FieldType.CURRENCY),
+                    f("total", "Totale", FieldType.CURRENCY),
+                    f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
+                    f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
+            )),
+            new ObjectSpec("delivery_note", "DDT", "DDT", "package-check", "#7C3AED", List.of(
+                    fReq("subject", "Soggetto", FieldType.TEXT),
+                    f("number", "DDT n.", FieldType.TEXT),
+                    fRelation("company", "Nome Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("salesOrder", "Ordine di riferimento", Map.of("targetObject", "sales_order", "multiple", false)),
+                    f("date", "Data", FieldType.DATE),
+                    fOpts("status", "Stato", FieldType.STATUS, false, List.of(
+                            opt("draft", "Bozza"), opt("shipped", "Spedito"), opt("delivered", "Consegnato"))),
+                    f("carrier", "Vettore", FieldType.TEXT),
+                    f("packages", "Colli", FieldType.INTEGER),
+                    f("weight", "Peso (kg)", FieldType.DECIMAL),
+                    f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT),
+                    f("reason", "Causale trasporto", FieldType.TEXT)
+            )),
+            new ObjectSpec("visit_report", "Report visita", "Report visite", "map-pin", "#D97706", List.of(
+                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("contact", "Contatto", Map.of("targetObject", "contact", "multiple", false)),
+                    f("date", "Data visita", FieldType.DATE),
+                    f("outcome", "Esito", FieldType.LONGTEXT),
+                    f("nextStep", "Prossimo passo", FieldType.TEXT),
+                    f("assignee", "Assegnato a", FieldType.USER)
+            )),
+
+            // INVENTARIO, tabelle di configurazione
+            new ObjectSpec("vat_rate", "Aliquota IVA", "Aliquote IVA", "percent", "#DC2626", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    fReq("rate", "Aliquota %", FieldType.PERCENT),
+                    // per le operazioni non imponibili/esenti serve la natura ai fini di SDI
+                    f("sdiNature", "Natura SDI", FieldType.TEXT),
+                    f("isDefault", "Predefinita", FieldType.BOOLEAN)
+            )),
+            new ObjectSpec("payment_method", "Modalità di pagamento", "Modalità di pagamento", "wallet", "#0F766E", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("days", "Giorni", FieldType.INTEGER),
+                    f("sdiCode", "Codice SDI", FieldType.TEXT),
+                    f("notes", "Note", FieldType.LONGTEXT)
+            )),
+            new ObjectSpec("price_book", "Listino", "Listini", "list-ordered", "#4F46E5", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("currency", "Valuta", FieldType.TEXT),
+                    f("validFrom", "Valido da", FieldType.DATE),
+                    f("validTo", "Valido fino a", FieldType.DATE),
+                    f("isDefault", "Predefinito", FieldType.BOOLEAN)
+            )),
+            // riga di listino: prezzo di un articolo dentro un listino
+            // è una tabella ponte, ma i suoi campi sono tutti scalari (regge bene come RECORD)
+            new ObjectSpec("price_book_item", "Riga di listino", "Righe di listino", "tag", "#4338CA", List.of(
+                    fRelation("priceBook", "Listino", Map.of("targetObject", "price_book", "multiple", false)),
+                    fRelation("product", "Articolo", Map.of("targetObject", "product", "multiple", false)),
+                    fReq("price", "Prezzo", FieldType.CURRENCY),
+                    f("minQuantity", "Quantità minima", FieldType.DECIMAL)
+            )),
+
+            // supporto
+            new ObjectSpec("service_contract", "Contratto di servizio", "Contratti di servizio", "shield-check", "#0369A1", List.of(
+                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    f("startDate", "Inizio", FieldType.DATE),
+                    f("endDate", "Fine", FieldType.DATE),
+                    fOpts("status", "Stato", FieldType.STATUS, false, List.of(
+                            opt("active", "In corso"), opt("expiring", "In scadenza"),
+                            opt("expired", "Scaduto"), opt("terminated", "Risolto"))),
+                    fOpts("slaType", "Tipo SLA", FieldType.SELECT, false, List.of(
+                            opt("hours", "Ore"), opt("incidents", "Numero interventi"), opt("none", "Nessuno"))),
+                    f("slaHours", "Ore SLA", FieldType.DECIMAL),
+                    f("usedHours", "Ore consumate", FieldType.DECIMAL),
+                    f("responseHours", "Tempo di risposta (h)", FieldType.DECIMAL),
+                    f("value", "Valore", FieldType.CURRENCY)
+            )),
+            new ObjectSpec("asset", "Asset", "Asset", "cpu", "#475569", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    fRelation("company", "Cliente", Map.of("targetObject", "company", "multiple", false)),
+                    fRelation("product", "Articolo", Map.of("targetObject", "product", "multiple", false)),
+                    f("serial", "Numero di serie", FieldType.TEXT),
+                    f("installedAt", "Installato il", FieldType.DATE),
+                    f("warrantyUntil", "Garanzia fino a", FieldType.DATE),
+                    fOpts("status", "Stato", FieldType.STATUS, false, List.of(
+                            opt("active", "Attivo"), opt("maintenance", "In manutenzione"), opt("dismissed", "Dismesso")))
+            )),
+
+            // progetti
+            new ObjectSpec("project_task", "Compito di progetto", "Compiti di progetto", "list-checks", "#0D9488", List.of(
+                    fReq("title", "Titolo", FieldType.TEXT),
+                    fRelation("project", "Progetto", Map.of("targetObject", "project", "multiple", false)),
+                    fOpts("status", "Stato", FieldType.STATUS, false, List.of(
+                            opt("todo", "Da fare"), opt("doing", "In corso"),
+                            opt("blocked", "Bloccato"), opt("done", "Fatto"))),
+                    f("assignee", "Assegnatario", FieldType.USER),
+                    f("startDate", "Inizio", FieldType.DATE),
+                    f("dueDate", "Scadenza", FieldType.DATE),
+                    f("estimatedHours", "Ore stimate", FieldType.DECIMAL),
+                    f("progress", "Avanzamento", FieldType.PERCENT)
+            )),
+            new ObjectSpec("project_template", "Template progettuale", "Templates progettuali", "layout-template", "#059669", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("description", "Descrizione", FieldType.LONGTEXT),
+                    // elenco dei compiti da istanziare: [{title, offsetDays, estimatedHours}]
+                    f("tasks", "Compiti", FieldType.JSON)
+            )),
+            new ObjectSpec("time_entry", "Time tracker", "Time tracker", "timer", "#CA8A04", List.of(
+                    fReq("description", "Descrizione", FieldType.TEXT),
+                    f("user", "Utente", FieldType.USER),
+                    fReq("date", "Data", FieldType.DATE),
+                    fReq("hours", "Ore", FieldType.DECIMAL),
+                    fOpts("billable", "Fatturabile", FieldType.SELECT, false, List.of(
+                            opt("yes", "Si'"), opt("no", "No"))),
+                    f("hourlyRate", "Tariffa oraria", FieldType.CURRENCY),
+                    fRelation("project", "Progetto", Map.of("targetObject", "project", "multiple", false)),
+                    fRelation("ticket", "Ticket", Map.of("targetObject", "ticket", "multiple", false))
+            )),
+
+            // marketing
+            new ObjectSpec("marketing_list", "Lista marketing", "Liste marketing", "users", "#DB2777", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("description", "Descrizione", FieldType.LONGTEXT),
+                    fOpts("kind", "Tipo", FieldType.SELECT, false, List.of(
+                            opt("static", "Statica"), opt("dynamic", "Dinamica"))),
+                    // per le liste dinamiche: lo stesso JSON dei filtri del Filter Builder
+                    f("filter", "Filtro", FieldType.JSON)
+            )),
+            new ObjectSpec("email_template", "Modello email", "Modelli email", "mail", "#BE185D", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    f("body", "Corpo", FieldType.RICHTEXT),
+                    f("objectKey", "Modulo di riferimento", FieldType.TEXT)
+            )),
+            new ObjectSpec("campaign", "Campagna", "Campagne", "megaphone", "#E11D48", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    fOpts("channel", "Canale", FieldType.SELECT, false, List.of(
+                            opt("email", "Email"), opt("telemarketing", "Telemarketing"))),
+                    fOpts("status", "Stato", FieldType.STATUS, false, List.of(
+                            opt("draft", "Bozza"), opt("scheduled", "Programmata"),
+                            opt("sending", "In invio"), opt("sent", "Inviata"), opt("cancelled", "Annullata"))),
+                    fRelation("list", "Lista marketing", Map.of("targetObject", "marketing_list", "multiple", false)),
+                    fRelation("template", "Modello Email", Map.of("targetObject", "email_template", "multiple", false)),
+                    f("scheduledAt", "Programmata per", FieldType.DATETIME),
+                    f("budget", "Budget", FieldType.CURRENCY),
+                    // contatori aggiornati dal motore di invio (blocco campagne, non ora)
+                    f("sentCount", "Inviate", FieldType.INTEGER),
+                    f("openCount", "Aperture", FieldType.INTEGER),
+                    f("clickCount", "Click", FieldType.INTEGER)
+            )),
+            new ObjectSpec("goal", "Obiettivo", "Obiettivi", "flag", "#9333EA", List.of(
+                    fReq("name", "Nome", FieldType.TEXT),
+                    f("owner", "Responsabile", FieldType.USER),
+                    fOpts("metric", "Metrica", FieldType.SELECT, false, List.of(
+                            opt("revenue", "Fatturato"), opt("opportunities", "Opportunita'"),
+                            opt("leads", "Lead"), opt("custom", "Personalizzata"))),
+                    f("target", "Obiettivo", FieldType.DECIMAL),
+                    f("current", "Attuale", FieldType.DECIMAL),
+                    f("periodStart", "Da", FieldType.DATE),
+                    f("periodEnd", "A", FieldType.DATE)
             ))
+
     );
 
 
