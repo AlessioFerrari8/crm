@@ -80,4 +80,27 @@ public class ObjectType {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    // numerazione automatica: se numberingField è valorizzato, alla creazione di un record
+    // quel campo viene riempito con il progressivo. Null = nessuna numerazione (il caso di quasi tutti i moduli)
+    // @ColumnDefault su tutte le not null: object_type è popolata, senza default l'alter di ddl-auto fallisce
+    // e l'app va in crash-loop
+    private String numberingField;
+
+    private String numberingPrefix;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    private boolean numberingUseYear = false;
+
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    private int numberingPadding = 0;
+
+    // separatore fra anno e progressivo: "2025-47" -> "-"
+    @Column(nullable = false)
+    @ColumnDefault("'-'")
+    private String numberingSeparator = "-";
+
+
 }
