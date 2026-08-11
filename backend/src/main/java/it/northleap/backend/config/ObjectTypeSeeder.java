@@ -30,7 +30,16 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                               List<Map<String, Object>> options, Map<String, Object> config) {
     }
 
-    private record ObjectSpec(String key, String label, String plural, String icon, String color, List<FieldSpec> fields) {
+    // numerazione automatica del modulo: null = nessuna (il caso di quasi tutti i tipi)
+    private record NumberingSpec(String field, String prefix, boolean useYear, int padding, String separator) {
+    }
+
+    private record ObjectSpec(String key, String label, String plural, String icon, String color,
+                              List<FieldSpec> fields, NumberingSpec numbering) {
+        // i tipi senza numerazione restano scritti con sei argomenti
+        ObjectSpec(String key, String label, String plural, String icon, String color, List<FieldSpec> fields) {
+            this(key, label, plural, icon, color, fields, null);
+        }
     }
 
     private static FieldSpec f(String key, String label, FieldType type) {
@@ -96,7 +105,9 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("closeDate", "Chiusura prevista", FieldType.DATE)
             )),
             new ObjectSpec("quote", "Preventivo", "Preventivi", "file-text", "#0EA5E9", List.of(
-                    fReq("number", "Numero", FieldType.TEXT),
+                    // NON obbligatorio: lo riempie la numerazione automatica, che gira dopo la
+                    // validazione. Required + valore generato dal sistema non stanno insieme
+                    f("number", "Numero", FieldType.TEXT),
                     f("total", "Totale", FieldType.CURRENCY),
                     fOpts("status", "Stato", FieldType.STATUS, false, List.of(
                             opt("draft", "Bozza"), opt("sent", "Inviato"),
@@ -116,7 +127,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("vatTotal", "IVA", FieldType.CURRENCY),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
                     f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
-            )),
+            ), new NumberingSpec("number", null, true, 0, "-")),
             new ObjectSpec("product", "Prodotto/Servizio", "Prodotti/Servizi", "box", "#6366F1", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
                     f("sku", "SKU", FieldType.TEXT),
@@ -149,7 +160,10 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("assignee", "Assegnatario", FieldType.USER)
             )),
             new ObjectSpec("ticket", "Ticket", "Ticket", "life-buoy", "#EF4444", List.of(
-                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    f("subject", "Oggetto", FieldType.TEXT),
+                    // numerato "TT643": il titolo resta comunque il soggetto, perché in
+                    // TITLE_KEYS subject viene prima di number
+                    f("number", "Numero", FieldType.TEXT),
                     f("description", "Descrizione", FieldType.LONGTEXT),
                     fOpts("status", "Stato", FieldType.STATUS, false, List.of(
                             opt("open", "Aperto"), opt("pending", "In attesa"),
@@ -157,7 +171,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fOpts("priority", "Priorità", FieldType.SELECT, false, List.of(
                             opt("low", "Bassa"), opt("medium", "Media"), opt("high", "Alta"), opt("urgent", "Urgente"))),
                     f("assignee", "Assegnatario", FieldType.USER)
-            )),
+            ), new NumberingSpec("number", "TT", false, 0, "-")),
             new ObjectSpec("document", "Documento", "Documenti", "file", "#64748B", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
                     f("file", "File", FieldType.FILE),
@@ -193,7 +207,8 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                             List.of(opt("active", "Attivo"), opt("cancelled", "Annullato")))
             )),
             new ObjectSpec("invoice", "Fattura", "Fatture", "receipt", "#059669", List.of(
-                    fReq("number", "Numero", FieldType.TEXT),
+                    // vedi quote: la riempie la numerazione automatica
+                    f("number", "Numero", FieldType.TEXT),
                     f("amount", "Importo", FieldType.CURRENCY),
                     fOpts("status", "Stato", FieldType.STATUS, false, List.of(
                             opt("draft", "Bozza"), opt("sent", "Inviata"),
@@ -206,7 +221,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("subtotal", "Imponibile", FieldType.CURRENCY),
                     f("vatTotal", "IVA", FieldType.CURRENCY),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT)
-            )),
+            ), new NumberingSpec("number", "FT", true, 4, "-")),
             new ObjectSpec("payment", "Pagamento", "Pagamenti", "credit-card", "#16A34A", List.of(
                     fReq("amount", "Importo", FieldType.CURRENCY),
                     f("method", "Metodo", FieldType.TEXT),
@@ -227,7 +242,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("notes", "Note", FieldType.LONGTEXT)
             )),
             new ObjectSpec("sales_order", "Ordine di vendita", "Ordini di vendita", "clipboard-list", "#0284C7", List.of(
-                    fReq("subject", "Soggetto", FieldType.TEXT),
+                    f("subject", "Soggetto", FieldType.TEXT),
                     f("number", "Ordine n.", FieldType.TEXT),
                     fRelation("company", "Nome Azienda", Map.of("targetObject", "company", "multiple", false)),
                     fRelation("contact", "Nome Contatto", Map.of("targetObject", "contact", "multiple", false)),
@@ -249,7 +264,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
             )),
             new ObjectSpec("delivery_note", "DDT", "DDT", "package-check", "#7C3AED", List.of(
-                    fReq("subject", "Soggetto", FieldType.TEXT),
+                    f("subject", "Soggetto", FieldType.TEXT),
                     f("number", "DDT n.", FieldType.TEXT),
                     fRelation("company", "Nome Azienda", Map.of("targetObject", "company", "multiple", false)),
                     fRelation("salesOrder", "Ordine di riferimento", Map.of("targetObject", "sales_order", "multiple", false)),
@@ -263,7 +278,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("reason", "Causale trasporto", FieldType.TEXT)
             )),
             new ObjectSpec("visit_report", "Report visita", "Report visite", "map-pin", "#D97706", List.of(
-                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    f("subject", "Oggetto", FieldType.TEXT),
                     fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
                     fRelation("contact", "Contatto", Map.of("targetObject", "contact", "multiple", false)),
                     f("date", "Data visita", FieldType.DATE),
@@ -304,7 +319,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
 
             // supporto
             new ObjectSpec("service_contract", "Contratto di servizio", "Contratti di servizio", "shield-check", "#0369A1", List.of(
-                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    f("subject", "Oggetto", FieldType.TEXT),
                     fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
                     f("startDate", "Inizio", FieldType.DATE),
                     f("endDate", "Fine", FieldType.DATE),
@@ -371,7 +386,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
             )),
             new ObjectSpec("email_template", "Modello email", "Modelli email", "mail", "#BE185D", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
-                    fReq("subject", "Oggetto", FieldType.TEXT),
+                    f("subject", "Oggetto", FieldType.TEXT),
                     f("body", "Corpo", FieldType.RICHTEXT),
                     f("objectKey", "Modulo di riferimento", FieldType.TEXT)
             )),
@@ -438,6 +453,21 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                 // scelto dall'utente sui tipi esistenti non si scombina
                 obj.setSortOrder((int) objectTypeRepository.count());
                 objectTypeRepository.save(obj);
+            }
+
+            // la numerazione si accende solo se il tipo non ne ha già una: come per label e
+            // icona, una configurazione fatta a mano dall'utente non va sovrascritta. La
+            // condizione sul null serve anche ai tipi creati prima che il blocco 5 esistesse,
+            // che altrimenti resterebbero senza numerazione per sempre
+            if (spec.numbering() != null && obj.getNumberingField() == null) {
+                NumberingSpec n = spec.numbering();
+                obj.setNumberingField(n.field());
+                obj.setNumberingPrefix(n.prefix());
+                obj.setNumberingUseYear(n.useYear());
+                obj.setNumberingPadding(n.padding());
+                obj.setNumberingSeparator(n.separator());
+                objectTypeRepository.save(obj);
+                log.info("seed: numbering enabled on {} ({})", spec.key(), n.field());
             }
 
 
