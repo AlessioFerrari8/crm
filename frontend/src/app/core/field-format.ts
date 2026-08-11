@@ -1,3 +1,10 @@
+// Formattazione dei valori dei campi per la lettura (liste, dettaglio, export).
+// La preferenza utente sta in un modulo-level `currentPref` invece che in un service
+// iniettabile perché queste funzioni vengono chiamate anche da pipe e template puri, dove non
+// c'è un injector a disposizione: UserPreferenceService la spinge qui con setFormatPreference()
+// appena la GET torna. Il rovescio della medaglia è che il cambio di preferenza non fa scattare
+// il change detection da solo, per questo la pagina preferenze usa previewFormat() con la
+// preferenza esplicita invece di leggere currentPref.
 import { FieldDef, FieldOption } from '../models/object-type';
 
 import { DEFAULT_PREFERENCE, UserPreference } from '../models/user-preference';
@@ -89,20 +96,27 @@ function formatCurrency(raw: unknown): string {
   return withSymbol(formatNumber(n, currentPref.currencyDecimals));
 }
 
-// simbolo dalla valuta preferita, ricavato da Intl invece che da una tabella
-// nostra: "EUR" -> "€", "USD" -> "$"; funziona per qualsiasi codice ISO 
-function currencySymbol(): string {
-  const parts = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: currentPref.currency,
-  }).formatToParts(0);
-  return parts.find((p) => p.type === 'currency')?.value ?? currentPref.currency;
+// anteprima con una preferenza ESPLICITA, non quella attiva: serve alla pagina delle
+// preferenze, dove l'utente deve vedere l'effetto di una scelta prima di salvarla.
+// Sta qui e non nel componente per non avere due copie della stessa formattazione
+export function previewFormat(pref: UserPreference, n: number): string {
+  return withSymbol(formatNumber(n, pref.currencyDecimals, pref), pref);
 }
 
-function withSymbol(formatted: string): string {
-  return currentPref.symbolPlacement === 'BEFORE'
-    ? `${currencySymbol()} ${formatted}`
-    : `${formatted} ${currencySymbol()}`;
+// simbolo dalla valuta preferita, ricavato da Intl invece che da una tabella
+// nostra: "EUR" -> "€", "USD" -> "$"; funziona per qualsiasi codice ISO
+function currencySymbol(pref: UserPreference = currentPref): string {
+  const parts = new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: pref.currency,
+  }).formatToParts(0);
+  return parts.find((p) => p.type === 'currency')?.value ?? pref.currency;
+}
+
+function withSymbol(formatted: string, pref: UserPreference = currentPref): string {
+  return pref.symbolPlacement === 'BEFORE'
+    ? `${currencySymbol(pref)} ${formatted}`
+    : `${formatted} ${currencySymbol(pref)}`;
 }
 
 // le DATE arrivano come 'YYYY-MM-DD': formattate a mano per evitare lo shift di fuso di new Date()
@@ -120,19 +134,19 @@ function formatDate(raw: unknown, withTime: boolean): string {
 
 // formattazione a mano e non con toLocaleString: i separatori
 // sono scelti dall'utente e possono non corrispondere a nessun locale esistente
-function formatNumber(n: number, decimals: number): string {
+function formatNumber(n: number, decimals: number, pref: UserPreference = currentPref): string {
   const fixed = Math.abs(n).toFixed(decimals);
   let [intPart, decPart = ''] = fixed.split('.');
 
-  if (currentPref.truncateTrailingZeros && decPart) {
+  if (pref.truncateTrailingZeros && decPart) {
     decPart = decPart.replace(/0+$/, '');
   }
 
-  if (currentPref.groupSeparator) {
-    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, currentPref.groupSeparator);
+  if (pref.groupSeparator) {
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, pref.groupSeparator);
   }
 
   const sign = n < 0 ? '-' : '';
-  return decPart ? `${sign}${intPart}${currentPref.decimalSeparator}${decPart}` : `${sign}${intPart}`;
+  return decPart ? `${sign}${intPart}${pref.decimalSeparator}${decPart}` : `${sign}${intPart}`;
 }
 
