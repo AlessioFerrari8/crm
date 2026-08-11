@@ -50,6 +50,7 @@ public class RecordsService {
     private final RbacService rbacService;
     private final AuditService auditService;
     private final ApplicationEventPublisher events;
+    private final DocumentNumberService documentNumberService;
 
     public RecordQueryResponse query(Actor actor, String key, QueryRecordsDto q) {
         PermScope scope = authorize(actor, key, PermAction.READ);
@@ -79,12 +80,27 @@ public class RecordsService {
         Map<String, Object> data = recordValidator.validate(obj.getFields(), dto.getData());
         assertUniqueConstraints(obj, data, null);
 
+        // numerazione automatica: solo se il tipo la prevede e il campo è vuoto (se l'utente
+        // ha scritto un numero a mano, quello vince: capita di dover inserire un documento vecchio
+        // con il suo numero originale).
+        // Va PRIMA di deriveTitle: "number" è una delle TITLE_KEYS, e per un preventivo il
+        // titolo si deriva proprio dal numero - se lo generassimo dopo, il titolo nascerebbe
+        // da un fallback
+        String numberField = obj.getNumberingField();
+        if (numberField != null && data.get(numberField) == null) {
+            String generated = documentNumberService.next(obj);
+            if (generated != null) {
+                data.put(numberField, generated);
+            }
+        }
+
         Record record = new Record();
         record.setObjectType(obj);
         record.setTitle(dto.getTitle() != null ? dto.getTitle() : recordValidator.deriveTitle(obj.getFields(), data));
         record.setStatus(dto.getStatus() != null ? dto.getStatus() : recordValidator.deriveStatus(obj.getFields(), data));
         record.setOwnerId(resolveOwnerId(actor, scope, dto.getOwnerId(), null));
         record.setData(data);
+
         recordRepository.save(record);
         syncRelationLinks(obj, record, data);
 

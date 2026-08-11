@@ -61,6 +61,9 @@ class RecordsServiceTest {
     private AuditService auditService;
     @Mock
     private ApplicationEventPublisher events;
+    // "lead" non ha numerazione: il mock non viene mai interrogato, sta qui solo per il costruttore
+    @Mock
+    private DocumentNumberService documentNumberService;
 
     private RecordsService service;
     private ObjectType objectType;
@@ -68,7 +71,8 @@ class RecordsServiceTest {
     @BeforeEach
     void setUp() {
         service = new RecordsService(objectTypeRepository, recordRepository, recordLinkRepository,
-                new RecordValidator(), recordQueryService, rbacService, auditService, events);
+                new RecordValidator(), recordQueryService, rbacService, auditService, events,
+                documentNumberService);
         objectType = new ObjectType();
         objectType.setId(UUID.randomUUID());
         objectType.setKey("lead");
