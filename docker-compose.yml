@@ -10,6 +10,9 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # estensioni (pg_trgm) create come superuser alla prima inizializzazione del volume:
+      # vedi la nota dentro il file per il caso "volume gia' esistente"
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d crm_db"]
       interval: 5s
