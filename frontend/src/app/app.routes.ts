@@ -64,6 +64,11 @@ export const routes: Routes = [
         path: 'settings',
         title: 'Impostazioni · NorthLeap',
         loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings)
+      },
+      {
+        path: 'preferences',
+        title: 'Le mie preferenze · NorthLeap',
+        loadComponent: () => import('./pages/preferences/preferences').then((m) => m.Preferences)
       }
     ]
   },

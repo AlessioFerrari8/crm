@@ -66,6 +66,7 @@
       </button>
       <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-sm border border-base-300 z-30 w-48 p-1 shadow">
         <li><a routerLink="/settings"><lucide-icon [img]="SettingsIcon" [size]="16" /> {{ i18n.t('topbar.settings') }}</a></li>
+        <li><a routerLink="/preferences"><lucide-icon [img]="SlidersIcon" [size]="16" /> Le mie preferenze</a></li>
         <li><button (click)="openChangePassword()"><lucide-icon [img]="KeyIcon" [size]="16" /> Cambia password</button></li>
         <li><button (click)="logout()"><lucide-icon [img]="LogOutIcon" [size]="16" /> {{ i18n.t('topbar.logout') }}</button></li>
       </ul>

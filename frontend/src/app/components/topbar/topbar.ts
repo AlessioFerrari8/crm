@@ -1,13 +1,14 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Bell, KeyRound, Languages, LogOut, LucideAngularModule, Moon, Search, Settings, Sun } from 'lucide-angular';
+import { Bell, KeyRound, Languages, LogOut, LucideAngularModule, Moon, Search, Settings, SlidersHorizontal, Sun } from 'lucide-angular';
 import { switchMap, timer } from 'rxjs';
 
 import { UiPasswordRules, passwordValid } from '../ui/password-rules';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ThemeService } from '../../services/theme.service';
+import { UserPreferenceService } from '../../services/user-preference.service';
 import { errorKey } from '../../core/error-message';
 import { I18nService } from '../../services/i18n';
 import { Workspace } from '../../services/workspace';
@@ -31,6 +32,7 @@ export class Topbar {
   private readonly notificationService = inject(NotificationService);
   private readonly auth = inject(AuthService);
   private readonly theme = inject(ThemeService);
+  private readonly userPreferences = inject(UserPreferenceService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   // servizio per la lingua
@@ -51,6 +53,7 @@ export class Topbar {
   protected readonly Languages = Languages;
   protected readonly SearchIcon = Search;
   protected readonly KeyIcon = KeyRound;
+  protected readonly SlidersIcon = SlidersHorizontal;
 
   constructor() {
     this.workspace.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
@@ -63,6 +66,11 @@ export class Topbar {
 
     this.notificationService.openConnection();
     this.destroyRef.onDestroy(() => this.notificationService.closeConnection());
+
+    // preferenze di formattazione: la topbar è il primo componente montato dell'area
+    // autenticata, quindi è qui che va il bootstrap. Senza, field-format resta sui DEFAULT
+    // e le liste mostrano i numeri con la formattazione sbagliata
+    this.userPreferences.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   protected toggleTheme(): void {
@@ -94,7 +102,12 @@ export class Topbar {
     this.auth
       .logout()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.router.navigate(['/login']));
+      .subscribe(() => {
+        // le preferenze sono per utente: senza reset il prossimo login vedrebbe quelle
+        // del precedente finché la GET non torna
+        this.userPreferences.reset();
+        this.router.navigate(['/login']);
+      });
   }
 
   // ── cambio password self-service (modal) ───────────────────────────────────

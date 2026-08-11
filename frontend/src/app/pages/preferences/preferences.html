@@ -1,0 +1,82 @@
+<div>
+  <h1 class="text-2xl font-semibold mb-4">Le mie preferenze</h1>
+
+  <form (ngSubmit)="save()" class="border border-base-300 rounded-sm p-4 max-w-xl space-y-3">
+    <h2 class="font-semibold">Numeri e valuta</h2>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm mb-1" for="pref-group">Separatore migliaia</label>
+        <select id="pref-group" name="groupSeparator" class="select rounded-sm w-full"
+                [ngModel]="draft().groupSeparator" (ngModelChange)="set('groupSeparator', $event)">
+          <option value=".">punto (1.234)</option>
+          <option value=",">virgola (1,234)</option>
+          <option value=" ">spazio (1 234)</option>
+          <option value="">nessuno (1234)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1" for="pref-decimal">Separatore decimali</label>
+        <select id="pref-decimal" name="decimalSeparator" class="select rounded-sm w-full"
+                [ngModel]="draft().decimalSeparator" (ngModelChange)="set('decimalSeparator', $event)">
+          <option value=",">virgola (1,50)</option>
+          <option value=".">punto (1.50)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1" for="pref-currency">Valuta</label>
+        <input id="pref-currency" name="currency" type="text" maxlength="3"
+               class="input rounded-sm w-full uppercase" placeholder="EUR"
+               [ngModel]="draft().currency" (ngModelChange)="set('currency', $event.toUpperCase())" />
+        <p class="text-xs text-base-content/50 mt-1">Codice ISO a 3 lettere: EUR, USD, CHF.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1" for="pref-decimals">Cifre decimali</label>
+        <input id="pref-decimals" name="currencyDecimals" type="number" min="0" max="6"
+               class="input rounded-sm w-full"
+               [ngModel]="draft().currencyDecimals" (ngModelChange)="set('currencyDecimals', +$event)" />
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1" for="pref-placement">Posizione del simbolo</label>
+        <select id="pref-placement" name="symbolPlacement" class="select rounded-sm w-full"
+                [ngModel]="draft().symbolPlacement" (ngModelChange)="set('symbolPlacement', $event)">
+          <option value="AFTER">dopo il numero (1.234,50 €)</option>
+          <option value="BEFORE">prima del numero (€ 1.234,50)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1" for="pref-date">Formato data</label>
+        <select id="pref-date" name="dateFormat" class="select rounded-sm w-full"
+                [ngModel]="draft().dateFormat" (ngModelChange)="set('dateFormat', $event)">
+          <option value="dd/MM/yyyy">dd/MM/yyyy</option>
+          <option value="dd-MM-yyyy">dd-MM-yyyy</option>
+          <option value="yyyy-MM-dd">yyyy-MM-dd</option>
+          <option value="MM/dd/yyyy">MM/dd/yyyy</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="label cursor-pointer justify-start gap-2">
+      <input type="checkbox" name="truncateTrailingZeros" class="checkbox checkbox-sm"
+             [ngModel]="draft().truncateTrailingZeros" (ngModelChange)="set('truncateTrailingZeros', $event)" />
+      <span class="text-sm">Togli gli zeri finali dei decimali (1,50 &rarr; 1,5)</span>
+    </label>
+
+    <div class="border border-base-300 rounded-sm p-3 bg-base-200">
+      <p class="text-xs text-base-content/60 mb-1">Anteprima</p>
+      <p class="text-lg font-semibold">{{ preview() }}</p>
+      <p class="text-sm text-base-content/70">{{ datePreview() }}</p>
+    </div>
+
+    <ui-button type="submit" variant="primary" [loading]="saving()">Salva</ui-button>
+  </form>
+
+  @if (saved()) {
+    <div class="alert alert-success rounded-sm py-2 text-sm mt-4 max-w-xl">Preferenze salvate.</div>
+  }
+</div>
