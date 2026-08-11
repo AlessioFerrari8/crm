@@ -2,6 +2,8 @@ package it.northleap.backend.repositories;
 
 import it.northleap.backend.entities.Record;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,4 +23,51 @@ public interface RecordRepository extends JpaRepository<Record, UUID> {
 
     // per invetorySeeder
     boolean existsByObjectTypeIdAndTitleAndIsDeletedFalse(UUID objectTypeId, String title);
+
+    // coppie di record dello stesso tipo, con titoli simili. similarity() è di
+    // pg_trgm; 0.6 è una soglia prudente (0.3 troppo, 0.8 quasi niente)
+    // r1.id < r2.id evita di restituire la stessa coppia due volte a specchio
+    @Query(value = """
+            select r1.id as leftId, r2.id as rightId, similarity(r1.title, r2.title) as score
+            from record r1
+            join record r2
+              on r1.object_type_id = r2.object_type_id
+             and r1.id < r2.id
+            where r1.object_type_id = :objectTypeId
+              and r1.is_deleted = false
+              and r2.is_deleted = false
+              and similarity(r1.title, r2.title) > :threshold
+            order by score desc
+            limit 200
+            """, nativeQuery = true)
+    List<DuplicatePair> findDuplicates(@Param("objectTypeId") UUID objectTypeId, @Param("threshold") double threshold);
+
+    // record che citano l'id passato dentro il proprio `data` (campi di tipo reference).
+    // Il confronto è sul jsonb serializzato a testo: grezzo, ma un UUID non genera falsi
+    // positivi e così prende anche gli id dentro le liste
+    @Query(value = """
+            select * from record
+            where is_deleted = false
+              and data::text like concat('%', :id, '%')
+            """, nativeQuery = true)
+    List<Record> findAllReferencing(@Param("id") String id);
+
+    // projection: Spring Data la implementa da sola
+    interface DuplicatePair {
+        UUID getLeftId();
+        UUID getRightId();
+        double getScore();
+    }
+
+    // revisioni DIRETTE di un preventivo: la regex chiude su [0-9]+$ apposta, un LIKE
+    // 'prefix%' conterebbe anche le revisioni annidate (2025-13_2_2 inizia per "2025-13_")
+    // e il progressivo salterebbe
+    @Query(value = """
+              select count(*) from record
+              where object_type_id = :objectTypeId
+                and data->>'number' ~ concat('^', :prefix, '[0-9]+$')
+                and is_deleted = false
+              """, nativeQuery = true)
+    long countRevisionsOf(@Param("objectTypeId") UUID objectTypeId,
+                          @Param("prefix") String prefix);
 }
