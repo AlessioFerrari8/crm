@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -20,7 +20,7 @@ import {
 import { WfGraph } from '../models/workflow-graph';
 
 // service per gestione user admin, e gestione impostazioni
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AdminService {
   // http client con api base
   private readonly http = inject(HttpClient);

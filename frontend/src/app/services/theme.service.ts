@@ -1,10 +1,10 @@
-import { Injectable, WritableSignal, effect, signal } from '@angular/core';
+import { Injectable, Service, WritableSignal, effect, signal } from '@angular/core';
 
 export type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'theme';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ThemeService {
 
   // servizio per cambiare tema
@@ -20,7 +20,7 @@ export class ThemeService {
     });
   }
 
-  
+
   // metodi per cambiare e settare un differente tema
   toggle(): void {
     this._theme.set(this._theme() === 'dark' ? 'light' : 'dark');

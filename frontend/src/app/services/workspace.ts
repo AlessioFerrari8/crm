@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { computed, inject, Injectable, Service, signal, WritableSignal } from '@angular/core';
 import { catchError, Observable, of, tap } from 'rxjs';
 import { API_BASE_URL } from '../core/api-config';
 import { IWorkspace, IWorkspaceProfile } from '../models/IWorkspace';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class Workspace {
 
     // http client

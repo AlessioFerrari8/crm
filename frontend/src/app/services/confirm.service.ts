@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, Service, signal } from '@angular/core';
 
 interface ConfirmRequest {
   message: string;
@@ -7,7 +7,7 @@ interface ConfirmRequest {
 
 // Sostituisce i confirm() nativi del browser con una modal propria (ui-confirm-dialog nel root):
 // ask(msg) risolve true/false. Una richiesta alla volta (le conferme sono per natura modali).
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ConfirmService {
   readonly pending = signal<ConfirmRequest | null>(null);
 

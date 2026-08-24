@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -25,7 +25,7 @@ export interface SavedView {
   createdAt: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SavedViewService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/views`;

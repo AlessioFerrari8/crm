@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, Service, signal } from '@angular/core';
 
 export interface Toast {
   id: number;
@@ -9,7 +9,7 @@ export interface Toast {
 // Toast globali (ui-toasts nel root): feedback immediato su azioni riuscite e, tramite
 // errorToastInterceptor, su ogni errore server delle richieste mutanti — prima un 400 di
 // validazione sul salvataggio spariva nel nulla.
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ToastService {
   private seq = 0;
   readonly toasts = signal<Toast[]>([]);

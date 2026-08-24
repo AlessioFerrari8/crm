@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, WritableSignal, inject, signal } from '@angular/core';
+import { Injectable, Service, WritableSignal, inject, signal } from '@angular/core';
 import { tap } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -35,7 +35,7 @@ export interface FieldUpsert {
 }
 
 // service che prende solo la lista di oggetti
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ObjectTypeService {
   // inject client http
   private readonly http = inject(HttpClient);

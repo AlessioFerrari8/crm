@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -8,7 +8,7 @@ import { IEfficiencyPoint } from '../models/IEfficiencyPoint';
 import { IPipelinePoint } from '../models/IPipelinePoint';
 import { IActivityPoint } from '../models/IActivityPoint';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AnalyticsService {
   // http client + url base
   private readonly http = inject(HttpClient);

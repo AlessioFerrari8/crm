@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Injectable, Service, WritableSignal, computed, inject, signal } from '@angular/core';
 import { catchError, of, tap } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 60_000;
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class NotificationService {
   // importo http client
   private readonly http = inject(HttpClient);

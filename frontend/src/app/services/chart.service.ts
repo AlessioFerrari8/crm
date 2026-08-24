@@ -1,12 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
 import { Chart, ChartQuery, ChartRunResponse, ChartType } from '../models/chart';
 
 // CRUD sui Chart persistiti + esecuzione (run). Il run torna i punti già aggregati dal backend.
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ChartService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/charts`;

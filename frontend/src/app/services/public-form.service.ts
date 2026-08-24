@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -14,7 +14,7 @@ export interface PublicFormDefinition {
 }
 
 // Web form pubblico di lead capture: endpoint senza autenticazione, usati dalla pagina /f/{key}
-@Injectable({ providedIn: 'root' })
+@Service()
 export class PublicFormService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/public/forms`;

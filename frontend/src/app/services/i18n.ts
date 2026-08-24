@@ -1,4 +1,4 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { Injectable, Service, signal, WritableSignal } from '@angular/core';
 import { it } from '../i18n/it';
 import { en } from '../i18n/en';
 
@@ -11,7 +11,7 @@ export type TranslationKey = keyof typeof it;
 
 const DICT: Record<Lang, Record<TranslationKey, string>> = { it, en };
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class I18nService {
     readonly lang: WritableSignal<Lang> = signal<Lang>(readInitialLang());
 

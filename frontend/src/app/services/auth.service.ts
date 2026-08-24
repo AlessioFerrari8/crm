@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Injectable, Service, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, of, switchMap, tap } from 'rxjs';
 
 import { API_BASE_URL } from '../core/api-config';
@@ -9,7 +9,7 @@ import { IOnboardingPayload } from '../models/IOnboardingPayload';
 
 // I token JWT vivono solo nei cookie httpOnly impostati dal backend (mai letti/scritti qui via
 // JS) - questo service tiene solo lo stato "chi e' loggato", popolato da GET /auth/me.
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AuthService {
   // client http
   private readonly http = inject(HttpClient);
