@@ -6,6 +6,7 @@ package it.northleap.backend.entities;
 // qualsiasi -> nessun vincolo di tipo qui.
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,7 +48,7 @@ public class DocumentLine {
     // copiata dall'articolo ma modificabile: il documento deve restare uguale a se stesso
     // anche se domani il catalogo cambia descrizione
     @Column(nullable = false, length = 200)
-    private String description = "";
+    @Size(max = 2000) String description;
 
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity = BigDecimal.ONE;

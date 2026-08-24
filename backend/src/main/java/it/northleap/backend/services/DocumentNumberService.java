@@ -5,7 +5,6 @@ package it.northleap.backend.services;
 // prefisso "" + anno + padding 0 -> "2025-47" (preventivi, ordini)
 // prefisso "TT" niente anno -> "TT643" (ticket)
 // prefisso "FT" + anno + padding 4 -> "FT2025-0001" (fatture)
-
 import it.northleap.backend.entities.DocumentSequence;
 import it.northleap.backend.entities.ObjectType;
 import it.northleap.backend.repositories.DocumentSequenceRepository;

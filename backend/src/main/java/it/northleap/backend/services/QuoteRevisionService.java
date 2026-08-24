@@ -22,6 +22,7 @@ public class QuoteRevisionService {
 
     private final RecordRepository recordRepository;
     private final RbacService rbacService;
+    private final DocumentLineService documentLineService;
 
     @Transactional
     public Record revise(Actor actor, UUID quoteId) {
@@ -64,9 +65,8 @@ public class QuoteRevisionService {
         revision.setData(data);
         recordRepository.save(revision);
 
-        // TODO blocco 6 (righe documento): documentLineService.copyLines(parent.getId(), revision.getId());
-        // una revisione senza le righe del padre è incompleta, ma DocumentLineService non
-        // esiste ancora e il riferimento teneva giù tutta la build
+        // le righe si copiano dal padre: una revisone parte da quello che c'era
+        documentLineService.copyLines(parent.getId(), revision.getId());
 
         parent.setStatus("revised");
         Map<String, Object> newParentData = new LinkedHashMap<>(parentData);
