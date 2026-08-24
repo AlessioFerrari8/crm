@@ -15,10 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import it.northleap.backend.entities.Record;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 // Fusione di due record dello stesso tipo. Il perdente non viene cancellato, ma viene
 // messo nel cestino (isDeleted): un merge sbagliato deve essere recuperabile, e il
@@ -120,13 +117,23 @@ public class MergeService {
         return winner;
     }
 
-    // i link in cui il perdente è la sorgente
+    // i link in cui il perdente è la sorgente passano al vincitore
+    // Il duplicato va cercato fra i link uscenti del vincitore (stessa sorgente, stesso target, stessa relationKey)
+    // è quello il vincolo UNIQUE che salterebbe. Cercare fra gli entranti (findByTarget_Id) confronta il vincitore
+    // con sè stesso e non trova mai niente
     private void relinkSources(Record loser, Record winner) {
+        List<RecordLink> winnerOut = recordLinkRepository.findBySource_Id(winner.getId());
         for (RecordLink link : recordLinkRepository.findBySource_Id(loser.getId())) {
-            boolean duplicate = recordLinkRepository
-                    .findByTarget_Id(winner.getId()).stream()
-                    .anyMatch(w -> w.getTarget().getId().equals(link.getTarget().getId())
-                    && w.getRelationKey().equals(link.getRelationKey()));
+            // un link perdente -> vincitore diventerebbe vincitore -> vincitore
+            // un record collegato a sè stesso non ha senso, si butta
+            if (link.getTarget().getId().equals(winner.getId())) {
+                recordLinkRepository.delete(link);
+                continue;
+            }
+
+            boolean duplicate = winnerOut.stream().anyMatch(w ->
+                    w.getTarget().getId().equals(link.getTarget().getId())
+                            && Objects.equals(w.getRelationKey(), link.getRelationKey()));
 
             if (duplicate) {
                 recordLinkRepository.delete(link);
@@ -135,16 +142,28 @@ public class MergeService {
                 recordLinkRepository.save(link);
             }
         }
+
     }
 
-    // i link in cui il perdente è il bersaglio.
-    // findByTarget_Id e non la variante ...IsDeletedFalse: qui servono TUTTI i link del
-    // perdente, anche quelli verso record cestinati, altrimenti restano appesi a un record
-    // che sta per finire nel cestino a sua volta
+    // I link in cui il perdente è il bersaglio. Stessa logica a specchio.
+    // findByTarget_Id e non la variante IsDeletedFalse: qui servono tutti i link del perdente,
+    // anche quelli verso record già cestinati.
     private void relinkTargets(Record loser, Record winner) {
+        List<RecordLink> winnerIn = recordLinkRepository.findByTarget_Id(winner.getId());
         for (RecordLink link : recordLinkRepository.findByTarget_Id(loser.getId())) {
-            link.setTarget(winner);
-            recordLinkRepository.save(link);
+            if (link.getSource().getId().equals(winner.getId())) {
+                recordLinkRepository.delete(link);
+                continue;
+            }
+            boolean duplicate = winnerIn.stream().anyMatch(w ->
+                    w.getSource().getId().equals(link.getSource().getId())
+                            && Objects.equals(w.getRelationKey(), link.getRelationKey()));
+            if (duplicate) {
+                recordLinkRepository.delete(link);
+            } else {
+                link.setTarget(winner);
+                recordLinkRepository.save(link);
+            }
         }
     }
 

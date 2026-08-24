@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import it.northleap.backend.entities.Record;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,8 +42,9 @@ public class DuplicateFinderService {
         var pairs = recordRepository.findDuplicates(type.getId(), threshold);
         var ids = pairs.stream()
                 .flatMap(p -> Stream.of(p.getLeftId(), p.getRightId())).distinct().toList();
-        Map<UUID, String> titles = recordRepository.findAllById(ids).stream()
-                .collect(Collectors.toMap(Record::getId, Record::getTitle));
+        Map<UUID, String> titles = new HashMap<>();
+        recordRepository.findAllById(ids)
+                .forEach(r -> titles.put(r.getId(), r.getTitle() != null ? r.getTitle() : ""));
 
         return pairs.stream()
                 .map(p -> new DuplicateCandidateDto(
