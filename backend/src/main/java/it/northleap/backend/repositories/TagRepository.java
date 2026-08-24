@@ -1,6 +1,6 @@
 package it.northleap.backend.repositories;
 
-import it.northleap.backend.dtos.Tag;
+import it.northleap.backend.entities.Tag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

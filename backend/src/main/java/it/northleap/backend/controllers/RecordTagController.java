@@ -1,6 +1,6 @@
 package it.northleap.backend.controllers;
 
-import it.northleap.backend.dtos.Tag;
+import it.northleap.backend.entities.Tag;
 import it.northleap.backend.security.Actor;
 import it.northleap.backend.security.CurrentActor;
 import it.northleap.backend.services.TagService;

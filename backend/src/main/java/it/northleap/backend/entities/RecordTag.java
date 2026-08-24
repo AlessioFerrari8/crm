@@ -1,6 +1,5 @@
 package it.northleap.backend.entities;
 
-import it.northleap.backend.dtos.Tag;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

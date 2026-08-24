@@ -1,4 +1,4 @@
-package it.northleap.backend.dtos;
+package it.northleap.backend.entities;
 
 
 import jakarta.persistence.*;

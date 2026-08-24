@@ -2,7 +2,7 @@ package it.northleap.backend.services;
 
 
 import it.northleap.backend.dtos.CreateTagDto;
-import it.northleap.backend.dtos.Tag;
+import it.northleap.backend.entities.Tag;
 import it.northleap.backend.entities.Record;
 import it.northleap.backend.entities.RecordTag;
 import it.northleap.backend.exceptions.BadRequestException;
