@@ -1,6 +1,6 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, of, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 import { API_BASE_URL } from './api-config';
@@ -26,19 +26,35 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  let authReq = req.clone({ withCredentials: true });
-
-  if (MUTATING_METHODS.has(req.method)) {
-    const xsrfToken = readCookie('XSRF-TOKEN');
-    if (xsrfToken) {
-      authReq = authReq.clone({ setHeaders: { 'X-XSRF-TOKEN': xsrfToken } });
-    }
-  }
-
+  const baseReq = req.clone({ withCredentials: true });
+  const http = inject(HttpClient);
   const authService = inject(AuthService);
   const isAuthPath = NO_RETRY_PATHS.some((path) => req.url.includes(path));
 
-  return next(authReq).pipe(
+  const withXsrf = (): Observable<typeof baseReq> => {
+    if (!MUTATING_METHODS.has(req.method)) {
+      return of(baseReq);
+    }
+    const cookie = readCookie('XSRF-TOKEN');
+    if (cookie) {
+      return of(baseReq.clone({ setHeaders: { 'X-XSRF-TOKEN': cookie } }));
+    }
+    // Il cookie XSRF-TOKEN viene emesso dal backend solo quando una richiesta arriva davvero
+    // a destinazione. Se la prima chiamata del bootstrap (GET /auth/me) e' fallita a livello
+    // di rete (backend non ancora pronto), il cookie non esiste e ogni POST successivo
+    // verrebbe respinto con 403 dal CsrfFilter. GET /auth/status e' pubblico e lo rilascia.
+    return http
+      .get(`${API_BASE_URL}/api/auth/status`, { withCredentials: true })
+      .pipe(
+        catchError(() => of(null)),
+        switchMap(() => {
+          const refreshed = readCookie('XSRF-TOKEN');
+          return of(refreshed ? baseReq.clone({ setHeaders: { 'X-XSRF-TOKEN': refreshed } }) : baseReq);
+        })
+      );
+  };
+
+  return withXsrf().pipe(switchMap((authReq) => next(authReq).pipe(
     catchError((error: unknown) => {
       // questo backend risponde 403 (non 401) per le richieste non autenticate quando manca un
       // AuthenticationEntryPoint dedicato (vedi nota in JwtAuthenticationFilter lato backend) -
@@ -58,5 +74,5 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }
       return throwError(() => error);
     })
-  );
+  )));
 };
