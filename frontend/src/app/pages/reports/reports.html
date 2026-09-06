@@ -1,0 +1,145 @@
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <aside class="lg:col-span-1">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-2xl font-semibold">Report</h1>
+      <ui-button variant="primary" (click)="newReport()">+ Nuovo</ui-button>
+    </div>
+
+    @if (loading()) {
+    <div class="flex justify-center py-8"><ui-spinner /></div>
+    } @else {
+    @for (group of byFolder(); track group[0]) {
+    <p class="text-xs uppercase tracking-wide text-base-content/50 mt-4 mb-1">{{ group[0] }}</p>
+    <ul class="divide-y divide-base-300 border border-base-300 rounded-sm">
+      @for (r of group[1]; track r.id) {
+      <li class="p-2 flex items-center justify-between gap-2">
+        <button class="link link-hover text-left flex-1" (click)="run(r)">{{ r.title }}</button>
+        <div class="flex gap-1">
+          <button class="btn btn-ghost btn-xs" (click)="edit(r)">Modifica</button>
+          <button class="btn btn-ghost btn-xs" (click)="duplicate(r)">Duplica</button>
+          <button class="btn btn-ghost btn-xs text-error" (click)="remove(r)">✕</button>
+        </div>
+      </li>
+      }
+    </ul>
+    }
+    }
+  </aside>
+
+  <section class="lg:col-span-2">
+    @if (editorOpen()) {
+    <div class="border border-base-300 rounded-sm p-4 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm mb-1">Titolo</label>
+          <input class="input rounded-sm w-full" [ngModel]="title()" (ngModelChange)="title.set($event)" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Cartella</label>
+          <input class="input rounded-sm w-full" [ngModel]="folder()" (ngModelChange)="folder.set($event)" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Modulo</label>
+          <select class="select rounded-sm w-full" [ngModel]="draft().objectKey"
+            (ngModelChange)="patch({ objectKey: $event })">
+            <option value="">—</option>
+            @for (o of objects(); track o.id) { <option [value]="o.key">{{ o.pluralLabel }}</option> }
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Rendering</label>
+          <select class="select rounded-sm w-full" [ngModel]="render()" (ngModelChange)="render.set($event)">
+            <option value="GRID">Griglia</option>
+            <option value="BAR">Barre</option>
+            <option value="LINE">Linea</option>
+            <option value="PIE">Torta</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-sm mb-1">Filtro</label>
+        <app-filter-builder [fields]="filterFields()" [value]="filterValue()" (valueChange)="setFilter($event)" />
+      </div>
+
+      <!-- righe e colonne, stesso blocco due volte, l'unica cosa che cambia è il nome -->
+      @for (where of ['rows', 'columns']; track where) {
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium">{{ where === 'rows' ? 'Righe' : 'Colonne (pivot)' }}</span>
+          <button class="btn btn-ghost btn-xs" (click)="addDimension($any(where))">+ campo</button>
+        </div>
+        @for (d of (where === 'rows' ? draft().rows : draft().columns) ?? []; track $index) {
+        <div class="flex gap-2 mt-1">
+          <select class="select select-sm rounded-sm flex-1" [ngModel]="d.field"
+            (ngModelChange)="setDimension($any(where), $index, { field: $event })">
+            @for (k of fieldKeys(); track k) { <option [value]="k">{{ k }}</option> }
+          </select>
+          <select class="select select-sm rounded-sm w-32" [ngModel]="d.grain"
+            (ngModelChange)="setDimension($any(where), $index, { grain: $event })">
+            @for (g of GRAINS; track g) { <option [value]="g">{{ g }}</option> }
+          </select>
+          <button class="btn btn-ghost btn-xs text-error" (click)="removeDimension($any(where), $index)">✕</button>
+        </div>
+        }
+      </div>
+      }
+
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium">Metriche</span>
+          <button class="btn btn-ghost btn-xs" (click)="addMetric()">+ metrica</button>
+        </div>
+        @for (m of draft().metrics; track $index) {
+        <div class="flex gap-2 mt-1">
+          <select class="select select-sm rounded-sm w-44" [ngModel]="m.aggregate"
+            (ngModelChange)="setMetric($index, { aggregate: $event })">
+            @for (a of AGGREGATES; track a) { <option [value]="a">{{ a }}</option> }
+          </select>
+          @if (m.aggregate !== 'COUNT') {
+          <select class="select select-sm rounded-sm flex-1" [ngModel]="m.field"
+            (ngModelChange)="setMetric($index, { field: $event })">
+            @for (k of fieldKeys(); track k) { <option [value]="k">{{ k }}</option> }
+          </select>
+          }
+          @if (m.aggregate === 'AVG_DAYS_BETWEEN') {
+          <select class="select select-sm rounded-sm flex-1" [ngModel]="m.secondField"
+            (ngModelChange)="setMetric($index, { secondField: $event })">
+            @for (k of fieldKeys(); track k) { <option [value]="k">{{ k }}</option> }
+          </select>
+          }
+          <input class="input input-sm rounded-sm w-32" placeholder="etichetta" [ngModel]="m.label"
+            (ngModelChange)="setMetric($index, { label: $event })" />
+          <button class="btn btn-ghost btn-xs text-error" (click)="removeMetric($index)">✕</button>
+        </div>
+        }
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <ui-button variant="ghost" (click)="editorOpen.set(false)">Chiudi</ui-button>
+        <ui-button variant="ghost" [loading]="running()" (click)="preview()">Anteprima</ui-button>
+        <ui-button variant="primary" (click)="save()">Salva</ui-button>
+      </div>
+    </div>
+    }
+
+    @if (result(); as res) {
+    <div class="border border-base-300 rounded-sm p-4 mt-4 overflow-x-auto">
+      <table class="table table-sm">
+        <tbody>
+          @for (dims of res.dimensions; track $index) {
+          <tr>
+            @for (d of dims; track $index) { <td>{{ label(d) }}</td> }
+            @for (m of res.metrics[$index]; track $index) { <td class="text-right tabular-nums">{{ m }}</td> }
+          </tr>
+          } @empty {
+          <tr>
+            <td class="text-center text-base-content/50 py-6">Nessun dato</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</div>

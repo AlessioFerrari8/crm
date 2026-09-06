@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { API_BASE_URL } from '../core/api-config';
 import { Observable } from 'rxjs';
-import { ReportQuery, ReportResult } from '../models/report';
+import { Report, ReportQuery, ReportResult } from '../models/report';
 
 @Service()
 export class ReportService {
@@ -38,6 +38,5 @@ export class ReportService {
   duplicate(id: string): Observable<Report> {
     return this.http.post<Report>(`${this.base}/${id}/duplicate`, {});
   }
-
 
 }
