@@ -1,1 +1,11 @@
-<p>chart-widget works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full">
+  <p class="text-sm font-medium mb-2">{{ widget().label }}</p>
+
+  @if(state.loading()) {
+    <div class="skeleton h-48 w-full"></div>
+  } @else if (state.failed() || !config) {
+    <p class="text-sm text-base-content/50 py-8 text-center">Nessun dato</p>
+  } @else {
+    <div class="h-48"><app-chart [config]="config()!" /></div>
+  }
+</div>

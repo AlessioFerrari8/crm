@@ -1,1 +1,11 @@
-<p>kpi-tile works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full"
+  [style.border-left]="'4px solid ' + (widget().color ?? 'oklch(var(--p))')">
+  <p class="text-xs uppercase tracking-wide text-base-content/60">{{ widget().label }}</p>
+  @if (state.loading()) {
+  <div class="skeleton h-8 w-24 mt-2"></div>
+  } @else if (state.failed()) {
+  <p class="text-error text-sm mt-2">Errore nel calcolo</p>
+  } @else {
+  <p class="text-3xl font-semibold tabular-nums mt-1">{{ value() ?? '—' }}</p>
+  }
+</div>

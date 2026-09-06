@@ -1,1 +1,52 @@
-<p>pivot-widget works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full">
+  <p class="text-sm font-medium mb-2">{{ widget().label }}</p>
+  @if(state.loading()) {
+  <div class="skeleton h-40 w-full"></div>
+  } @else if (matrix(); as m) {
+  <div class="overflow-x-auto max-h-96">
+    <table class="table table-xs">
+      <thead>
+        <tr>
+          <th rowspan="2" class="align-bottom"></th>
+          @for (c of m.cols; track c) {
+          <th [attr.colspan]="metrics().length" class="text-center border-l border-base-300">{{ label(c) }}</th>
+          }
+          <th [attr.colspan]="metrics().length" class="text-center border-l border-base-300">Totale</th>
+        </tr>
+        <tr>
+          @for (c of m.cols; track c) {
+          @for (mt of metrics(); track mt.label) { <th class="text-right text-xs">{{ mt.label }}</th> }
+          }
+          @for (mt of metrics(); track mt.label) { <th class="text-right text-xs">{{ mt.label }}</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of m.rows; track r) {
+        <tr>
+          <td class="font-medium">{{ label(r) }}</td>
+          @for (c of m.cols; track c) {
+          @for (v of cellValues(r, c); track $index) { <td class="text-right tabular-nums">{{ v }}</td> }
+          }
+          @for (t of m.rowTotals.get(r) ?? []; track $index) {
+          <td class="text-right tabular-nums font-medium border-l border-base-300">{{ t }}</td>
+          }
+        </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="font-semibold">Totale</td>
+          @for (c of m.cols; track c) {
+          @for (t of m.colTotals.get(c) ?? []; track $index) {
+          <td class="text-right tabular-nums font-semibold">{{ t }}</td>
+          }
+          }
+          <td [attr.colspan]="metrics().length"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  } @else {
+  <p class="text-sm text-base-content/50 py-8 text-center">Nessun dato</p>
+  }
+</div>

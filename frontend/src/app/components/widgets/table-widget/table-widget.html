@@ -1,1 +1,23 @@
-<p>table-widget works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full">
+  <p class="text-sm font-medium mb-2">{{ widget().label }}</p>
+  @if(state.loading()) {
+  <div class="skeleton h.32 w-full"></div>
+  } @else {
+  <div class="overflow-x-auto max-h-72">
+    <table class="table table-xs">
+      <thead>
+        <tr>@for (h of headers(); track $index) { <th>{{ h }}</th> }</tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track $index) {
+        <tr>@for (c of row; track $index) { <td class="tabular-nums">{{ c }}</td> }</tr>
+        } @empty {
+        <tr>
+          <td [attr.colspan]="headers().length" class="text-center text-base-content/50 py-4">Nessun dato</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</div>

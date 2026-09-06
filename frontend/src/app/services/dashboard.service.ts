@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../core/api-config';
 import { Observable } from 'rxjs';
 
 @Service()
-export class Dashboard {
+export class DashboardService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/dashboards`;
 

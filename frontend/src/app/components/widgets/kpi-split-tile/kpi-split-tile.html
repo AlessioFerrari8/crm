@@ -1,1 +1,15 @@
-<p>kpi-split-tile works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full">
+  <p class="text-xs uppercase tracking-wide text-base-content/60 mb-2">{{ widget().label }}</p>
+  <div class="grid grid-cols-2 divide-x divide-base-300">
+    <div class="pr-3">
+      <p class="text-xs text-base-content/60">{{ leftLabel() }}</p>
+      @if (leftState.loading()) { <div class="skeleton h-7 w-16 mt-1"></div> }
+      @else { <p class="text-2xl font-semibold tabular-nums">{{ leftValue() ?? '—' }}</p> }
+    </div>
+    <div class="pl-3">
+      <p class="text-xs text-base-content/60">{{ rightLabel() }}</p>
+      @if (rightState.loading()) { <div class="skeleton h-7 w-16 mt-1"></div> }
+      @else { <p class="text-2xl font-semibold tabular-nums">{{ rightValue() ?? '—' }}</p> }
+    </div>
+  </div>
+</div>

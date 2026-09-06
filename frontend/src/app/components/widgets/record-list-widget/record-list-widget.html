@@ -1,1 +1,21 @@
-<p>record-list-widget works!</p>
+<div class="border border-base-300 rounded-sm p-4 h-full">
+  <p class="text-sm font-medium mb-2">{{ widget().label }}</p>
+  @if(loading()) {
+    <div class="skeleton h-32 w-full"></div>
+  } @else {
+    <ul class="divide-y divide-base-300">
+      @for (r of rows(); track r.id) {
+        <li class="py-2">
+          <a class="link link-hover font-medium" [routerLink]="['/o', objectKey(), r.id]">{{ r.title }}</a>
+          <div class="text-xs text-base-content/60 flex gap-3">
+            @for (c of columns(); track c.id) {
+              <span>{{ value(r, c) }}</span>
+            }
+          </div>
+        </li>
+      } @empty {
+        <li class="py-6 text-center text-base-content/50 text-sm">Nessun record</li>
+      }
+    </ul>
+  }
+</div>
