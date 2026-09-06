@@ -1,7 +1,7 @@
 import { Component, DestroyRef, NgZone, Renderer2, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { CalendarDays, ChartColumn, LucideAngularModule, Settings } from 'lucide-angular';
+import { CalendarDays, ChartColumn, LucideAngularModule, Settings, Copy, FileText, LayoutDashboard } from 'lucide-angular';
 
 import { resolveObjectIcon } from '../../core/object-icons';
 import { ObjectType } from '../../models/object-type';
@@ -14,7 +14,7 @@ const LABEL_THRESHOLD = 150; // oltre questa larghezza ricompaiono le etichette
 const KEY_STEP = 16;         // di quanto si muove la larghezza con le frecce
 const STORAGE_KEY = 'sidebar-width';
 
-// Sidebar ridimensionabile: di default un rail stretto con sole icone (piu' grandi); trascinando
+// Sidebar ridimensionabile: di default un rail stretto con sole icone (più grandi); trascinando
 // il bordo destro la si allarga, e oltre LABEL_THRESHOLD ricompaiono le etichette. La larghezza
 // e' persistita in localStorage. Il host e' direttamente l'elemento .drawer-side di daisyUI.
 @Component({
@@ -43,6 +43,9 @@ export class Sidebar {
   protected readonly SettingsIcon = Settings;
   protected readonly ChartsIcon = ChartColumn;
   protected readonly CalendarIcon = CalendarDays;
+  protected readonly DashboardsIcon = LayoutDashboard;
+  protected readonly ReportsIcon = FileText;
+  protected readonly DuplicatesIcon = Copy;
 
   // estremi esposti al template (per gli attributi aria della maniglia)
   protected readonly MIN_WIDTH = MIN_WIDTH;

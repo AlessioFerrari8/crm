@@ -2,9 +2,9 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth.guard';
 
-// Routing piatto. La shell (sidebar/topbar) vive nel root app.html in base allo stato di auth,
-// quindi qui non c'e' un componente layout: le rotte protette sono figlie di un parent pathless
-// con l'authGuard e rendono nel <router-outlet> del root.
+// Routing piatto: la shell (sidebar/topbar) vive nel root app.html in base allo stato di auth,
+// quindi qui non c'è un componente layout: le rotte protette sono figlie di un parent pathless
+// con l'authGuard e rendono nel <router-outlet> del root
 export const routes: Routes = [
   {
     path: 'login',
@@ -69,6 +69,26 @@ export const routes: Routes = [
         path: 'preferences',
         title: 'Le mie preferenze · NorthLeap',
         loadComponent: () => import('./pages/preferences/preferences').then((m) => m.Preferences)
+      },
+      {
+        path: 'dashboards',
+        title: 'Dashboard · NorthLeap',
+        loadComponent: () => import('./pages/dashboard-tabs/dashboard-tabs').then((m) => m.DashboardTabs)
+      },
+      {
+        path: 'reports',
+        title: 'Report · NorthLeap',
+        loadComponent: () => import('./pages/reports/reports').then((m) => m.Reports)
+      },
+      {
+        path: 'duplicates',
+        title: 'Duplicati · NorthLeap',
+        loadComponent: () => import('./pages/duplicates/duplicates').then((m) => m.Duplicates)
+      },
+      {
+        path: 'tags/:tagId',
+        title: 'Tag · NorthLeap',
+        loadComponent: () => import('./pages/tag-records/tag-records').then((m) => m.TagRecords)
       }
     ]
   },

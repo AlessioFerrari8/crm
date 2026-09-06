@@ -38,6 +38,48 @@
 
   <div class="mt-auto p-1 border-t border-base-300 flex flex-col gap-1">
     <a
+      routerLink="/dashboards"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Dashboard"
+    >
+      <lucide-icon [img]="DashboardsIcon" [size]="20" />
+      @if(showLabels()) {
+        <span>Dashboard</span>
+      }
+    </a>
+
+    <a
+      routerLink="/reports"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Report"
+    >
+      <lucide-icon [img]="ReportsIcon" [size]="20" />
+      @if(showLabels()) {
+        <span>Report</span>
+      }
+    </a>
+
+    <a
+      routerLink="/duplicates"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Duplicati"
+    >
+      <lucide-icon [img]="ReportsIcon" [size]="20" />
+      @if(showLabels()) {
+        <span>Duplicati</span>
+      }
+    </a>
+
+    <a
       routerLink="/calendar"
       routerLinkActive="active"
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
