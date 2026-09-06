@@ -16,10 +16,12 @@
   </div>
 
   <div class="flex-1 flex items-center justify-end gap-1">
+    <app-quick-create />
+
     <button class="group p-2 cursor-pointer" (click)="i18n.toggle()" aria-label="Lingua">
-      <lucide-icon [img]="Languages" [size]="18" class="transition duration-200 group-hover:blur-[0.5px]"/> 
-    </button> 
-    
+      <lucide-icon [img]="Languages" [size]="18" class="transition duration-200 group-hover:blur-[0.5px]"/>
+    </button>
+
     <button class="group p-2 cursor-pointer" (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Tema chiaro' : 'Tema scuro'">
       <lucide-icon [img]="isDark() ? SunIcon : MoonIcon" [size]="18" class="transition duration-200 group-hover:blur-[0.5px]" />
     </button>

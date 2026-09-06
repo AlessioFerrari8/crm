@@ -12,18 +12,19 @@ import { UserPreferenceService } from '../../services/user-preference.service';
 import { errorKey } from '../../core/error-message';
 import { I18nService } from '../../services/i18n';
 import { Workspace } from '../../services/workspace';
+import { QuickCreate } from '../quick-create/quick-create';
 
 const NOTIFICATION_POLL_MS = 300_000;
 
-// Barra superiore: logo, hamburger (toggle del drawer in app.html via id), tema, campanella
-// notifiche, menu utente. Possiede lo stream SSE delle notifiche piu' un polling di riserva a
-// 5 minuti, che copre il caso in cui l'SSE si rompa in silenzio (es. buffering di un proxy).
+// Barra superiore: logo, hamburger (toggle del drawer in app.html via id), tema, campanella notifiche, menu
+// utente. Possiede lo stream SSE delle notifiche, con in aggiunta un polling di riserva a 5 minuti, che copre
+// il caso in cui l'SSE si rompa in silenzio (es. buffering di un proxy)
 // :host display:contents -> il <header> diventa figlio diretto del flex .drawer-content, layout
-// identico a prima della scomposizione.
+// identico a prima della scomposizione
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, UiPasswordRules],
+  imports: [RouterLink, LucideAngularModule, UiPasswordRules, QuickCreate],
   templateUrl: './topbar.html',
   styles: ':host { display: contents; }'
 })
