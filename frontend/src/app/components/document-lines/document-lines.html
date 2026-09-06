@@ -1,1 +1,155 @@
-<p>document-lines works!</p>
+<div class="border border-base-300 rounded-sm">
+  <div class="flex items-center justify-between px-3 py-2 border-b border-base-300">
+    <h2 class="font-semibold">Dettagli articolo</h2>
+    @if(!readonlyMode()) {
+    <div class="flex items-center gap-2">
+      @if (dirty()) { <span class="text-xs text-warning">modifiche non salvate</span> }
+      <ui-button variant="ghost" (click)="addRow()">+ Riga</ui-button>
+      <ui-button variant="primary" [loading]="saving()" [disabled]="!dirty()" (click)="save()">Salva righe</ui-button>
+    </div>
+    }
+  </div>
+
+  @if(loading()) {
+  <div class="flex justify-center py-8"><ui-spinner /></div>
+  } @else {
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th class="w-8"></th>
+          <th class="min-w-64">Articolo / Descrizione</th>
+          <th class="w-24 text-right">Q.ta</th>
+          <th class="w-20">U.M.</th>
+          <th class="w-28 text-right">Prezzo</th>
+          <th class="w-32 text-right">Sconto</th>
+          <th class="w-32">IVA</th>
+          <th class="w-28 text-right">Imponibile</th>
+          <th class="w-28 text-right">Totale</th>
+          <th class="w-20"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of lines(); track $index) {
+        <tr>
+          <td class="text-xs text-base-content/50">{{ $index + 1 }}</td>
+          <td>
+            <select class="select select-xs rounded-sm mb-1 w-28" [ngModel]="l.kind"
+              (ngModelChange)="set($index, 'kind', $event)" [disabled]="readonlyMode()">
+              <option value="PRODUCT">Articolo</option>
+              <option value="TEXT">Solo testo</option>
+            </select>
+
+            @if (l.kind === 'PRODUCT') {
+            <div class="relative">
+              <input class="input input-sm rounded-sm w-full" placeholder="Cerca a catalogo..."
+                [value]="l.productLabel ?? ''" (input)="onProductSearch($index, $any($event.target).value)"
+                [disabled]="readonlyMode()" />
+
+              @if(searchOpenFor() === $index && productResults().length > 0) {
+              <ul class="menu absolute z-30 bg-base-100 border border-base-300 rounded-sm w-full mt-1 shadow">
+                @for (p of productResults(); track p.id) {
+                <li><button type="button" (click)="pickProduct($index, p)">{{ p.title }}</button></li>
+                }
+              </ul>
+              }
+            </div>
+            }
+
+            <input class="input input-sm rounded-sm w-full mt-1" placeholder="Descrizione" [ngModel]="l.description"
+              (ngModelChange)="set($index, 'description', $event)" [disabled]="readonlyMode()" />
+
+          </td>
+
+          <td>
+            <input type="number" step="0.01" class="input input-sm rounded-sm w-full text-right" [ngModel]="l.quantity"
+              (ngModelChange)="set($index, 'quantity', +$event)" [disabled]="readonlyMode() || l.kind === 'TEXT'" />
+          </td>
+
+          <td>
+            <input class="input input-sm rounded-sm w-full" [ngModel]="l.unit"
+              (ngModelChange)="set($index, 'unit', $event)" [disabled]="readonlyMode() || l.kind === 'TEXT'" />
+          </td>
+
+          <td>
+            <input type="number" step="0.01" class="input input-sm rounded-sm w-full text-right" [ngModel]="l.unitPrice"
+              (ngModelChange)="set($index, 'unitPrice', +$event)" [disabled]="readonlyMode() || l.kind === 'TEXT'" />
+          </td>
+
+          <td>
+            <div class="flex gap-1">
+              <input type="number" step="0.01" class="input input-sm rounded-sm w-16 text-right"
+                [ngModel]="l.discountValue" (ngModelChange)="set($index, 'discountValue', +$event)"
+                [disabled]="readonlyMode() || l.kind === 'TEXT'" />
+              <select class="select select-xs rounded-sm w-14" [ngModel]="l.discountType"
+                (ngModelChange)="set($index, 'discountType', $event)" [disabled]="readonlyMode() || l.kind === 'TEXT'">
+                <option value="PERCENT">%</option>
+                <option value="AMOUNT">€</option>
+              </select>
+            </div>
+          </td>
+          <td>
+            <select class="select select-sm rounded-sm w-full" [ngModel]="l.vatRateId"
+              (ngModelChange)="onVatRate($index, $event)" [disabled]="readonlyMode() || l.kind === 'TEXT'">
+              <option [ngValue]="null">—</option>
+              @for (r of vatRates(); track r.id) {
+              <option [ngValue]="r.id">{{ vatLabel(r) }}</option>
+              }
+            </select>
+          </td>
+
+          <td class="text-right tabular-nums">{{ totalsOf(l).net.toFixed(2) }}</td>
+          <td class="text-right tabular-nums font-medium">{{ totalsOf(l).gross.toFixed(2) }}</td>
+
+          <td>
+            @if (!readonlyMode()) {
+            <div class="flex gap-1">
+              <button class="btn btn-ghost btn-xs" (click)="move($index, -1)" aria-label="Sposta su">↑</button>
+              <button class="btn btn-ghost btn-xs" (click)="move($index, 1)" aria-label="Sposta giu">↓</button>
+              <button class="btn btn-ghost btn-xs text-error" (click)="removeRow($index)"
+                aria-label="Elimina riga">✕</button>
+            </div>
+            }
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="10" class="text-center py-6 text-base-content/50">
+            Nessuna riga. Usa "+ Riga" per aggiungerne una.
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-end border-t border-base-300 p-3">
+    <dl class="text-sm w-64 space-y-1">
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">Imponibile</dt>
+        <dd class="tabular-nums">{{ totals().subtotal.toFixed(2) }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">IVA</dt>
+        <dd class="tabular-nums">{{ totals().vatTotal.toFixed(2) }}</dd>
+      </div>
+      @if (documentDiscount()) {
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">Sconto documento</dt>
+        <dd class="tabular-nums">- {{ documentDiscount().toFixed(2) }}</dd>
+      </div>
+      }
+      @if (shippingCost()) {
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">Trasporto</dt>
+        <dd class="tabular-nums">{{ shippingCost().toFixed(2) }}</dd>
+      </div>
+      }
+      <div class="flex justify-between border-t border-base-300 pt-1 font-semibold">
+        <dt>Totale</dt>
+        <dd class="tabular-nums">{{ totals().total.toFixed(2) }}</dd>
+      </div>
+    </dl>
+  </div>
+  }
+</div>

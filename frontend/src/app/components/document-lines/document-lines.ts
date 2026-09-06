@@ -17,10 +17,13 @@ import { DocumentLineDto, LineDraft } from '../../models/document-line';
 import { catchError, debounceTime, of, Subject, switchMap } from 'rxjs';
 import { documentTotals, lineTotals } from '../../core/money';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { UiButton } from '../ui/button';
+import { UiSpinner } from '../ui/spinner';
 
 @Component({
   selector: 'app-document-lines',
-  imports: [],
+  imports: [FormsModule, UiButton, UiSpinner],
   templateUrl: './document-lines.html',
 })
 export class DocumentLines {
@@ -52,10 +55,10 @@ export class DocumentLines {
   private readonly productSearch$ = new Subject<string>();
 
   protected readonly totals = computed(() => {
-    documentTotals(this.lines(), this.documentDiscount(), this.shippingCost());
+    return documentTotals(this.lines(), this.documentDiscount(), this.shippingCost());
   });
 
-  costructor() {
+  constructor() {
     // ricarica quando cambia il documento, permette di navigare fra record senza ricreare il componente
     effect(() => {
       const id = this.documentId();
