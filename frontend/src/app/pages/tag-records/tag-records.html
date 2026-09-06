@@ -1,0 +1,48 @@
+<div>
+  <div class="flex items-center gap-2 mb-4">
+    <h1 class="text-2xl font-semibold">Record con il tag</h1>
+    @if(tag(); as t) {
+      <span class="badge badge-sm rounded-sm"
+          [class.badge-ghost]="!t.color"
+          [style.background-color]="t.color || null"
+          [style.border-color]="t.color || null"
+          [style.color]="t.color ? 'white' : null">{{ t.name }}</span>
+    }
+    <span class="text-sm text-base-content/60">{{ rows().length }}</span>
+  </div>
+
+  @if(loading()) {
+    <div class="flex justify-center py-12"><ui-spinner /></div>
+  } @else {
+    <table class="table table-sm border border-base-300 rounded-sm">
+      <thead>
+        <tr>
+          <th>Titolo</th>
+          <th>Modulo</th>
+          <th>Aggiornato</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (rec of rows(); track rec.id) {
+          <tr class="hover">
+            <td>
+              @if (rec.objectType) {
+                <a class="link link-primary" [routerLink]="['/o', rec.objectType.key, rec.id]">{{ rec.title }}</a>
+              } @else {
+                {{ rec.title }}
+              }
+            </td>
+            <td>{{ rec.objectType?.label ?? '—' }}</td>
+            <td class="text-base-content/60">{{ rec.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="3" class="text-center py-12 text-base-content/50">
+              Nessun record con questo tag.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
