@@ -6,6 +6,7 @@
       <div>
         <a [routerLink]="['/o', objectKey]" class="text-sm link link-hover text-base-content/50">← {{ object()?.pluralLabel ?? objectKey }}</a>
         <h1 class="text-2xl font-semibold">{{ rec.title || '(senza titolo)' }}</h1>
+        <app-tag-picker [recordId]="rec.id" />
         <div class="flex items-center gap-2 mt-1">
           @if (rec.status) {
             <span class="badge badge-neutral rounded-sm">{{ rec.status }}</span>
@@ -29,6 +30,11 @@
         <ui-button variant="ghost" (click)="editOpen.set(true)">Modifica</ui-button>
         <ui-button variant="danger" (click)="remove()">Elimina</ui-button>
       </div>
+
+      @if(isQuote()) {
+        <ui-button variant="ghost" (click)="revise()">Nuova revisione</ui-button>
+        <ui-button variant="accent" [loading]="converting()" (click)="convertToOrder()">Converti in ordine</ui-button>
+      }
     </div>
 
     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 border border-base-300 rounded-sm p-4">
@@ -136,6 +142,14 @@
         </ul>
       }
     </div>
+
+    @if(hasLines() && record(); as rec) {
+      <app-document-lines
+      [documentId]="recordId"
+      [documentDiscount]="numberOf('discountTotal')"
+      [shippingCost]="numberOf('shippingCost')"
+      (saved)="reloadRecord()" />
+    }
 
     <div class="mt-6">
       <h2 class="font-semibold mb-2">Note</h2>

@@ -1,4 +1,13 @@
-import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  DestroyRef,
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -12,7 +21,7 @@ import {
   of,
   startWith,
   switchMap,
-  tap
+  tap,
 } from 'rxjs';
 
 import { Drawer } from '../../components/drawer/drawer';
@@ -30,14 +39,19 @@ import { ObjectTypeService } from '../../services/object-type.service';
 import { RecordsService } from '../../services/records.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmService } from '../../services/confirm.service';
+import { DocumentLines } from '../../components/document-lines/document-lines';
+import { TagPicker } from '../../components/tag-picker/tag-picker';
+import { DOCUMENT_KEYS } from '../../models/document-line';
+import { DocumentLineService } from '../../services/document-line.service';
 
 @Component({
   selector: 'app-record-detail',
   standalone: true,
-  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner],
-  templateUrl: './record-detail.html'
+  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner, DocumentLines, TagPicker],
+  templateUrl: './record-detail.html',
 })
 export class RecordDetail {
+  // vari servizi
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recordsService = inject(RecordsService);
@@ -49,30 +63,72 @@ export class RecordDetail {
   private readonly title = inject(Title);
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly lineService = inject(DocumentLineService);
 
   // NON readonly: navigando verso un altro record della stessa route (duplica, link tra record)
-  // Angular riusa il componente — la subscription a paramMap nel costruttore aggiorna questi
+  // Angular riusa il componente, la subscription a paramMap nel costruttore aggiorna questi
   // campi e rilancia gli stream (che li leggono dentro switchMap, quindi a valore fresco).
   protected objectKey = this.route.snapshot.paramMap.get('objectKey') ?? '';
   protected recordId = this.route.snapshot.paramMap.get('id') ?? '';
 
-  protected readonly loading = signal(true);
-  protected readonly editOpen = signal(false);
-  protected readonly submitting = signal(false);
-  protected readonly uploading = signal(false);
+  // le righe si mostrano solo sui 4 moduli documento: sugli altri la tabella non avrebbe senso e l'endpoint
+  // risponderebbe comunque vuoto
+  protected readonly hasLines = computed(() => DOCUMENT_KEYS.includes(this.objectKey));
+  protected readonly isQuote = computed(() => this.objectKey === 'quote');
+
+  protected numberOf(key: string): number {
+    return Number(this.record()?.data?.[key] ?? 0) || 0;
+  }
+
+  protected readonly converting: WritableSignal<boolean> = signal(false);
+
+  // preventivo -> ordine, crea un ordine nuovo con le stesse righe e ci porta sopra
+  // il preventivo resta modificabile
+  protected convertToOrder(): void {
+    if (this.converting()) return;
+    this.converting.set(true);
+    this.lineService.convertQuoteToOrder(this.recordId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (order) => {
+          this.converting.set(false);
+          this.toasts.success('Ordine creato dal preventivo');
+          this.router.navigate(['/o', 'sales_order', order.id]);
+        },
+        error: () => this.converting.set(false)
+      });
+  }
+
+  // revisione, il padre passa a "revisionato"
+  protected revise(): void {
+    this.lineService.reviseQuote(this.recordId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((rev) => this.router.navigate(['/o', 'quote', rev.id]));
+  }
+
+  protected readonly loading: WritableSignal<boolean> = signal(true);
+  protected readonly editOpen: WritableSignal<boolean> = signal(false);
+  protected readonly submitting: WritableSignal<boolean> = signal(false);
+  protected readonly uploading: WritableSignal<boolean> = signal(false);
 
   // l'ObjectType (per i campi), rifetchato a ogni cambio di :objectKey (navigazioni tra record)
   protected readonly object = toSignal(
     this.route.paramMap.pipe(
       map((p) => p.get('objectKey') ?? ''),
       distinctUntilChanged(),
-      switchMap((key) => this.objectTypeService.getByKey(key).pipe(catchError(() => of(null))))
+      switchMap((key) => this.objectTypeService.getByKey(key).pipe(catchError(() => of(null)))),
     ),
-    { initialValue: null }
+    { initialValue: null },
   );
 
   // trigger di ricarica del record dopo una modifica
   private readonly reload$ = new Subject<void>();
+
+  // le righe documento scrivono i totali dentro Record.data lato server: dopo un salvataggio
+  // la testata va riletta, altrimenti resta quella caricata prima delle righe
+  protected reloadRecord(): void {
+    this.reload$.next();
+  }
 
   constructor() {
     // titolo della tab del browser: il titolo del record corrente
@@ -101,11 +157,11 @@ export class RecordDetail {
       startWith(undefined),
       tap(() => this.loading.set(true)),
       switchMap(() =>
-        this.recordsService.findOne(this.objectKey, this.recordId).pipe(catchError(() => of(null)))
+        this.recordsService.findOne(this.objectKey, this.recordId).pipe(catchError(() => of(null))),
       ),
-      tap(() => this.loading.set(false))
+      tap(() => this.loading.set(false)),
     ),
-    { initialValue: null }
+    { initialValue: null },
   );
 
   protected readonly record = computed(() => this.detail()?.record ?? null);
@@ -117,13 +173,17 @@ export class RecordDetail {
   protected readonly files = toSignal(
     this.filesReload$.pipe(
       startWith(undefined),
-      switchMap(() => this.fileService.list(this.recordId).pipe(catchError(() => of<FileObject[]>([]))))
+      switchMap(() =>
+        this.fileService.list(this.recordId).pipe(catchError(() => of<FileObject[]>([]))),
+      ),
     ),
-    { initialValue: [] as FileObject[] }
+    { initialValue: [] as FileObject[] },
   );
 
   protected readonly visibleFields = computed<FieldDef[]>(() =>
-    (this.object()?.fields ?? []).filter((f) => !f.hidden).sort((a, b) => a.sortOrder - b.sortOrder)
+    (this.object()?.fields ?? [])
+      .filter((f) => !f.hidden)
+      .sort((a, b) => a.sortOrder - b.sortOrder),
   );
 
   // cella type-aware (badge colorati, link, testo formattato) - formatter condiviso con la record-list
@@ -146,7 +206,7 @@ export class RecordDetail {
           this.toasts.success('Modifiche salvate');
           this.reload$.next();
         },
-        error: () => this.submitting.set(false)
+        error: () => this.submitting.set(false),
       });
   }
 
@@ -158,9 +218,11 @@ export class RecordDetail {
   protected readonly notes = toSignal(
     this.notesReload$.pipe(
       startWith(undefined),
-      switchMap(() => this.recordsService.listNotes(this.recordId).pipe(catchError(() => of<RecordNote[]>([]))))
+      switchMap(() =>
+        this.recordsService.listNotes(this.recordId).pipe(catchError(() => of<RecordNote[]>([]))),
+      ),
     ),
-    { initialValue: [] as RecordNote[] }
+    { initialValue: [] as RecordNote[] },
   );
 
   protected addNote(): void {
@@ -176,7 +238,7 @@ export class RecordDetail {
           this.noteBody.set('');
           this.notesReload$.next();
         },
-        error: () => this.noteSaving.set(false)
+        error: () => this.noteSaving.set(false),
       });
   }
 
@@ -208,22 +270,23 @@ export class RecordDetail {
       switchMap(() =>
         forkJoin({
           logs: this.admin.listLogs(this.objectKey, this.recordId),
-          users: this.admin.listUsers()
+          users: this.admin.listUsers(),
         }).pipe(
           map(({ logs, users }) => {
             const names = new Map(users.map((u) => [u.id, u.name || u.email]));
             return logs.map((l) => ({
               action: HISTORY_LABELS[l.action] ?? l.action,
-              author: (l.actorId && names.get(l.actorId)) || (l.actorType === 'APIKEY' ? 'API key' : '—'),
+              author:
+                (l.actorId && names.get(l.actorId)) || (l.actorType === 'APIKEY' ? 'API key' : '—'),
               date: new Date(l.createdAt).toLocaleString('it-IT'),
-              fields: changedFields(l.diff)
+              fields: changedFields(l.diff),
             }));
           }),
-          catchError(() => of(null))
-        )
-      )
+          catchError(() => of(null)),
+        ),
+      ),
     ),
-    { initialValue: null }
+    { initialValue: null },
   );
 
   // ── duplica record ──────────────────────────────────────────────────────────
@@ -242,17 +305,16 @@ export class RecordDetail {
           this.toasts.success('Record duplicato');
           this.router.navigate(['/o', this.objectKey, created.id]);
         },
-        error: () => this.duplicating.set(false)
+        error: () => this.duplicating.set(false),
       });
   }
 
   // ── proprietario del record ─────────────────────────────────────────────────
   // lista utenti per la riassegnazione: richiede il permesso RBAC "user" READ; senza, la select
   // non compare (il backend comunque ignora ownerId arbitrari sotto scope OWN)
-  protected readonly users = toSignal(
-    this.admin.listUsers().pipe(catchError(() => of(null))),
-    { initialValue: null }
-  );
+  protected readonly users = toSignal(this.admin.listUsers().pipe(catchError(() => of(null))), {
+    initialValue: null,
+  });
 
   protected setOwner(userId: string): void {
     if (!userId) return;
@@ -270,7 +332,7 @@ export class RecordDetail {
   // tutti i tipi, per la select del target (inclusi i disabilitati: un collegamento resta lecito)
   protected readonly allObjects = toSignal(
     this.objectTypeService.load().pipe(catchError(() => of<ObjectType[]>([]))),
-    { initialValue: [] as ObjectType[] }
+    { initialValue: [] as ObjectType[] },
   );
 
   // ricerca del record da collegare: per titolo, dentro il tipo scelto, con debounce
@@ -284,11 +346,11 @@ export class RecordDetail {
         if (!key || q.trim().length < 1) return of<RecordItem[]>([]);
         return this.recordsService.query(key, { q: q.trim(), pageSize: 8 }).pipe(
           map((r) => r.items),
-          catchError(() => of<RecordItem[]>([]))
+          catchError(() => of<RecordItem[]>([])),
         );
-      })
+      }),
     ),
-    { initialValue: [] as RecordItem[] }
+    { initialValue: [] as RecordItem[] },
   );
 
   protected onLinkSearch(q: string): void {
@@ -346,7 +408,7 @@ export class RecordDetail {
         error: () => {
           this.uploading.set(false);
           input.value = '';
-        }
+        },
       });
   }
 
@@ -370,7 +432,7 @@ const HISTORY_LABELS: Record<string, string> = {
   update: 'Modificato',
   delete: 'Eliminato',
   bulk_update: 'Modifica di massa',
-  bulk_delete: 'Eliminazione di massa'
+  bulk_delete: 'Eliminazione di massa',
 };
 
 // dal diff {before, after} dell'audit ricava le chiavi effettivamente cambiate
