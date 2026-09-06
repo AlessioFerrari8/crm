@@ -1,0 +1,102 @@
+<div>
+  <h1 class="text-2xl font-semibold mb-4">Duplicati</h1>
+
+  <div class="flex flex-wrap items-end gap-3 border border-base-300 rounded-sm p-3 mb-4">
+    <div>
+      <label class="block text-sm mb-1" for="dup-object">Modulo</label>
+
+      <select id="dup-object" class="select rounded-sm w-56" [ngModel]="objectKey()"
+        (ngModelChange)="objectKey.set($event)">
+        <option value="">—</option>
+        @for (o of objects(); track o.id) { <option [value]="o.key">{{ o.pluralLabel }}</option> }
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm mb-1" for="dup-threshold">Somiglianza minima</label>
+      <input id="dup-threshold" type="range" min="0.3" max="0.9" step="0.05" class="range range-sm w-48"
+        [ngModel]="threshold()" (ngModelChange)="threshold.set(+$event)" />
+      <span class="text-xs text-base-content/60 ml-2">{{ (threshold() * 100).toFixed(0) }}%</span>
+    </div>
+    <ui-button variant="primary" [disabled]="!objectKey()" (click)="search()">Cerca duplicati</ui-button>
+  </div>
+
+  @if(loading()) {
+  <div class="flex justify-center py-12"><ui-spinner /></div>
+  } @else if (candidates().length === 0) {
+  <p class="text-center py-12 text-base-content/50">Nessun duplicato con questa soglia.</p>
+  } @else {
+  <table class="table table-sm border border-base-300 rounded-sm">
+    <thead>
+      <tr>
+        <th>Record</th>
+        <th>Possibile duplicato</th>
+        <th class="w-24">Somiglianza</th>
+        <th class="w-32"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of candidates(); track c.leftId + c.rightId) {
+      <tr>
+        <td>{{ c.leftTitle }}</td>
+        <td>{{ c.rightTitle }}</td>
+        <td><span class="badge badge-sm rounded-sm">{{ (c.score * 100).toFixed(0) }}%</span></td>
+        <td><ui-button variant="ghost" (click)="compare(c)">Confronta</ui-button></td>
+      </tr>
+      }
+    </tbody>
+  </table>
+  }
+
+  @if (left() && right()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-4xl rounded-sm">
+      <h3 class="font-semibold mb-1">Unisci i due record</h3>
+      <p class="text-xs text-base-content/60 mb-3">
+        Il record scartato finisce nel cestino (recuperabile). Note, tag e collegamenti
+        passano a quello che tieni.
+      </p>
+
+      <div class="flex gap-2 mb-3">
+        <button class="btn btn-sm rounded-sm flex-1" [class.btn-primary]="winnerIsLeft()"
+          (click)="winnerIsLeft.set(true)">Tieni: {{ left()!.title }}</button>
+        <button class="btn btn-sm rounded-sm flex-1" [class.btn-primary]="!winnerIsLeft()"
+          (click)="winnerIsLeft.set(false)">Tieni: {{ right()!.title }}</button>
+      </div>
+
+      <div class="overflow-y-auto max-h-96">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Valore tenuto</th>
+              <th>Valore scartato</th>
+              <th class="w-24"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of fields(); track f.id) {
+            <tr [class.bg-warning]="differs(f)" [class.bg-opacity-10]="differs(f)">
+              <td class="text-base-content/70">{{ f.label }}</td>
+              <td [class.font-medium]="keeps(f) === 'winner'">{{ valueOf(winner(), f) }}</td>
+              <td [class.font-medium]="keeps(f) === 'loser'">{{ valueOf(loser(), f) }}</td>
+              <td>
+                @if (differs(f)) {
+                <button class="btn btn-ghost btn-xs" (click)="toggleField(f.key)">
+                  {{ keeps(f) === 'winner' ? 'usa scartato' : 'annulla' }}
+                </button>
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-action">
+        <ui-button variant="ghost" (click)="closeCompare()">Annulla</ui-button>
+        <ui-button variant="primary" [loading]="merging()" (click)="doMerge()">Unisci</ui-button>
+      </div>
+    </div>
+  </div>
+  }
+</div>

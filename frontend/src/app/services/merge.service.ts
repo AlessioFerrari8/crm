@@ -14,7 +14,7 @@ export interface DuplicateCandidate {
 }
 
 @Service()
-export class MergeServiceTs {
+export class MergeService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/records`;
 
