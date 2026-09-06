@@ -6,9 +6,9 @@ import { CreateTagDto, Tag } from '../models/tag';
 import { RecordItem } from '../models/record';
 
 @Service()
-export class TagServiceTs {
+export class TagService {
   private readonly http = inject(HttpClient);
-  private readonly base = `${API_BASE_URL}/api/records`;
+  private readonly base = `${API_BASE_URL}/api/tags`;
 
   private readonly _all = signal<Tag[]>([]);
   readonly all = this._all.asReadonly();
@@ -39,6 +39,13 @@ export class TagServiceTs {
 
   ofRecord(recordId: string): Observable<Tag[]> {
     return this.http.get<Tag[]>(`${API_BASE_URL}/api/records/${recordId}/tags`);
+  }
+
+  // i tag di più record in una chiamata sola, senza la lista ne farebbe una per riga
+  ofRecords(recordIds: string[]): Observable<Record<string, Tag[]>> {
+    return this.http.get<Record<string, Tag[]>>(`${API_BASE_URL}/api/records/tags`, {
+      params: { ids: recordIds.join(',') },
+    });
   }
 
   // put e non post: attaccare due volte lo stesso tag non è un errore

@@ -1,0 +1,30 @@
+<div class="flex items-center flex-wrap gap-1">
+  @for (t of mine(); track t.id) {
+    <span class="badge badge-sm rounded-sm gap-1"
+        [style.background-color]="t.color ?? undefined"
+        [style.border-color]="t.color ?? undefined">
+      {{ t.name }}
+      <button type="button" class="opacity-60 hover:opacity-100" (click)="detach(t)" aria-label="Togli tag">✕</button>
+    </span>
+  }
+
+  <div class="dropdown dropdown-end">
+    <button type="button" tabindex="0" class="btn btn-ghost btn-xs" (click)="open.set(!open())">+ Tag</button>
+
+    @if (open()) {
+      <div tabindex="0" class="dropdown-content bg-base-100 border border-base-300 rounded-sm z-30 w-56 p-2 shadow">
+        <input class="input input-sm rounded-sm w-full mb-2" placeholder="Nuovo tag..."
+          [ngModel]="newName()" (ngModelChange)="newName.set($event)"
+          (keydown.enter)="createAndAttach()" />
+
+        <ul class="menu menu-sm p-0 max-h-56 overflow-y-auto">
+          @for (t of available(); track t.id) {
+            <li><button type="button" (click)="attach(t)">{{ t.name }}</button></li>
+          } @empty {
+            <li class="text-xs text-base-content/50 px-2 py-1">Nessun altro tag</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+</div>
