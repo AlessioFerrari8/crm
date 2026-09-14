@@ -53,6 +53,17 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // pdf: Thymeleaf rende il template HTML, openhtmltopdf lo stampa
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    // Template non-Spring (PdfTemplateConfig) valuta le espressioni con OGNL
+    implementation 'ognl:ognl:3.3.4'
+    implementation 'io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.28'
+    implementation 'io.github.openhtmltopdf:openhtmltopdf-slf4j:1.1.28'
+
+    // jsoup: openhtmltopdf vuole XML ben formato, l'HTL di un utente non lo è
+    implementation 'org.jsoup:jsoup:1.18.1'
+
 }
 
 tasks.named('test') {
