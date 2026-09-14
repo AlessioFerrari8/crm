@@ -71,6 +71,7 @@ export interface RecordQueryResponse {
   page: number;
   pageSize: number;
   object: ObjectType;
+  relationTitles: Record<string, string>;
 }
 
 // dtos/RecordDetailResponse.java
@@ -78,6 +79,7 @@ export interface RecordDetailResponse {
   record: RecordItem;
   outgoing: RecordLink[];
   incoming: RecordLink[];
+  relationTitles: Record<string, string>;
 }
 
 // dtos/UpsertRecordDto.java

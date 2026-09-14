@@ -70,4 +70,6 @@ public interface RecordRepository extends JpaRepository<Record, UUID> {
               """, nativeQuery = true)
     long countRevisionsOf(@Param("objectTypeId") UUID objectTypeId,
                           @Param("prefix") String prefix);
+
+    Optional<Record> findFirstByObjectType_KeyAndIsDeletedFalseOrderByCreatedAtDesc(String key);
 }

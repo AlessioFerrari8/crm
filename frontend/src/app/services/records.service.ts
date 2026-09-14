@@ -16,6 +16,8 @@ import {
   SearchResult,
   UpsertRecordDto
 } from '../models/record';
+import { tap } from 'rxjs'
+import { mergeRelationTitles } from '../core/field-format';
 
 // CRUD generico sul motore dinamico: {key} seleziona l'ObjectType (records.controller.ts lato
 // backend). Un solo service per tutti i tipi, esattamente come il backend ha un solo controller.
@@ -32,15 +34,18 @@ export class RecordsService {
     if (params.status) httpParams = httpParams.set('status', params.status);
     if (params.page != null) httpParams = httpParams.set('page', params.page);
     if (params.pageSize != null) httpParams = httpParams.set('pageSize', params.pageSize);
-    return this.http.get<RecordQueryResponse>(`${this.base}/${key}`, { params: httpParams });
+    return this.http.get<RecordQueryResponse>(`${this.base}/${key}`, { params: httpParams })
+      .pipe(tap((r) => mergeRelationTitles(r.relationTitles)));
   }
 
   queryAdvanced(key: string, body: QueryRecordsDto): Observable<RecordQueryResponse> {
-    return this.http.post<RecordQueryResponse>(`${this.base}/${key}/query`, body);
+    return this.http.post<RecordQueryResponse>(`${this.base}/${key}/query`, body)
+      .pipe(tap((r) => mergeRelationTitles(r.relationTitles)));
   }
 
   findOne(key: string, id: string): Observable<RecordDetailResponse> {
-    return this.http.get<RecordDetailResponse>(`${this.base}/${key}/${id}`);
+    return this.http.get<RecordDetailResponse>(`${this.base}/${key}/${id}`)
+      .pipe(tap((r) => mergeRelationTitles(r.relationTitles)));
   }
 
   // silentErrors: niente toast automatico sugli errori (per chi li gestisce riga per riga,

@@ -62,6 +62,12 @@ export function formatFieldValue(field: FieldDef, raw: unknown): string {
     case 'FLOAT': return formatNumber(Number(raw), currentPref.currencyDecimals);
     case 'INTEGER':
     case 'BIGINT': return formatNumber(Number(raw), 0);
+    // relation: il valore nel jsonb è un UUID (o una lista di UUID se config.multiple). Il titolo non è nel record
+    // ma arriva già caricato nel dettaglio o va chiesto
+    case 'RELATION': {
+      const ids = Array.isArray(raw) ? raw : [raw];
+      return ids.map((id) => relationTitle(String(id))).join(', ');
+    }
     default:
       return String(raw);
   }
@@ -90,7 +96,7 @@ export function fieldCell(field: FieldDef, raw: unknown): FieldCell {
   return { kind: 'text', text: formatFieldValue(field, raw) };
 }
 
-function formatCurrency(raw: unknown): string {
+export function formatCurrency(raw: unknown): string {
   const n = Number(raw);
   if (Number.isNaN(n)) return String(raw);
   return withSymbol(formatNumber(n, currentPref.currencyDecimals));
@@ -150,3 +156,19 @@ function formatNumber(n: number, decimals: number, pref: UserPreference = curren
   return decPart ? `${sign}${intPart}${pref.decimalSeparator}${decPart}` : `${sign}${intPart}`;
 }
 
+
+// id -> titolo dei record puntati dai campi relation. la riempie records.service.ts a ogni risposta, si accumula e non
+// si svuota mai: è una cache di stringhe corte, e svuoltarla farebbe sfarfallare la lista a ogni cambio pagina
+const relationTitles = new Map<string, string>();
+
+export function mergeRelationTitles(titles: Record<string, string> | undefined): void {
+  if (!titles) return;
+  for (const [id, title] of Object.entries(titles)) {
+    if (title) relationTitles.set(id, title);
+  }
+}
+
+// fallback: le prime otto cifre dell'UUID. Un id accorciato si riconosce come "un id", un id intero sembra un dato
+export function relationTitle(id: string): string {
+  return relationTitles.get(id) ?? `${id.slice(0, 8)}...`;
+}

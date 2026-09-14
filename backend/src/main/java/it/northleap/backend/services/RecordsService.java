@@ -51,6 +51,7 @@ public class RecordsService {
     private final AuditService auditService;
     private final ApplicationEventPublisher events;
     private final DocumentNumberService documentNumberService;
+    private final RelationTitleService relationTitleService;
 
     public RecordQueryResponse query(Actor actor, String key, QueryRecordsDto q) {
         PermScope scope = authorize(actor, key, PermAction.READ);
@@ -58,7 +59,8 @@ public class RecordsService {
         UUID ownerScopeId = actor.type() == ActorType.USER ? actor.id() : null;
 
         RecordQueryService.QueryResult result = recordQueryService.query(obj, q, scope, ownerScopeId);
-        return new RecordQueryResponse(result.items(), result.total(), result.page(), result.pageSize(), obj);
+        return new RecordQueryResponse(result.items(), result.total(), result.page(), result.pageSize(), obj,
+                relationTitleService.titlesFor(obj, result.items()));
     }
 
     public RecordDetailResponse findOne(Actor actor, String key, UUID id) {
@@ -70,7 +72,7 @@ public class RecordsService {
         // i link verso/da record cestinati restano a DB ma non si mostrano (vedi RecordLinkRepository)
         List<RecordLink> outgoing = recordLinkRepository.findBySource_IdAndTarget_IsDeletedFalse(id);
         List<RecordLink> incoming = recordLinkRepository.findByTarget_IdAndSource_IsDeletedFalse(id);
-        return new RecordDetailResponse(record, outgoing, incoming);
+        return new RecordDetailResponse(record, outgoing, incoming, relationTitleService.titlesFor(obj, List.of(record)));
     }
 
     @Transactional
