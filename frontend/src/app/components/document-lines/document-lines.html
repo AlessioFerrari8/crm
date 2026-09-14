@@ -98,8 +98,8 @@
             </select>
           </td>
 
-          <td class="text-right tabular-nums">{{ totalsOf(l).net.toFixed(2) }}</td>
-          <td class="text-right tabular-nums font-medium">{{ totalsOf(l).gross.toFixed(2) }}</td>
+          <td class="text-right tabular-nums">{{ money(totalsOf(l).net) }}</td>
+          <td class="text-right tabular-nums font-medium">{{ money(totalsOf(l).gross) }}</td>
 
           <td>
             @if (!readonlyMode()) {
@@ -126,28 +126,32 @@
   <div class="flex justify-end border-t border-base-300 p-3">
     <dl class="text-sm w-64 space-y-1">
       <div class="flex justify-between">
-        <dt class="text-base-content/60">Imponibile</dt>
-        <dd class="tabular-nums">{{ totals().subtotal.toFixed(2) }}</dd>
+        <dt class="text-base-content/60">Totale righe</dt>
+        <dd class="tabular-nums">{{ money(totals().subtotal) }}</dd>
       </div>
-      <div class="flex justify-between">
-        <dt class="text-base-content/60">IVA</dt>
-        <dd class="tabular-nums">{{ totals().vatTotal.toFixed(2) }}</dd>
-      </div>
-      @if (documentDiscount()) {
-      <div class="flex justify-between">
-        <dt class="text-base-content/60">Sconto documento</dt>
-        <dd class="tabular-nums">- {{ documentDiscount().toFixed(2) }}</dd>
-      </div>
+      @if(documentDiscount()) {
+        <div class="flex justify-between">
+          <dt class="text-base-content/60">Sconto documento</dt>
+          <dd class="tabular-nums">- {{ money(documentDiscount()) }}</dd>
+        </div>
       }
       @if (shippingCost()) {
       <div class="flex justify-between">
         <dt class="text-base-content/60">Trasporto</dt>
-        <dd class="tabular-nums">{{ shippingCost().toFixed(2) }}</dd>
+        <dd class="tabular-nums">{{ money(shippingCost()) }}</dd>
       </div>
       }
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">Imponibile</dt>
+        <dd class="tabular-nums">{{ money(totals().taxable) }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-base-content/60">IVA</dt>
+        <dd class="tabular-nums">{{ money(totals().vatTotal) }}</dd>
+      </div>
       <div class="flex justify-between border-t border-base-300 pt-1 font-semibold">
         <dt>Totale</dt>
-        <dd class="tabular-nums">{{ totals().total.toFixed(2) }}</dd>
+        <dd class="tabular-nums">{{ money(totals().total) }}</dd>
       </div>
     </dl>
   </div>

@@ -16,6 +16,7 @@ import { ToastService } from '../../services/toast.service';
 import { DocumentLineDto, LineDraft } from '../../models/document-line';
 import { catchError, debounceTime, of, Subject, switchMap } from 'rxjs';
 import { documentTotals, lineTotals } from '../../core/money';
+import { formatCurrency } from '../../core/field-format';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '../ui/button';
@@ -231,6 +232,11 @@ export class DocumentLines {
         },
         error: () => this.saving.set(false),
       });
+  }
+
+  // money.ts calcola, field-format.ts formatta
+  protected money(n: number): string {
+    return formatCurrency(n);
   }
 }
 

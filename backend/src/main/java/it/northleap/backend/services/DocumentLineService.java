@@ -1,6 +1,7 @@
 package it.northleap.backend.services;
 
 import it.northleap.backend.dtos.DocumentLineDto;
+import it.northleap.backend.dtos.DocumentTotals;
 import it.northleap.backend.entities.DocumentLine;
 import it.northleap.backend.entities.Record;
 import it.northleap.backend.exceptions.NotFoundException;
@@ -31,6 +32,7 @@ public class DocumentLineService {
     private final RecordRepository recordRepository;
     private final DocumentLineCalculator documentLineCalculator;
     private final RbacService rbacService;
+    private final DocumentTotalService documentTotalService;
 
     public List<DocumentLine> list(Actor actor, UUID documentId) {
         assertPerm(actor, documentId, PermAction.READ);
@@ -82,38 +84,22 @@ public class DocumentLineService {
         return saved;
     }
 
-    // I totali finiscono dentro Record.data del documento: devono essere colonne di lista filtrabili e
-    // ordinabili ("Totale parziale", "Sub totale" negli screenshot).
+    // I totali li calcola DocumentTotalService e basta: sono gli stessi numeri che finiscono nel PDF
+    // e, domani, nell'XML della fattura elettronica. Qui si persistono soltanto dentro Record.data,
+    // per avere colonne di lista filtrabili e ordinabili ("Totale parziale", "Sub totale").
     // Ricalcolati a ogni salvataggio delle righe
     private void writeTotals(Record document, List<DocumentLine> lines) {
-        BigDecimal subtotal = lines.stream().map(DocumentLine::getNetTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal vatTotal = lines.stream().map(DocumentLine::getVatTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        DocumentTotals totals = documentTotalService.compute(document, lines);
 
         Map<String, Object> data = new LinkedHashMap<>(
                 document.getData() != null ? document.getData() : Map.of());
 
-        // sconto e trasporto a livello documento: li scrive l'utente sulla testata,
-        // qui li rileggo per il totale finale
-        BigDecimal docDiscount = decimal(data.get("discountTotal"));
-        BigDecimal shipping = decimal(data.get("shippingCost"));
-
-        data.put("subtotal", subtotal);
-        data.put("vatTotal", vatTotal);
-        data.put("total", subtotal.subtract(docDiscount).add(vatTotal).add(shipping));
+        data.put("subtotal", totals.linesNet());
+        data.put("vatTotal", totals.vat());
+        data.put("total", totals.total());
 
         document.setData(data);
         recordRepository.save(document);
-    }
-
-    private BigDecimal decimal(Object raw) {
-        if (raw == null) return BigDecimal.ZERO;
-        try {
-            return new BigDecimal(String.valueOf(raw));
-        } catch (NumberFormatException e) {
-            return BigDecimal.ZERO;
-        }
     }
 
     // usata dalle revisioni e dalla conversione preventivo
