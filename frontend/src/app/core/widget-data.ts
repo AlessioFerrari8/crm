@@ -1,4 +1,4 @@
-import { DestroyRef, inject, signal, WritableSignal } from '@angular/core';
+import { DestroyRef, effect, inject, signal, WritableSignal } from '@angular/core';
 import { ReportQuery, ReportResult } from '../models/report';
 import { ReportService } from '../services/report.service';
 import { catchError, of } from 'rxjs';
@@ -19,19 +19,21 @@ export function loadWidget(query: () => ReportQuery) {
   const loading: WritableSignal<boolean> = signal(true);
   const failed: WritableSignal<boolean> = signal(false);
 
-  reports
-    .preview(query())
-    .pipe(
-      catchError(() => {
-        failed.set(true);
-        return of(null);
-      }),
-      takeUntilDestroyed(destroyRef),
-    )
-    .subscribe((r) => {
-      result.set(r);
-      loading.set(false);
-    });
+  // niente chiamate qui: siamo nell'inizializzazione di campo del componente, gli input non sono ancora
+  // assegnati. L'effect parte dopo
+  effect((onCleanup) => {
+    const q = query();
+    if (!q) return;
+    loading.set(true);
+    failed.set(false);
+    const sub = reports.preview(q)
+      .pipe(
+        catchError(() => { failed.set(true); return of(null); }),
+        takeUntilDestroyed(destroyRef),
+      )
+      .subscribe((r) => { result.set(r); loading.set(false); });
+    onCleanup(() => sub.unsubscribe());
+  });
 
   return { result, loading, failed };
 }

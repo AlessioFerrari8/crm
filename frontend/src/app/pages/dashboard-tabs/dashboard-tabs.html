@@ -1,1 +1,69 @@
-<p>dashboard-tabs works!</p>
+<div>
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-semibold">{{ current()?.name ?? 'Dashboard' }}</h1>
+          @if (list().length > 1) {
+            <select class="select select-sm rounded-sm"
+                    [ngModel]="current()?.id" (ngModelChange)="open($event)">
+              @for (d of list(); track d.id) { <option [value]="d.id">{{ d.name }}</option> }
+            </select>
+          }
+        </div>
+        <div class="flex gap-2">
+          <ui-button variant="ghost" (click)="editing.set(!editing())">
+            {{ editing() ? 'Fine' : 'Modifica' }}
+          </ui-button>
+          <ui-button variant="ghost" (click)="createDashboard()">+ Dashboard</ui-button>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <div class="flex justify-center py-12"><ui-spinner /></div>
+      } @else if (!current()) {
+        <p class="text-center py-12 text-base-content/50">Nessuna dashboard. Creane una.</p>
+      } @else {
+        <div role="tablist" class="tabs tabs-bordered mb-4">
+          @for (t of current()!.tabs; track t.id) {
+            <button role="tab" class="tab" [class.tab-active]="activeTab()?.id === t.id"
+                    (click)="activeTabId.set(t.id)">
+              {{ t.label }}
+              @if (editing()) {
+                <span class="ml-1 text-error" (click)="removeTab(t.id); $event.stopPropagation()">✕</span>
+              }
+            </button>
+          }
+          @if (editing()) {
+            <span class="flex items-center gap-1 ml-2">
+              <input class="input input-xs rounded-sm w-32" placeholder="Nuovo tab"
+                     [ngModel]="newTabLabel()" (ngModelChange)="newTabLabel.set($event)"
+                     (keydown.enter)="addTab()" />
+            </span>
+          }
+        </div>
+
+        @if (activeTab(); as tab) {
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            @for (w of tab.widgets; track w.id) {
+              <div [class]="spanClass(w.gridSpan)" class="relative">
+                @if (editing()) {
+                  <button class="btn btn-ghost btn-xs absolute right-1 top-1 z-10 text-error"
+                          (click)="removeWidget(w.id)" aria-label="Elimina widget">✕</button>
+                }
+                @switch (w.kind) {
+                  @case ('KPI')         { <app-kpi-tile [widget]="w" /> }
+                  @case ('KPI_SPLIT')   { <app-kpi-split-tile [widget]="w" /> }
+                  @case ('CHART')       { <app-chart-widget [widget]="w" /> }
+                  @case ('TABLE')       { <app-table-widget [widget]="w" /> }
+                  @case ('PIVOT')       { <app-pivot-widget [widget]="w" /> }
+                  @case ('RECORD_LIST') { <app-record-list-widget [widget]="w" /> }
+                }
+              </div>
+            } @empty {
+              <p class="lg:col-span-4 text-center py-12 text-base-content/50">
+                Tab vuoto. I widget si aggiungono dalla pagina Report con "Aggiungi alla dashboard".
+              </p>
+            }
+          </div>
+        }
+      }
+    </div>
