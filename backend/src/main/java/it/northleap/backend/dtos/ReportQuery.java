@@ -9,7 +9,7 @@ public record ReportQuery(
         List<Dimension> columns,    // raggruppamenti di colonna (= pivot, se non vuoto)
         List<Metric> metrics,   // cosa si calcola
         String orderBy, // chiave di ordinamento del risultato
-        boolean orderDesc,
+        Boolean orderDesc,
         Integer limit
 ) {
 
@@ -26,4 +26,9 @@ public record ReportQuery(
     public record Metric(Aggregate aggregate, String field, String secondField, String label) {}
 
     public enum Aggregate { COUNT, SUM, AVG, MIN, MAX, AVG_DAYS_BETWEEN }
+
+    // accessor difensivo: chi legge non deve sapere che può essere null
+    public boolean orderDescOrDefault() {
+        return Boolean.TRUE.equals(orderDesc);
+    }
 }

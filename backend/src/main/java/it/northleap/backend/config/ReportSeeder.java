@@ -12,10 +12,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
-// @Order dopo i seeder esistenti (1 Role, 2 ObjectType, 3 Permission, 4 Workflow)
+// @Order dopo i seeder esistenti (1 Role, 2 ObjectType, 3 Permission, 4 Workflow,
+// 5 Inventory, 6 PdfTemplate)
 // idempotente sul titolo, al riavvio non duplica e un report che l'utente ha cancellato apposta non torna in vita
 @Component
-@Order(6)
+@Order(7)
 @RequiredArgsConstructor
 public class ReportSeeder implements ApplicationRunner {
 
@@ -48,14 +49,16 @@ public class ReportSeeder implements ApplicationRunner {
                 Map.of("objectKey", "opportunity",
                         "rows", List.of(dim("stage", "NONE")),
                         "metrics", List.of(metric("COUNT", null, null, "Numero"),
-                                metric("SUM", "amount", null, "Importo"))));
+                                metric("SUM", "amount", null, "Importo")),
+                        "orderDesc", false));
 
         seed("OPPORTUNITA' - Stadio per mese di chiusura attesa", Report.ReportRender.GRID, "opportunity", "Vendite",
                 Map.of("objectKey", "opportunity",
                         "rows", List.of(dim("stage", "NONE")),
                         "columns", List.of(dim("closeDate", "MONTH")),
                         "metrics", List.of(metric("COUNT", null, null, "Numero"),
-                                metric("SUM", "amount", null, "Importo"))));
+                                metric("SUM", "amount", null, "Importo")),
+                        "orderDesc", false));
 
         seed("LEAD - Per fonte", Report.ReportRender.PIE, "lead", "Vendite",
                 Map.of("objectKey", "lead",

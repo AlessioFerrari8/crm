@@ -123,7 +123,7 @@ public class ReportEngine {
             sql.append(" group by ").append(String.join(", ", groups));
         }
         sql.append(" order by ").append(orderByClause(query, dims.size(), metrics));
-        // il cap a 500 resta: un report che ne vuoel di più è un export, non un report
+        // Un report che ne vuole di più è un export, non un report
         sql.append(" limit ").append(query.limit() != null ? Math.min(query.limit(), 5000) : 5000);
 
         Query q = entityManager.createNativeQuery(sql.toString());
@@ -141,7 +141,7 @@ public class ReportEngine {
     // mai fatturato"
     // formato accettato in orderBy: "dim0", "dim1", "met0", null = prima colonna
     private String orderByClause(ReportQuery query, int dimCount, List<ReportQuery.Metric> metrics) {
-        String dir = query.orderDesc() ? "desc" : "asc";
+        String dir = query.orderDescOrDefault() ? "desc" : "asc";
         String key = query.orderBy();
 
         if (key == null || key.isBlank()) return "1 " + dir;
