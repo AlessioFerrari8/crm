@@ -47,8 +47,9 @@ public class DocumentLine {
 
     // copiata dall'articolo ma modificabile: il documento deve restare uguale a se stesso
     // anche se domani il catalogo cambia descrizione
-    @Column(nullable = false, length = 200)
-    @Size(max = 2000) String description;
+    @Column(nullable = false, length = 2000)
+    @Size(max = 2000)
+    private String description = "";
 
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity = BigDecimal.ONE;
