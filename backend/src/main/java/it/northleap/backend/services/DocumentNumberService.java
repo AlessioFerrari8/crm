@@ -21,7 +21,13 @@ public class DocumentNumberService {
 
     private final DocumentSequenceRepository documentSequenceRepository;
 
-    // REQUIRES_NEW: il numero si consuma anche se la transazione chiamante fallisce dopo
+    // REQUIRES_NEW: il contatore dev'essere immune al rollback di chi lo chiama, altrimenti due
+    // creazioni simultanee prendono lo stesso numero. Il prezzo e' che il numero si consuma anche
+    // se la create() fallisce dopo, cioe' la numerazione puo' avere dei BUCHI.
+    // NON "CORREGGERE" QUESTO, e' voluto: su preventivi, ordini e DDT i buchi sono ammessi.
+    // Le FATTURE no - il fisco le vuole senza buchi - ma la soluzione non e' togliere
+    // REQUIRES_NEW: e' assegnare il numero al momento dell'EMISSIONE (quando la fattura diventa
+    // immutabile) e dentro quella stessa transazione. Lo fara' la fatturazione elettronica.
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String next(ObjectType objectType) {
         if (objectType.getNumberingField() == null) return null;
