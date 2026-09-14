@@ -17,8 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -150,4 +150,29 @@ public class TagService {
             throw new RbacDeniedException("Not allowed to manage shared tags");
         }
     }
+
+    // versione in blocco di `ofRecord()`: stessi due controlli, ma il permesso si risolve una volta per modulo
+    // e non una per record, sennò la lista da 200 righe diventa 200 righi di RBAC
+    @Transactional(readOnly = true)
+    public Map<UUID, List<Tag>> ofRecords(Actor actor, Collection<UUID> recordIds) {
+        if (recordIds == null || recordIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Boolean> allowedByObject = new HashMap<>();
+
+        return recordTagRepository.findByRecordIdIn(recordIds).stream()
+                // RBAC per modulo, memorizzato: un tag attraversa i moduli e
+                // l'utente potrebbe vedere i ticket ma non le opportunità
+                .filter(rt -> allowedByObject.computeIfAbsent(
+                        rt.getRecord().getObjectType().getKey(),
+                        key -> rbacService.resolve(actor.roleIds(), key, PermAction.READ).allowed()))
+                // i tag privati di altri utenti non devono comparire (come in ofRecord)
+                .filter(rt -> rt.getTag().getOwnerId() == null
+                        || rt.getTag().getOwnerId().equals(actor.id()))
+                .collect(Collectors.groupingBy(
+                        rt -> rt.getRecord().getId(),
+                        Collectors.mapping(RecordTag::getTag, Collectors.toList())));
+    }
+
 }

@@ -143,6 +143,7 @@
                 }
               </th>
             }
+            <th>Tag</th>
           </tr>
         </thead>
         <tbody>
@@ -173,6 +174,15 @@
                   }
                 </td>
               }
+            <td>
+              @for (t of tagsByRecord()[rec.id] ?? []; track t.id) {
+                <span class="badge badge-sm rounded-sm mr-1"
+                  [class.badge-ghost]="!t.color"
+                  [style.background-color]="t.color || null"
+                  [style.border-color]="t.color || null"
+                  [style.color]="t.color ? 'white' : null">{{ t.name }}</span>
+              }
+            </td>
             </tr>
           }
         </tbody>

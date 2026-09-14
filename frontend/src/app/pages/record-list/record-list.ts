@@ -46,6 +46,8 @@ import {
   Search,
   Trash2
 } from 'lucide-angular';
+import { Tag } from '../../models/tag';
+import { TagService } from '../../services/tag.service'
 
 type RecordView = 'table' | 'board' | 'calendar';
 
@@ -78,6 +80,7 @@ export class RecordList {
   private readonly title = inject(Title);
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly tagService = inject(TagService);
 
   protected readonly loading: WritableSignal<boolean> = signal(true);
   protected readonly drawerOpen: WritableSignal<boolean> = signal(false);
@@ -225,6 +228,22 @@ export class RecordList {
   protected readonly records = computed(() => this.result()?.items ?? []);
   protected readonly total = computed(() => this.result()?.total ?? 0);
   protected readonly formFields = computed<FieldDef[]>(() => this.object()?.fields ?? []);
+
+  // I tag della pagina corrente in una chiamata sola. L'aggancio è su records(), cioè sulla pagina:
+  // agganciarlo alla riga vorrebbe dire 200 richieste. switchMap perché sfogliando in fretta le risposte
+  // tornano fuori ordine, e senza anullamento la mappa vecchia sovrascriverebbe quella nuova
+  protected readonly tagsByRecord = toSignal(
+    toObservable(this.records).pipe(
+      map((rows) => rows.map((r) => r.id)),
+      distinctUntilChanged((a, b) => a.length === b.length && a.every((id, i) => id === b[i])),
+      switchMap((ids) =>
+        ids.length === 0
+          ? of<Record<string, Tag[]>>({})
+          : this.tagService.ofRecords(ids).pipe(catchError(() => of<Record<string, Tag[]>>({})))
+      )
+    ),
+    { initialValue: {} as Record<string, Tag[]> }
+  );
 
   // colonne: i field con showInList, fallback ai primi 6 (stesso criterio dell'originale)
   protected readonly columns = computed<FieldDef[]>(() => {

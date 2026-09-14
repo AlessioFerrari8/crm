@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import it.northleap.backend.entities.Record;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,4 +24,15 @@ public interface RecordTagRepository extends JpaRepository<RecordTag, UUID> {
 
     // cancellare il tag porta via le associazioni: sono etichette, non dati del record
     void deleteByTagId(UUID tagId);
+
+    // i tag di N record in un colpo solo: il join fetch è obbligatorio, senza quello
+    // rt.getTag() è lazy e ti ritrovi una select per riga
+    @Query("""
+        select rt from RecordTag rt
+            join fetch rt.tag
+            join fetch rt.record r
+            join fetch r.objectType
+        where rt.record.id in :ids and r.isDeleted = false
+        """)
+    List<RecordTag> findByRecordIdIn(@Param("ids") Collection<UUID> ids);
 }
