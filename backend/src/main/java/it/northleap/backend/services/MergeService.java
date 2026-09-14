@@ -168,7 +168,7 @@ public class MergeService {
     }
 
     private Record load(Actor actor, UUID id) {
-        Record record = recordRepository.findById(id)
+        Record record = recordRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Record not found"));
 
         if (!rbacService.resolve(actor.roleIds(), record.getObjectType().getKey(), PermAction.WRITE).allowed()) {
