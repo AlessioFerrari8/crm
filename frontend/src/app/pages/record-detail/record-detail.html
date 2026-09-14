@@ -31,6 +31,10 @@
         <ui-button variant="danger" (click)="remove()">Elimina</ui-button>
       </div>
 
+      @if(printable()) {
+        <ui-button variant="ghost" [loading]="printing()" (click)="print()">Stampa PDF</ui-button>
+      }
+
       @if(isQuote()) {
         <ui-button variant="ghost" (click)="revise()">Nuova revisione</ui-button>
         <ui-button variant="accent" [loading]="converting()" (click)="convertToOrder()">Converti in ordine</ui-button>

@@ -43,6 +43,7 @@ import { DocumentLines } from '../../components/document-lines/document-lines';
 import { TagPicker } from '../../components/tag-picker/tag-picker';
 import { DOCUMENT_KEYS } from '../../models/document-line';
 import { DocumentLineService } from '../../services/document-line.service';
+import { PdfService } from '../../services/pdf.service';
 
 @Component({
   selector: 'app-record-detail',
@@ -64,6 +65,7 @@ export class RecordDetail {
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly lineService = inject(DocumentLineService);
+  private readonly pdf = inject(PdfService);
 
   // NON readonly: navigando verso un altro record della stessa route (duplica, link tra record)
   // Angular riusa il componente, la subscription a paramMap nel costruttore aggiorna questi
@@ -75,6 +77,10 @@ export class RecordDetail {
   // risponderebbe comunque vuoto
   protected readonly hasLines = computed(() => DOCUMENT_KEYS.includes(this.objectKey));
   protected readonly isQuote = computed(() => this.objectKey === 'quote');
+
+  protected readonly printable = computed(() => ['quote', 'sales_order', 'delivery_note', 'invoice']
+    .includes(this.record()?.objectType?.key ?? ''));
+  protected readonly printing: WritableSignal<boolean> = signal(false);
 
   protected numberOf(key: string): number {
     return Number(this.record()?.data?.[key] ?? 0) || 0;
@@ -422,6 +428,26 @@ export class RecordDetail {
           this.toasts.success('Record eliminato');
           this.router.navigate(['/o', this.objectKey]);
         });
+    });
+  }
+
+  protected print(): void {
+    const id = this.record()?.id;
+    if (!id) return;
+    this.printing.set(true);
+    this.pdf.print(id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.record()?.data?.['number'] ?? 'documento'}.pdf`;
+        a.click();
+        // senza revoke ogni stampa lascia un blob in memoria finché non ricarichi la pagina
+        // Il setTimeout serve perché revocare nell'istante il click annulla il download su Firefox
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.printing.set(false);
+      },
+      error: () => this.printing.set(false),
     });
   }
 }
