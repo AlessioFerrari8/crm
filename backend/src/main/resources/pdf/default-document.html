@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        /* @Page lo aggiunge il renderer da pageSize/marginMm */
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 9pt; color: #111; }
+        .head { width: 100%; }
+        .head td { vertical-align: top; }
+        .logo { max-height: 70px; }
+        .company { font-size: 8pt; line-height: 1.35; }
+        .customer { border: 1px solid #ddd; padding: 8px; font-size: 9pt; line-height: 1.35; white-space: pre-line; }
+        h1 { font-size: 15pt; margin: 18px 0 2px 0; letter-spacing: .5px; }
+        .meta { font-size: 9pt; color: #444; margin-bottom: 14px; }
+
+        table.lines { width: 100%; border-collapse: collapse; margin-top: 6px;
+            -fs-table-paginate: paginate; }
+        table.lines th { background: #f2f2f2; border-bottom: 1px solid #999;
+            padding: 5px 4px; text-align: left; font-size: 8pt; }
+        table.lines td { border-bottom: 1px solid #eee; padding: 5px 4px;
+            font-size: 8.5pt; }
+        /* senza questa riga un documento di tre pagine ha le intestazioni di colonna solo
+           sulla prima. È una riga di CSS e si dimentica sempre. */
+        table.lines thead { display: table-header-group; }
+        .num { text-align: right; white-space: nowrap; }
+        .text-line td { border-bottom: none; font-style: italic; color: #444; }
+
+        table.totals { margin-top: 14px; width: 46%; float: right;
+            border-collapse: collapse; }
+        table.totals td { padding: 3px 4px; font-size: 9pt; }
+        table.totals tr.grand td { border-top: 1.5px solid #333; font-size: 11pt;
+            font-weight: bold; padding-top: 6px; }
+        table.vat { margin-top: 14px; width: 50%; border-collapse: collapse;
+            font-size: 8pt; }
+        table.vat th, table.vat td { border: 1px solid #ddd; padding: 3px 4px; }
+        .notes { clear: both; padding-top: 26px; font-size: 8.5pt;
+            white-space: pre-line; }
+    </style>
+</head>
+<body>
+    <table class="head">
+        <tr>
+            <td style="width:55%">
+                <img class="logo" th:if="${company.hasLogo}" th:src="${company.logoDataUri}" alt="" />
+                <div class="company">
+                    <strong th:text="${company.name}">Azienda</strong><br />
+                    <span th:text="${company.address}" style="white-space: pre-line"></span><br />
+                    <span th:if="${!#strings.isEmpty(company.vatNumber)}"
+                          th:text="'P.IVA ' + ${company.vatNumber}"></span>
+                    <span th:if="${!#strings.isEmpty(company.taxCode)}"
+                          th:text="' - C.F. ' + ${company.taxCode}"></span><br />
+                    <span th:text="${company.contactLine}"></span>
+                </div>
+            </td>
+            <td style="width:45%">
+                <div class="customer">
+                    <strong th:text="${doc.customerName}">Cliente</strong><br />
+                    <span th:text="${doc.customerBlock}"></span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <h1 th:text="${doc.typeLabel} + ' n. ' + ${doc.number}">Preventivo n. 2026-3</h1>
+    <div class="meta">
+        <span th:text="'Data: ' + ${doc.date}"></span>
+        <span th:if="${!#strings.isEmpty(doc.fields['reference'])}"
+              th:text="' - Rif. ' + ${doc.fields['reference']}"></span>
+    </div>
+
+    <table class="lines">
+        <thead>
+        <tr>
+            <th style="width:4%">#</th>
+            <th style="width:40%">Descrizione</th>
+            <th style="width:10%" class="num">Q.ta</th>
+            <th style="width:14%" class="num">Prezzo</th>
+            <th style="width:10%" class="num">Sconto</th>
+            <th style="width:8%" class="num">IVA</th>
+            <th style="width:14%" class="num">Importo</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="l : ${lines}" th:classappend="${l.text} ? 'text-line' : ''">
+            <td th:text="${l.text} ? '' : ${l.lineNo}"></td>
+            <td>
+              <span th:if="${!#strings.isEmpty(l.productCode)}"
+                    th:text="${l.productCode} + ' - '"></span>
+                <span th:text="${l.description}"></span>
+            </td>
+            <td class="num" th:text="${l.quantity} + ' ' + ${l.unit}"></td>
+            <td class="num" th:text="${l.unitPrice}"></td>
+            <td class="num" th:text="${l.discount}"></td>
+            <td class="num" th:text="${l.vatPercent}"></td>
+            <td class="num" th:text="${l.netTotal}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td>Totale imponibile righe</td>
+            <td class="num" th:text="${totals.linesNet}"></td>
+        </tr>
+        <tr th:if="${totals.hasDiscount}">
+            <td>Sconto</td>
+            <td class="num" th:text="'-' + ${totals.headerDiscount}"></td>
+        </tr>
+        <tr th:if="${totals.hasShipping}">
+            <td>Spese di trasporto</td>
+            <td class="num" th:text="${totals.shipping}"></td>
+        </tr>
+        <tr>
+            <td>Imponibile</td>
+            <td class="num" th:text="${totals.taxable}"></td>
+        </tr>
+        <tr>
+            <td>IVA</td>
+            <td class="num" th:text="${totals.vat}"></td>
+        </tr>
+        <tr class="grand">
+            <td>TOTALE</td>
+            <td class="num" th:text="${totals.total}"></td>
+        </tr>
+    </table>
+
+    <table class="vat">
+        <thead>
+        <tr><th>Aliquota</th><th class="num">Imponibile</th><th class="num">Imposta</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="v : ${totals.vatRows}">
+            <td th:text="${v.vatPercent}"></td>
+            <td class="num" th:text="${v.taxable}"></td>
+            <td class="num" th:text="${v.vat}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="notes">
+        <div th:if="${!#strings.isEmpty(doc.paymentTerms)}">
+            <strong>Condizioni di pagamento:</strong>
+            <span th:text="${doc.paymentTerms}"></span>
+        </div>
+        <div th:if="${!#strings.isEmpty(doc.notes)}" th:text="${doc.notes}"></div>
+    </div>
+
+</body>
+</html>
