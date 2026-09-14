@@ -124,7 +124,10 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("quoteDate", "Data preventivo", FieldType.DATE),
                     f("subtotal", "Totale parziale", FieldType.CURRENCY),
                     f("discountTotal", "Sconto", FieldType.CURRENCY),
+                    f("shippingCost", "Spese di trasporto", FieldType.CURRENCY),
                     f("vatTotal", "IVA", FieldType.CURRENCY),
+                    f("notes", "Note", FieldType.LONGTEXT),
+                    f("paymentTerms", "Condizioni di pagamento", FieldType.TEXT),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
                     f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
             ), new NumberingSpec("number", null, true, 0, "-")),
@@ -218,8 +221,15 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fRelation("company", "Nome azienda", Map.of("targetObject", "company", "multiple", false)),
                     fRelation("salesOrder", "Ordine", Map.of("targetObject", "sales_order", "multiple", false)),
                     fRelation("paymentMethod", "Modalità di pagamento", Map.of("targetObject", "payment_method", "multiple", false)),
+                    f("shippingCost", "Spese di trasporto", FieldType.CURRENCY),
                     f("subtotal", "Imponibile", FieldType.CURRENCY),
+                    // senza questi due RecordValidator li butta via al primo salvataggio dalla UI:
+                    // tiene solo le chiavi dichiarate, e writeTotals invece li scrive
+                    f("discountTotal", "Sconto", FieldType.CURRENCY),
+                    f("total", "Totale", FieldType.CURRENCY),
                     f("vatTotal", "IVA", FieldType.CURRENCY),
+                    f("notes", "Note", FieldType.LONGTEXT),
+                    f("paymentTerms", "Condizioni di pagamento", FieldType.TEXT),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT)
             ), new NumberingSpec("number", "FT", true, 4, "-")),
             new ObjectSpec("payment", "Pagamento", "Pagamenti", "credit-card", "#16A34A", List.of(
@@ -257,9 +267,12 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     // totali persistiti, ricalcolati dal service delle righe
                     // devono essere colonne di lista filtrabili e ordinabili
                     f("subtotal", "Sub totale", FieldType.CURRENCY),
+                    f("shippingCost", "Spese di trasporto", FieldType.CURRENCY),
                     f("discountTotal", "Sconto", FieldType.CURRENCY),
                     f("vatTotal", "IVA", FieldType.CURRENCY),
                     f("total", "Totale", FieldType.CURRENCY),
+                    f("notes", "Note", FieldType.LONGTEXT),
+                    f("paymentTerms", "Condizioni di pagamento", FieldType.TEXT),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
                     f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
             )),
@@ -272,8 +285,11 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fOpts("status", "Stato", FieldType.STATUS, false, List.of(
                             opt("draft", "Bozza"), opt("shipped", "Spedito"), opt("delivered", "Consegnato"))),
                     f("carrier", "Vettore", FieldType.TEXT),
+                    f("shippingCost", "Spese di trasporto", FieldType.CURRENCY),
                     f("packages", "Colli", FieldType.INTEGER),
                     f("weight", "Peso (kg)", FieldType.DECIMAL),
+                    f("notes", "Note", FieldType.LONGTEXT),
+                    f("paymentTerms", "Condizioni di pagamento", FieldType.TEXT),
                     f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT),
                     f("reason", "Causale trasporto", FieldType.TEXT)
             )),
