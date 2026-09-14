@@ -16,7 +16,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-@Order(3)
+@Order(5)
 public class InventorySeeder implements ApplicationRunner {
 
     // inject
