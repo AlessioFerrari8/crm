@@ -88,6 +88,12 @@ public class ReportService {
         return reportEngine.run(query);
     }
 
+    // overload
+    public ReportResult preview(Actor actor, ReportQuery query) {
+        assertCanRead(actor, query.objectKey());
+        return reportEngine.run(query);
+    }
+
     // export/import, il JSON della definizione. Serve a portarsi i report da un'installazione
     // all'altra
     public Map<String, Object> export(Actor actor, UUID id) {

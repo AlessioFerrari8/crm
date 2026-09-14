@@ -2,12 +2,14 @@ package it.northleap.backend.controllers;
 
 
 import it.northleap.backend.dtos.CreateReportDto;
+import it.northleap.backend.dtos.ReportQuery;
 import it.northleap.backend.dtos.ReportResult;
 import it.northleap.backend.entities.Report;
 import it.northleap.backend.security.Actor;
 import it.northleap.backend.security.CurrentActor;
 import it.northleap.backend.security.PermAction;
 import it.northleap.backend.security.RequirePerm;
+import it.northleap.backend.services.ReportEngine;
 import it.northleap.backend.services.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportService reportService;
+    private final ReportEngine reportEngine;
 
     @GetMapping
     @RequirePerm(resource = "chart", action = PermAction.READ)
@@ -82,5 +85,13 @@ public class ReportController {
     @RequirePerm(resource = "chart", action = PermAction.WRITE)
     public ResponseEntity<Report> importDefinition(@CurrentActor Actor actor, @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(reportService.importDefinition(actor, body));
+    }
+
+    // esegue una query non salvata: anteprima del wizard e motore dei widget
+    // Un widget è un report non salvato, con un rendering diverso
+    @PostMapping("/run")
+    @RequirePerm(resource = "chart", action = PermAction.READ)
+    public ResponseEntity<ReportResult> runAdhoc(@CurrentActor Actor actor, @Valid @RequestBody ReportQuery query) {
+        return ResponseEntity.ok(reportService.preview(actor, query));
     }
 }
