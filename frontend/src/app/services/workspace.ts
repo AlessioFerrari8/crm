@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, Service, signal, WritableSignal } from '@angular/core';
 import { catchError, Observable, of, tap } from 'rxjs';
 import { API_BASE_URL } from '../core/api-config';
-import { IWorkspace, IWorkspaceProfile } from '../models/IWorkspace';
+import { IWorkspace, IWorkspaceProfile, IWorkspaceUpdate } from '../models/IWorkspace';
 
 @Service()
 export class Workspace {
@@ -35,12 +35,12 @@ export class Workspace {
         );
     }
 
-    // aggiorna i campi brand (nome/colore/logo/link Cal.com). Aggiorna il signal brand -> la
-    // topbar e la pagina Calendario reagiscono.
-    updateBrand(payload: { name: string; brandColor: string; logoUrl: string | null; calcomUrl?: string }): Observable<IWorkspace> {
-        return this.http.patch<IWorkspace>(`${API_BASE_URL}/api/workspace`, payload).pipe(
-            tap((ws) => this._workspace.set(ws))
-        );
+    // brand + anagrafica fiscale. La risposta è la sola vista brand: aggiorna il signal della topbar
+    // I campi fiscali si rileggono da loadProfile()
+    updateCompany(payload: IWorkspaceUpdate): Observable<IWorkspace> {
+      return this.http.patch<IWorkspace>(`${API_BASE_URL}/api/workspace`, payload).pipe(
+        tap((ws) => this._workspace.set(ws))
+      );
     }
 
 }

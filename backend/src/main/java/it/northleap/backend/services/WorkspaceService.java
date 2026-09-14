@@ -28,13 +28,15 @@ public class WorkspaceService {
     // vista profilo (solo admin): per ora i campi brand, la Fase 1 vi aggiungera' l'anagrafica org
     public WorkspaceProfileResponse getProfile() {
         Workspace ws = currentWorkspace();
-        return new WorkspaceProfileResponse(ws.getName(), ws.getBrandColor(), ws.getLogoUrl(), ws.getCalcomUrl());
+        return new WorkspaceProfileResponse(ws.getName(), ws.getBrandColor(), ws.getLogoUrl(), ws.getCalcomUrl(),
+                ws.getLegalName(), ws.getVatNumber(), ws.getTaxCode(), ws.getAddress(), ws.getContactLine());
     }
 
     @Transactional
     public WorkspaceBrandResponse update(UpdateWorkspaceDto dto) {
         Workspace workspace = currentWorkspace();
         workspace.setName(dto.getName());
+
         // brandColor/logoUrl: aggiornati solo se forniti, altrimenti restano com'erano
         if (dto.getBrandColor() != null) {
             workspace.setBrandColor(dto.getBrandColor());
@@ -50,8 +52,23 @@ public class WorkspaceService {
             }
             workspace.setCalcomUrl(url.isEmpty() ? null : url);
         }
+        // anagrafica fiscale, stessa regola: null = non toccare, "" = svuotare
+        workspace.setLegalName(blankToNull(dto.getLegalName(), workspace.getLegalName()));
+        workspace.setLegalName(blankToNull(dto.getVatNumber(), workspace.getVatNumber()));
+        workspace.setLegalName(blankToNull(dto.getTaxCode(), workspace.getTaxCode()));
+        workspace.setLegalName(blankToNull(dto.getAddress(), workspace.getAddress()));
+        workspace.setLegalName(blankToNull(dto.getContactLine(), workspace.getContactLine()));
+
         workspaceRepository.save(workspace);
         return toResponse(workspace);
+    }
+
+    // helper
+    // null = lascia com'era, stringa vuota = svuota, altrimenti trim
+    private String blankToNull(String incoming, String current) {
+        if (incoming == null) return current;
+        String v = incoming.trim();
+        return v.isEmpty() ? null : v;
     }
 
     private Workspace currentWorkspace() {

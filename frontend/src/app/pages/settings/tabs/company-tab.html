@@ -9,7 +9,7 @@
       <label class="block text-sm mb-1">Colore brand</label>
       <div class="flex items-center gap-2">
         <input type="color" formControlName="brandColor"
-               class="h-10 w-14 rounded-sm border border-base-300 bg-base-100 p-1 cursor-pointer" />
+          class="h-10 w-14 rounded-sm border border-base-300 bg-base-100 p-1 cursor-pointer" />
         <span class="text-sm text-base-content/60">{{ form.controls.brandColor.value }}</span>
       </div>
     </div>
@@ -21,19 +21,55 @@
 
     <div>
       <label class="block text-sm mb-1">Link Cal.com</label>
-      <input type="text" formControlName="calcomUrl" class="input rounded-sm w-full" placeholder="https://cal.com/tuonome" />
+      <input type="text" formControlName="calcomUrl" class="input rounded-sm w-full"
+        placeholder="https://cal.com/tuonome" />
       <p class="text-xs text-base-content/50 mt-1">
         Il tuo link di prenotazione: appare nella pagina Calendario per fissare appuntamenti. Vuoto = disattivato.
       </p>
+    </div>
+
+    <div class="divider text-xs uppercase tracking-wide text-base-content/50">Dati per i documenti</div>
+    <p class="text-xs text-base-content/50 -mt-2">
+      Compaiono nell'intestazione di preventivi, ordini, DDT e fatture in PDF.
+    </p>
+
+    <div>
+      <label class="block text-sm mb-1">Ragione sociale</label>
+      <input type="text" formControlName="legalName" class="input rounded-sm w-full" placeholder="Mia Azienda S.r.l." />
+      <p class="text-xs text-base-content/50 mt-1">Se vuota si stampa il nome azienda qui sopra.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm mb-1">Partita IVA</label>
+        <input type="text" formControlName="vatNumber" class="input rounded-sm w-full" placeholder="IT02345670224" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Codice fiscale</label>
+        <input type="text" formControlName="taxCode" class="input rounded-sm w-full" placeholder="02345670224" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm mb-1">Sede</label>
+      <textarea formControlName="address" rows="3" class="textarea rounded-sm w-full"
+        placeholder="Via Roma 1&#10;38068 Rovereto (TN)"></textarea>
+      <p class="text-xs text-base-content/50 mt-1">Si stampa su piu' righe, esattamente come la scrivi.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm mb-1">Riga contatti</label>
+      <input type="text" formControlName="contactLine" class="input rounded-sm w-full"
+        placeholder="tel. 0464 000000 - info@miaazienda.it - www.miaazienda.it" />
     </div>
 
     <ui-button type="submit" variant="primary" [loading]="submitting()">Salva</ui-button>
   </form>
 
   @if (error()) {
-    <div class="alert alert-error rounded-sm py-2 text-sm mt-4 max-w-xl">{{ error() }}</div>
+  <div class="alert alert-error rounded-sm py-2 text-sm mt-4 max-w-xl">{{ error() }}</div>
   }
   @if (saved()) {
-    <div class="alert alert-success rounded-sm py-2 text-sm mt-4 max-w-xl">Impostazioni azienda salvate.</div>
+  <div class="alert alert-success rounded-sm py-2 text-sm mt-4 max-w-xl">Impostazioni azienda salvate.</div>
   }
 </div>

@@ -58,4 +58,22 @@ public class Workspace {
     @UpdateTimestamp
     private Instant updatedAt;
 
+    // dati fiscali di chi emette i documenti: intestazione del pdf e blocco cedente prestatore della fattura
+    // elettronica. Stringhe e non un entità a parte, il workspace è uno solo
+    @Column(name = "legal_name")
+    private String legalName; // se null si stampa name
+
+    @Column(name = "vat_number", length = 20)
+    private String vatNumber; // IT + 11 cifre
+
+    @Column(name = "tax_code", length = 20)
+    private String taxCode;
+
+    @Column(columnDefinition = "text")
+    private String address; // multiriga, si stampa così com'é
+
+    @Column(name = "contact_line")
+    private String contactLine; // "tel. 0464 .... - info@.... - www...."
+
+
 }

@@ -28,7 +28,13 @@ export class CompanyTab {
     brandColor: ['#0A84FF', [Validators.required, Validators.pattern(/^#[0-9a-fA-F]{6}$/)]],
     logoUrl: ['', [Validators.maxLength(500)]],
     // link di prenotazione Cal.com (pagina Calendario); vuoto = integrazione spenta
-    calcomUrl: ['', [Validators.maxLength(500), Validators.pattern(/^$|^https:\/\/.+/)]]
+    calcomUrl: ['', [Validators.maxLength(500), Validators.pattern(/^$|^https:\/\/.+/)]],
+    // anagrafica fiscale: i maxLength sono quelli delle colonne, non un'opinione
+    legalName: ['', [Validators.maxLength(255)]],
+    vatNumber: ['', [Validators.maxLength(20)]],
+    taxCode: ['', [Validators.maxLength(20)]],
+    address: ['', [Validators.maxLength(1000)]],
+    contactLine: ['', [Validators.maxLength(255)]]
   });
 
   constructor() {
@@ -39,7 +45,17 @@ export class CompanyTab {
       .subscribe((p) => {
         if (p) {
           this.form.setValue(
-            { name: p.name, brandColor: p.brandColor, logoUrl: p.logoUrl ?? '', calcomUrl: p.calcomUrl ?? '' },
+            {
+              name: p.name,
+              brandColor: p.brandColor,
+              logoUrl: p.logoUrl ?? '',
+              calcomUrl: p.calcomUrl ?? '',
+              legalName: p.legalName ?? '',
+              vatNumber: p.vatNumber ?? '',
+              taxCode: p.taxCode ?? '',
+              address: p.address ?? '',
+              contactLine: p.contactLine ?? ''
+            },
             { emitEvent: false }
           );
         }
@@ -56,7 +72,18 @@ export class CompanyTab {
     this.saved.set(false);
     const v = this.form.getRawValue();
     this.workspaceService
-      .updateBrand({ name: v.name, brandColor: v.brandColor, logoUrl: v.logoUrl.trim() || null, calcomUrl: v.calcomUrl.trim() })
+      .updateCompany({
+        name: v.name,
+        brandColor: v.brandColor,
+        logoUrl: v.logoUrl.trim() || null,
+        calcomUrl: v.calcomUrl.trim(),
+        // trim e basta: il backend legge "" come "svuota" e non come "non toccare"
+        legalName: v.legalName.trim(),
+        vatNumber: v.vatNumber.trim(),
+        taxCode: v.taxCode.trim(),
+        address: v.address.trim(),
+        contactLine: v.contactLine.trim()
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
