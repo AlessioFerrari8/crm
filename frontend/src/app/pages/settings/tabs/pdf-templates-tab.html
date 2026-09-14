@@ -1,0 +1,97 @@
+<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+
+  <!-- lista -->
+  <div class="border border-base-300 rounded-sm">
+    @if(loading()) {
+    <div class="p-4"><ui-spinner /></div>
+    } @else {
+    <ul class="menu menu-sm w-full">
+      @for(t of templates(); track t.id) {
+      <li>
+        <button type="button" class="rounded-sm" [class.menu-active]="selected()?.id === t.id" (click)="select(t)">
+          <span class="flex flex-col items-start">
+            <span>{{ t.label }}</span>
+            <span class="text-xs text-base-content/50">{{ t.objectKey }}</span>
+          </span>
+          @if(t.system) {
+          <span class="badge badge-sm rounded-sm">sistema</span>
+          }
+        </button>
+      </li>
+      } @empty {
+      <li class="p-4 text-sm text-base-content/60">Nessun template</li>
+      }
+    </ul>
+    }
+  </div>
+  <!-- editor -->
+  @if(selected(); as t) {
+  <div class="space-y-3">
+
+    @if (t.system) {
+    <div class="alert alert-info rounded-sm py-2 text-sm">
+      Questo è un template di sistema: non si modifica, si duplica.
+      Il seeder lo riscrive a ogni avvio.
+    </div>
+    }
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="sm:col-span-1">
+        <label class="block text-sm mb-1">Nome</label>
+        <input type="text" class="input rounded-sm w-full" [disabled]="t.system" [ngModel]="label()"
+          (ngModelChange)="label.set($event)" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Formato</label>
+        <select class="select rounded-sm w-full" [disabled]="t.system" [ngModel]="pageSize()"
+          (ngModelChange)="pageSize.set($event)">
+          @for(p of pageSizes; track p) {
+          <option [value]="p">{{ p }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Margine (mm)</label>
+        <input type="number" min="0" max="60" class="input rounded-sm w-full" [disabled]="t.system"
+          [ngModel]="marginMm()" (ngModelChange)="marginMm.set(+$event)" />
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm mb-1">HTML del template</label>
+      <textarea class="textarea rounded-sm w-full font-mono text-xs" rows="18" spellcheck="false" [disabled]="t.system"
+        [ngModel]="html()" (ngModelChange)="html.set($event)"></textarea>
+      <p class="text-xs text-base-content/50 mt-1">
+        Thymeleaf: <code>{{ '${doc.number}' }}</code>, <code>{{ '${company.vatNumber}' }}</code>,
+        <code>{{ '${totals.total}' }}</code>. I numeri arrivano gia' formattati.
+        Le risorse esterne (immagini remote, file locali) sono bloccate: il logo e' gia'
+        un data: URI dentro <code>company.logo</code>.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <ui-button variant="primary" [disabled]="t.system" [loading]="saving()" (click)="save()">Salva</ui-button>
+      <ui-button variant="ghost" [loading]="previewing()" (click)="refreshPreview()">Anteprima</ui-button>
+      <ui-button variant="ghost" (click)="duplicate()">Duplica</ui-button>
+      <ui-button variant="danger" [disabled]="t.system" (click)="remove()">Elimina</ui-button>
+    </div>
+
+    @if (error()) {
+    <div class="alert alert-error rounded-sm py-2 text-sm whitespace-pre-wrap">{{ error() }}</div>
+    }
+
+    @if (previewUrl(); as url) {
+    <iframe [src]="url" class="w-full h-[700px] border border-base-300 rounded-sm bg-base-100"
+      title="Anteprima del template"></iframe>
+    } @else {
+    <div class="border border-dashed border-base-300 rounded-sm p-8 text-center text-sm text-base-content/60">
+      Premi "Anteprima" per vedere il PDF vero, generato dal server sull'ultimo
+      documento di questo modulo.
+    </div>
+    }
+  </div>
+  } @else {
+  <div class="border border-dashed border-base-300 rounded-sm p-8 text-center text-sm text-base-content/60">
+    Scegli un template dall'elenco.
+  </div>
+  }
+</div>
