@@ -10,8 +10,9 @@ import { UsersTab } from './tabs/users-tab';
 import { WebhooksTab } from './tabs/webhooks-tab';
 import { WorkflowsTab } from './tabs/workflows-tab';
 import { PdfTemplatesTab } from './tabs/pdf-templates-tab';
+import { MailboxesTab } from './tabs/mailboxes-tab';
 
-type Tab = 'objects' | 'users' | 'apikeys' | 'workflows' | 'webhooks' | 'audit' | 'roles' | 'company' | 'pdf';
+type Tab = 'objects' | 'users' | 'apikeys' | 'workflows' | 'webhooks' | 'audit' | 'roles' | 'company' | 'pdf' | 'mailboxes';
 
 // ruoli che possono gestire l'organizzazione (anagrafica azienda): allineati al gate backend
 // user/WRITE, ma ristretti agli admin "di organizzazione".
@@ -21,7 +22,7 @@ const ORG_ADMIN_ROLES = ['owner', 'admin', 'manager'];
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ObjectsTab, UsersTab, ApiKeysTab, WorkflowsTab, WebhooksTab, AuditTab, RolesTab, CompanyTab, PdfTemplatesTab],
+  imports: [ObjectsTab, UsersTab, ApiKeysTab, WorkflowsTab, WebhooksTab, AuditTab, RolesTab, CompanyTab, PdfTemplatesTab, MailboxesTab],
   templateUrl: './settings.html'
 })
 export class Settings {
@@ -44,7 +45,8 @@ export class Settings {
       { id: 'webhooks', label: 'Webhooks' },
       { id: 'audit', label: 'Audit' },
       { id: 'roles', label: 'Ruoli' },
-      { id: 'pdf', label: 'Stampe' }
+      { id: 'pdf', label: 'Stampe' },
+      { id: 'mailboxes', label: 'Caselle email' }
     ];
     if (this.isOrgAdmin()) {
       base.push({ id: 'company', label: 'Azienda' });

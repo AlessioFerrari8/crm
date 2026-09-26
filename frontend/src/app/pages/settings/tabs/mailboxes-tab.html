@@ -1,0 +1,76 @@
+<div class="space-y-4 max-w-3xl">
+  <div class="flex justify-between items-center">
+    <p class="text-sm text-base-content/70">Ogni mail in arrivo diventa un ticket. Le risposte con [#NL-...] nell'oggetto
+      finiscono sul ticket originale.</p>
+    <ui-button variant="primary" (click)="edit(null)">Nuova casella</ui-button>
+  </div>
+
+  @for (m of rows(); track m.id) {
+    <div class="border border-base-300 rounded-sm p-3 space-y-2">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-medium">{{ m.label }} @if (!m.active) { <span class="badge badge-ghost badge-sm">spenta</span> }</p>
+          <p class="text-xs text-base-content/60">{{ m.username }} &middot; {{ m.host }}:{{ m.port }} &middot; {{ m.folder }}</p>
+          <p class="text-xs text-base-content/60">Ultima scansione: {{ m.lastScanAt ? (m.lastScanAt | date: 'dd/MM HH:mm') : 'mai' }}</p>
+        </div>
+        <div class="flex gap-1">
+          <ui-button variant="accent" [loading]="busy() === m.id" (click)="test(m)">Prova connessione</ui-button>
+          <ui-button variant="ghost" (click)="scan(m)">Scarica ora</ui-button>
+          <ui-button variant="ghost" (click)="edit(m)">Modifica</ui-button>
+          <ui-button variant="danger" (click)="remove(m)">Elimina</ui-button>
+        </div>
+      </div>
+      @if (m.lastError) {
+        <div class="alert alert-error rounded-sm py-2 text-sm font-mono whitespace-pre-line">{{ m.lastError }}</div>
+      }
+    </div>
+  } @empty {
+    <p class="text-sm text-base-content/60">Nessuna casella configurata.</p>
+  }
+
+  @if (editing() !== undefined) {
+    <form [formGroup]="form" (ngSubmit)="save()" class="border border-base-300 rounded-sm p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="sm:col-span-2"><span class="block text-sm mb-1">Nome</span>
+        <input formControlName="label" class="input rounded-sm w-full" placeholder="Assistenza" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Server IMAP</span>
+        <input formControlName="host" class="input rounded-sm w-full" placeholder="imap.gmail.com" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Porta</span>
+        <input type="number" formControlName="port" class="input rounded-sm w-full" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Utente</span>
+        <input formControlName="username" autocomplete="off" class="input rounded-sm w-full" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Password</span>
+        <input type="password" formControlName="password" autocomplete="new-password" class="input rounded-sm w-full"
+        [placeholder]="editing() ? 'lascia vuoto per non cambiarla' : ''" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Cartella</span>
+        <input formControlName="folder" class="input rounded-sm w-full" />
+      </label>
+
+      <label><span class="block text-sm mb-1">Assegna i ticket a</span>
+        <select formControlName="defaultOwnerId" class="select rounded-sm w-full">
+          @for(u of users(); track u.id) { <option [value]="u.id">{{ u.name }} ({{ u.email }})</option> }
+        </select>
+      </label>
+
+      <label class="flex items-center gap-2"><input type="checkbox" formControlName="ssl" class="checkbox checkbox-sm" /> SSL</label>
+
+      <label class="flex items-center gap-2"><input type="checkbox" formControlName="active" class="checkbox checkbox-sm"> Attiva</label>
+
+      <div class="sm:col-span-2 flex gap-2">
+        <ui-button type="submit" variant="primary">Salva</ui-button>
+        <ui-button variant="ghost" (click)="editing.set(undefined)">Annulla</ui-button>
+      </div>
+
+    </form>
+  }
+
+</div>
