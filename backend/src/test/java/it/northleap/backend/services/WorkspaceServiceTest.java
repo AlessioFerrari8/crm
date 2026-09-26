@@ -55,6 +55,31 @@ class WorkspaceServiceTest {
         assertEquals("#0A84FF", result.brandColor());
     }
 
+    // regressione: update() scriveva 5 volte setLegalName, e P.IVA, CF, indirizzo e contatti non venivano mai
+    // salvati, questo comportava che l'intestazione del PDF usciva vuota
+    @Test
+    void updateSavesEveryFiscalField() {
+        Workspace ws = existingWorkspace();
+        when(workspaceRepository.findTopByOrderByCreatedAtAsc()).thenReturn(Optional.of(ws));
+        UpdateWorkspaceDto dto = new UpdateWorkspaceDto();
+        dto.setName("NorthLeap");
+        dto.setLegalName("NorthLeap S.r.l");
+        dto.setVatNumber("IT01234567890");
+        dto.setTaxCode("01234567890");
+        dto.setAddress("Via Esempio 10");
+        dto.setContactLine("info@northleap.it");
+        dto.setProvince("tn");
+
+        newService().update(dto);
+
+        assertEquals("NorthLeap S.r.l.", ws.getLegalName());
+        assertEquals("IT01234567890", ws.getVatNumber());
+        assertEquals("01234567890", ws.getTaxCode());
+        assertEquals("Via Esempio 10", ws.getAddress());
+        assertEquals("info@northleap.it", ws.getContactLine());
+        assertEquals("TN", ws.getProvince());
+    }
+
     @Test
     void updateRenamesAndPersists() {
         Workspace ws = existingWorkspace();

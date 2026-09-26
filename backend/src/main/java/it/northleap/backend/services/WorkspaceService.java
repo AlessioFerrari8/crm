@@ -54,9 +54,9 @@ public class WorkspaceService {
         }
         // anagrafica fiscale, stessa regola: null = non toccare, "" = svuotare
         workspace.setLegalName(blankToNull(dto.getLegalName(), workspace.getLegalName()));
-        workspace.setLegalName(blankToNull(dto.getVatNumber(), workspace.getVatNumber()));
-        workspace.setLegalName(blankToNull(dto.getTaxCode(), workspace.getTaxCode()));
-        workspace.setLegalName(blankToNull(dto.getAddress(), workspace.getAddress()));
+        workspace.setVatNumber(blankToNull(dto.getVatNumber(), workspace.getVatNumber()));
+        workspace.setTaxCode(blankToNull(dto.getTaxCode(), workspace.getTaxCode()));
+        workspace.setAddress(blankToNull(dto.getAddress(), workspace.getAddress()));
         workspace.setLegalName(blankToNull(dto.getContactLine(), workspace.getContactLine()));
 
         workspaceRepository.save(workspace);
