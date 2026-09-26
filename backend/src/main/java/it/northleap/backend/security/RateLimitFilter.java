@@ -24,7 +24,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Set<String> LIMITED_POST_PATHS = Set.of(
             "/api/auth/login", "/api/auth/refresh", "/api/users/accept-invite",
-            "/api/integrations/calcom/webhook"
+            "/api/integrations/calcom/webhook",
+            // sei cifre senza limite di tentativi sono un milione di possibilità probabili in pochi
+            // minuti: senza questa riga il secondo fattore è decorativo
+            "/api/auth/mfa/verify"
     );
 
     private final RateLimiter rateLimiter;

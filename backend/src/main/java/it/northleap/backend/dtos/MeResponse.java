@@ -8,6 +8,7 @@ public record MeResponse(
     String email,
     String name,
     String avatarUrl,
-    List<String> roles
+    List<String> roles,
+    boolean mfaEnabled
 ) {
 }

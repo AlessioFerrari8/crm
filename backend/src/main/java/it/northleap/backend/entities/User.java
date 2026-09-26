@@ -2,10 +2,14 @@ package it.northleap.backend.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -60,4 +64,23 @@ public class User {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    // segreto TOTP, cifrato a riposo (AES-GCM, chiave da MFA_SECRET_KEY)
+    // Chi legge il database non deve poter generare i codici: è l'unica cosa che distingue un
+    // secondo fattore da una seconda password
+    @Column(name = "mfa_secret")
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled", nullable = false)
+    @ColumnDefault("false")
+    private boolean mfaEnabled = false;
+
+    // hash SHA-256 dei codici di recupero non ancora usati
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "mfa_recovery_codes", columnDefinition = "jsonb")
+    private List<String> mfaRecoveryCodes;
+
+    // l'ultimo contatore accettato: è l'anti replay
+    @Column(name = "mfa_last_counter")
+    private Long mfaLastCounter;
 }

@@ -43,6 +43,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MfaService mfaService;
 
     public StatusResponse status() {
         return new StatusResponse(isOnboarded());
@@ -78,7 +79,9 @@ public class AuthService {
         return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
     }
 
-    public IssuedTokens login(LoginRequest request, HttpServletRequest httpRequest) {
+    public record LoginOutcome(IssuedTokens tokens, String mfaToken) { }
+
+    public LoginOutcome login(LoginRequest request, HttpServletRequest httpRequest) {
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
@@ -86,7 +89,32 @@ public class AuthService {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         User user = userPrincipal.getUser();
 
-        return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+        // la password è giusta, ma da sola non basta più
+        if (user.isMfaEnabled()) {
+            return new LoginOutcome(null, jwtService.generateMfaToken(user));
+        }
+
+        return new LoginOutcome(
+                issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr()), null);
+    }
+
+    // qui nascono i cookie e la Session
+    @Transactional
+    public IssuedTokens verifyMfa(MfaVerifyDto dto, HttpServletRequest httpServletRequest) {
+        UUID userId;
+        try {
+            userId = jwtService.extractUserIdFromMfaToken(dto.mfaToken());
+        } catch (Exception e) {
+            // scaduto, manomesso o di tipo sbagliato: un solo messaggio
+            throw new BadRequestException("Invalid or expired MFA challenge");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired MFA challenge"));
+
+        mfaService.assertSecondFactor(user, dto.code(), dto.recoveryCode());
+
+        return issueTokens(user, httpServletRequest.getHeader("User-Agent"),
+                httpServletRequest.getRemoteAddr());
     }
 
     @Transactional
@@ -176,7 +204,7 @@ public class AuthService {
         List<String> roles = userRoleRepository.findByUser_Id(user.getId()).stream()
                 .map(userRole -> userRole.getRole().getKey())
                 .toList();
-        return new MeResponse(user.getId(), user.getEmail(), user.getName(), user.getAvatarUrl(), roles);
+        return new MeResponse(user.getId(), user.getEmail(), user.getName(), user.getAvatarUrl(), roles, user.isMfaEnabled());
     }
 
     private boolean isOnboarded() {

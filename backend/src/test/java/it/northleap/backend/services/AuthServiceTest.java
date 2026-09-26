@@ -46,13 +46,15 @@ class AuthServiceTest {
     private UserRoleRepository userRoleRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private MfaService mfaService;
 
     private AuthService service;
 
     @BeforeEach
     void setUp() {
         service = new AuthService(authenticationManager, jwtService, userRepository, workspaceRepository,
-                sessionRepository, roleRepository, userRoleRepository, passwordEncoder);
+                sessionRepository, roleRepository, userRoleRepository, passwordEncoder, mfaService);
     }
 
     // principal e' null quando la richiesta arriva autenticata via X-Api-Key invece che JWT

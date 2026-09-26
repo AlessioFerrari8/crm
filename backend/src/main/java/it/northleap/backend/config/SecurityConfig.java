@@ -147,6 +147,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/auth/status").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/onboarding").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/mfa/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/accept-invite").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/in/*").permitAll()

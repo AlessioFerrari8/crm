@@ -66,6 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             email = jwtService.extractEmail(token);
+            // un token di sfida MFA non è un token di accesso: qui si ferma
+            if ("mfa".equals(jwtService.extractType(token))) {
+                filterChain.doFilter(request, response);
+                return;
+            }
         } catch (Exception e) {
             // Token malformato, scaduto o firma non valida: lasciamo la richiesta
             // non autenticata, sarà Spring Security a rispondere 401/403 più avanti

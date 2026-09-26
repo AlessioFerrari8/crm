@@ -64,6 +64,10 @@ dependencies {
     // jsoup: openhtmltopdf vuole XML ben formato, l'HTL di un utente non lo è
     implementation 'org.jsoup:jsoup:1.18.1'
 
+    // qr code per l'onboarding MFA. Due jar piccoli, nessuna transitiva pesante
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
+
 }
 
 tasks.named('test') {

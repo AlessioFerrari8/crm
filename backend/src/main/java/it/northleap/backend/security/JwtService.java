@@ -65,6 +65,31 @@ public class JwtService {
                 .compact();
     }
 
+    // token di sfida per il secondo fattore, due minuti, subject = userId, claim typ=mfa
+    // firmato con il segreto ACCESS ma non è un token di accesso: il filtro lo rifiuta esplicitamente
+    public String generateMfaToken(User user) {
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .claim("typ", "mfa")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 120_000))
+                .signWith(getAccessSigningKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    public String extractType(String token) {
+        return extractClaim(token, c -> c.get("typ", String.class), getAccessSigningKey());
+    }
+
+    // solleva se il token non è di tipo mfa: chi chiama non deve ricordarsene
+    public UUID extractUserIdFromMfaToken(String token) {
+        if (!"mfa".equals(extractType(token))) {
+            throw new IllegalArgumentException("Not an MFA token");
+        }
+        return UUID.fromString(
+                extractClaim(token, Claims::getSubject, getAccessSigningKey()));
+    }
+
     // hash del refresh token, è quello che salviamo in Session/Invite, mai il token in chiaro
     public String hashToken(String token) {
         try {
