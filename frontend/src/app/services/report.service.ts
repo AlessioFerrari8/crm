@@ -18,7 +18,7 @@ export class ReportService {
   }
 
   update(id: string, body: Partial<Report> & { personal: boolean }): Observable<Report> {
-    return this.http.put<Report>(`${this.base}/${id}`, body);
+    return this.http.post<Report>(`${this.base}/${id}`, body);
   }
 
   remove(id: string): Observable<void> {
