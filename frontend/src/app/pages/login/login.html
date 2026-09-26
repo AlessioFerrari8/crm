@@ -4,31 +4,59 @@
       <h1 class="text-xl font-semibold mb-1">NorthLeap CRM</h1>
       <p class="text-sm text-base-content/60 mb-4">Accedi al tuo workspace</p>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
-        <div>
-          <ui-label [required]="true">Email</ui-label>
-          <input type="email" formControlName="email" class="input rounded-sm w-full" placeholder="tu@azienda.com" />
-          @if (form.controls.email.touched && form.controls.email.invalid) {
-            <p class="text-error text-xs mt-1">Inserisci un'email valida</p>
-          }
-        </div>
 
-        <div>
-          <ui-label [required]="true">Password</ui-label>
-          <input type="password" formControlName="password" class="input rounded-sm w-full" placeholder="••••••••" />
-          @if (form.controls.password.touched && form.controls.password.invalid) {
-            <p class="text-error text-xs mt-1">Password richiesta</p>
+      @if (mfaStep()) {
+        <!-- (submit) e non (ngSubmit): senza [formGroup] nessuna direttiva emette ngSubmit, e il form ricaricherebbe la pagina -->
+        <form (submit)="$event.preventDefault(); verify()" class="space-y-3">
+          <ui-label [required]="true">{{ useRecovery() ? 'Codice di recupero' : 'Codice dell\'app di autenticazione'
+            }}</ui-label>
+          @if (useRecovery()) {
+          <input name="recovery" autocomplete="off" class="input rounded-sm w-full font-mono" [value]="code()"
+            (input)="code.set($any($event.target).value)" />
+          } @else {
+          <!-- one-time-code, su IOS il codice si compila da solo -->
+          <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="input rounded-sm w-full
+              text-center tracking-[0.5em] font-mono" [value]="code()" (input)="code.set($any($event.target).value)" />
           }
-        </div>
 
-        @if (error()) {
+          @if (error()) {
           <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
-        }
+          }
 
-        <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">
-          Accedi
-        </ui-button>
-      </form>
+          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">Verifica</ui-button>
+          <button type="button" class="link link-primary text-xs" (click)="useRecovery.set(!useRecovery()); code.set('')">
+            {{ useRecovery() ? 'Usa il codice dell\'app' : 'Non hai il telefono? usa un codice di recupero' }}
+          </button>
+        </form>
+      } @else {
+
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+          <div>
+            <ui-label [required]="true">Email</ui-label>
+            <input type="email" formControlName="email" class="input rounded-sm w-full" placeholder="tu@azienda.com" />
+            @if (form.controls.email.touched && form.controls.email.invalid) {
+              <p class="text-error text-xs mt-1">Inserisci un'email valida</p>
+            }
+          </div>
+
+          <div>
+            <ui-label [required]="true">Password</ui-label>
+            <input type="password" formControlName="password" class="input rounded-sm w-full" placeholder="••••••••" />
+            @if (form.controls.password.touched && form.controls.password.invalid) {
+              <p class="text-error text-xs mt-1">Password richiesta</p>
+            }
+          </div>
+
+          @if (error()) {
+            <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
+          }
+
+          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">
+            Accedi
+          </ui-button>
+        </form>
+      }
 
       <p class="text-xs text-base-content/60 mt-4">
         Prima volta? <a routerLink="/onboarding" class="link link-primary">Configura il workspace</a>

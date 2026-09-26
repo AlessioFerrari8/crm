@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, WritableSignal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -23,6 +23,12 @@ export class Login {
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
 
+
+  // secondo passo: password già accettata, si chiede il codice dell'app, oppure uno di recupero
+  protected readonly mfaStep: WritableSignal<boolean> = signal(false);
+  protected readonly useRecovery: WritableSignal<boolean> = signal(false);
+  protected readonly code = signal('');
+
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]]
@@ -40,8 +46,12 @@ export class Login {
       .login(email, password)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
+        next: (r) => {
           this.submitting.set(false);
+          if (r === 'mfa') {
+            this.mfaStep.set(true);
+            return;
+          }
           this.router.navigate(['/']);
         },
         error: () => {
@@ -49,5 +59,29 @@ export class Login {
           this.error.set('Credenziali non valide');
         }
       });
+  }
+
+  protected verify(): void {
+    const value = this.code().trim();
+    if (!value || this.submitting()) return;
+    this.submitting.set(true);
+    this.error.set(null);
+    const call = this.useRecovery()
+      ? this.auth.verifyMfa(null, value)
+      : this.auth.verifyMfa(value);
+
+    call.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        // 401 col token di sfida scaduto (5 min): si ricomincia dalla password
+        if (err?.status === 401 && !this.auth.mfaToken()) this.mfaStep.set(false);
+        this.error.set('Codice non valido');
+        this.code.set('');
+      }
+    });
   }
 }

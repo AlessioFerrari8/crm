@@ -4,4 +4,5 @@ export interface IMeResponse {
   name: string;
   avatarUrl: string | null;
   roles: string[];
+  mfaEnabled: boolean;
 }

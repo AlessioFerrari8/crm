@@ -1,0 +1,49 @@
+<section class="max-w-xl mt-8 space-y-3">
+  <h2 class="font-semibold">Sicurezza</h2>
+
+  @if (recoveryCodes(); as codes) {
+    <div class="alert alert-warning rounded-sm text-sm">
+      Salva questi codici adesso: non verranno mostrati di nuovo. Ognuno value una volta sola. Se li perdi
+      insieme al telefono, solo un amministratore può disattivare l'autenticazione a due fattori.
+    </div>
+    <pre class="bg-base-200 rounded-sm p-3 font-mono text-sm grid grid-cols-2 gap-1">
+      @for(c of codes(); track c) {
+        <span>{{ c }}</span>
+      }
+    </pre>
+    <div class="flex gap-2">
+      <ui-button variant="ghost" (click)="copyCodes()">Copia</ui-button>
+      <ui-button variant="ghost" (click)="downloadCodes()">Scarica</ui-button>
+      <ui-button variant="primary" (click)="recoveryCodes.set(null)">Li ho salvati</ui-button>
+    </div>
+  } @else if (enabled()) {
+    <p class="text-sm">Autenticazione a due fattori <span class="badge badge-success badge-sm">attiva</span></p>
+    <div class="flex gap-2 items-end">
+      <label class="flex-1">
+        <span class="block text-sm mb-1">Password, per disattivarla</span>
+        <input type="password" (input)="password.set($any($event.target).value)" />
+      </label>
+      <ui-button variant="danger" [loading]="busy()" (click)="disable()">Disattiva</ui-button>
+    </div>
+  } @else if (setup(); as s) {
+    <p class="text-sm">Inquadra il QR con l'app di autenticazione (Google Authenticator, Aegis, 1Password...)</p>
+    <img [src]="s.qrPng" alt="QR code per l'app di autenticazione" class="w-48 h-48 bg-white p-2 rounded-sm" />
+    <!-- il segreto in chiaro: metà degli utenti sbaglia ad inquadrare, o usa un'app sul computer -->
+    <p class="text-xs text-base-content/60">Oppure inserisci a mano: <code class="font-mono select-all">{{ s.secretBase32 }}</code></p>
+    <div class="flex gap-2 items-end">
+      <label class="flex-1">
+        <span class="block text-sm mb-1">Codice a sei cifre</span>
+        <input inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="input rounded-sm w-full text-center
+        tracking-[0.5em] font-mono" [value]="code()" (input)="code.set($any($event.target).value)">
+      </label>
+      <ui-button variant="primary" [loading]="busy()" (click)="activate()">Attiva</ui-button>
+    </div>
+  } @else {
+    <p class="text-sm text-base-content/70">Autenticazione a due fattori non attiva.</p>
+    <ui-button variant="primary" [loading]="busy()" (click)="start()">Attiva</ui-button>
+  }
+
+  @if (error()) {
+    <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
+  }
+</section>

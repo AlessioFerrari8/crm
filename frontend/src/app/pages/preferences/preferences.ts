@@ -4,10 +4,11 @@ import { UserPreferenceService } from '../../services/user-preference.service';
 import { previewFormat } from '../../core/field-format';
 import { UserPreference } from '../../models/user-preference';
 import { UiButton } from '../../components/ui/button';
+import { MfaSection } from './mfa-section';
 
 @Component({
   selector: 'app-preferences',
-  imports: [FormsModule, UiButton],
+  imports: [FormsModule, UiButton, MfaSection],
   templateUrl: './preferences.html'
 })
 export class Preferences {

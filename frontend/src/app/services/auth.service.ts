@@ -1,11 +1,12 @@
+import { API_BASE_URL } from './../core/api-config';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, Service, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, of, switchMap, tap } from 'rxjs';
 
-import { API_BASE_URL } from '../core/api-config';
 import { IAuthResponse } from '../models/IAuthResponse';
 import { IMeResponse } from '../models/IMeResponse';
 import { IOnboardingPayload } from '../models/IOnboardingPayload';
+import { MfaChallenge, MfaSetup } from '../models/mfa';
 
 // I token JWT vivono solo nei cookie httpOnly impostati dal backend (mai letti/scritti qui via
 // JS) - questo service tiene solo lo stato "chi e' loggato", popolato da GET /auth/me.
@@ -39,11 +40,32 @@ export class AuthService {
     );
   }
 
-  // metodo login che punta all'omonimo endpoint
-  login(email: string, password: string): Observable<IMeResponse | null> {
+  // il token di sfida vive in un signal, non in localStorage. è una sorta di mezzo login, e localStorage è leggibile
+  // da qualunque XSS, quindi evitiamo
+  readonly mfaToken: WritableSignal<string | null> = signal(null);
+
+  // 'mfa' = password giusta, ora serve il codice: la pagina mostra il secondo passo
+  login(email: string, password: string): Observable<IMeResponse | null | 'mfa'> {
     return this.http
-      .post<IAuthResponse>(`${API_BASE_URL}/api/auth/login`, { email, password })
-      .pipe(switchMap(() => this.load()));
+      .post<IAuthResponse | MfaChallenge>(`${API_BASE_URL}/api/auth/login`, { email, password })
+      .pipe(
+        switchMap((r) => {
+          if ('mfaRequired' in r && r.mfaRequired) {
+            this.mfaToken.set(r.mfaToken);
+            return of('mfa' as const);
+          }
+          return this.load();
+        })
+      );
+  }
+
+  verifyMfa(code: string | null, recoveryCode?: string): Observable<IMeResponse | null> {
+    return this.http
+      .post<IAuthResponse>(`${API_BASE_URL}/api/auth/mfa/verify`, { mfaToken: this.mfaToken(), code, recoveryCode })
+      .pipe(
+        tap(() => this.mfaToken.set(null)),
+        switchMap(() => this.load())
+      );
   }
 
   onboarding(payload: IOnboardingPayload): Observable<IMeResponse | null> {
@@ -61,6 +83,18 @@ export class AuthService {
   // cambio password self-service: la sessione corrente resta viva, le altre vengono revocate
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
     return this.http.patch<void>(`${API_BASE_URL}/api/auth/password`, { currentPassword, newPassword });
+  }
+
+  mfaSetup(): Observable<MfaSetup> {
+    return this.http.post<MfaSetup>(`${API_BASE_URL}/api/auth/mfa/setup`, {});
+  }
+
+  mfaActivate(code: string) {
+    return this.http.post<string[]>(`${API_BASE_URL}/api/auth/mfa/activate`, { code });
+  }
+
+  mfaDisable(password: string) {
+    return this.http.delete<void>(`${API_BASE_URL}/api/auth/mfa`, { body: { password } });
   }
 
   // usata internamente dall'interceptor su 401/403; nessun refresh token nel body, viaggia
