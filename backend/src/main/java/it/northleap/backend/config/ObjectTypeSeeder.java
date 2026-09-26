@@ -173,7 +173,15 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                             opt("resolved", "Risolto"), opt("closed", "Chiuso"))),
                     fOpts("priority", "Priorità", FieldType.SELECT, false, List.of(
                             opt("low", "Bassa"), opt("medium", "Media"), opt("high", "Alta"), opt("urgent", "Urgente"))),
-                    f("assignee", "Assegnatario", FieldType.USER)
+                    f("assignee", "Assegnatario", FieldType.USER),
+                    fRelation("contact", "Contatto", Map.of("targetObject", "contact", "multiple", false)),
+                    fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    // scritti da MailMessageImporter. Senza dichiararli RecordValidator li butta via e threadKey è l'aggancio
+                    // delle risposte: senza ogni risposta via mail si perde
+                    f("fromEmail", "Email del mittente", FieldType.EMAIL),
+                    f("receivedAt", "Ricevuto il", FieldType.DATETIME),
+                    f("threadKey", "Codice conversazione", FieldType.DATETIME),
+                    f("messageId", "Message-Id", FieldType.TEXT)
             ), new NumberingSpec("number", "TT", false, 0, "-")),
             new ObjectSpec("document", "Documento", "Documenti", "file", "#64748B", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
