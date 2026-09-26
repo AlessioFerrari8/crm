@@ -80,6 +80,23 @@ public class DocumentTotalService {
             vatTotal = vatTotal.add(rowVat);
         }
 
+        // il residuo dell'arrotondamento va sull'ultima aliquota, sempre la stessa: così la somma per aliquota
+        // torna con il totale al centesimo
+        BigDecimal expected = linesNet.add(shipping).subtract(headerDiscount)
+                .setScale(SCALE, RM);
+
+        BigDecimal delta = expected.subtract(taxableTotal);
+        if (delta.signum() != 0 && !rows.isEmpty()) {
+            VatSummaryRow last = rows.get(rows.size() - 1);
+            BigDecimal fixedTaxable = last.taxable().add(delta);
+            BigDecimal fixedVat = fixedTaxable.multiply(last.vatPercent())
+                    .divide(BigDecimal.valueOf(100), SCALE, RM);
+            vatTotal = vatTotal.subtract(last.vat()).add(fixedVat);
+            rows.set(rows.size() - 1, new VatSummaryRow(last.vatPercent(), fixedTaxable, fixedVat));
+            taxableTotal = expected;
+        }
+
+
         taxableTotal = taxableTotal.setScale(SCALE, RM);
         vatTotal = vatTotal.setScale(SCALE, RM);
 
