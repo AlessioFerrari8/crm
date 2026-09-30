@@ -3,11 +3,11 @@
 
   @if (recoveryCodes(); as codes) {
     <div class="alert alert-warning rounded-sm text-sm">
-      Salva questi codici adesso: non verranno mostrati di nuovo. Ognuno value una volta sola. Se li perdi
+      Salva questi codici adesso: non verranno mostrati di nuovo. Ognuno vale una volta sola. Se li perdi
       insieme al telefono, solo un amministratore può disattivare l'autenticazione a due fattori.
     </div>
     <pre class="bg-base-200 rounded-sm p-3 font-mono text-sm grid grid-cols-2 gap-1">
-      @for(c of codes(); track c) {
+      @for(c of codes; track c) {
         <span>{{ c }}</span>
       }
     </pre>
