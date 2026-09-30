@@ -57,6 +57,8 @@
 
       <label><span class="block text-sm mb-1">Assegna i ticket a</span>
         <select formControlName="defaultOwnerId" class="select rounded-sm w-full">
+          <!-- senza, il browser mostra il primo utente ma il valore resta "" e Salva non parte -->
+          <option value="" disabled>—</option>
           @for(u of users(); track u.id) { <option [value]="u.id">{{ u.name }} ({{ u.email }})</option> }
         </select>
       </label>
