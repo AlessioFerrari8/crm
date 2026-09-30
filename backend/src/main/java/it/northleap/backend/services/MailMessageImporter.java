@@ -203,8 +203,6 @@ public class MailMessageImporter {
         String text = "Da " + (from == null ? "mittente sconosciuto" : from) + ":\n" + (body.isBlank() ? "(vuoto)" : body);
         note.setBody(text.length() > 4000 ? text.substring(0, 3990) + "\n[...]" : text );
         notesService.create(actor, ticket.getId(), note);
-        if ("closed".equals(ticket.getStatus()));
-        notesService.create(actor, ticket.getId(), note);
         if ("closed".equals(ticket.getStatus())) {
             ticket.setStatus("open");
             recordRepository.save(ticket);
