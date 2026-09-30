@@ -131,8 +131,13 @@ public class ReportEngine {
             q.setParameter(i + 1, params.get(i));
         }
 
+        // con una sola colonna nel select (una metrica, nessuna dimensione) Hibernate restituisce lo
+        // scalare nudo, non un Object[] da un elemento: si impacchetta qui, se no ClassCastException
         @SuppressWarnings("unchecked")
-        List<Object[]> rows = q.getResultList();
+        List<Object> raw = q.getResultList();
+        List<Object[]> rows = raw.stream()
+                .map(r -> r instanceof Object[] a ? a : new Object[]{r})
+                .toList();
         return ReportResult.of(dims.size(), metrics.size(), rows);
     }
 
