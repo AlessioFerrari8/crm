@@ -61,7 +61,7 @@ public class MailScannerService {
         }
 
         box.setLockedUntil(now.plus(LOCK));
-        mailBoxConfigRepository.save(box);
+        mailboxConfigRepository.save(box);
         return true;
     }
 
