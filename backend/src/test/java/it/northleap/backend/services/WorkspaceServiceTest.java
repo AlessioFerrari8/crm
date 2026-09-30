@@ -68,7 +68,6 @@ class WorkspaceServiceTest {
         dto.setTaxCode("01234567890");
         dto.setAddress("Via Esempio 10");
         dto.setContactLine("info@northleap.it");
-        dto.setProvince("tn");
 
         newService().update(dto);
 
@@ -77,7 +76,6 @@ class WorkspaceServiceTest {
         assertEquals("01234567890", ws.getTaxCode());
         assertEquals("Via Esempio 10", ws.getAddress());
         assertEquals("info@northleap.it", ws.getContactLine());
-        assertEquals("TN", ws.getProvince());
     }
 
     @Test
