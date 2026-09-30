@@ -180,7 +180,7 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     // delle risposte: senza ogni risposta via mail si perde
                     f("fromEmail", "Email del mittente", FieldType.EMAIL),
                     f("receivedAt", "Ricevuto il", FieldType.DATETIME),
-                    f("threadKey", "Codice conversazione", FieldType.DATETIME),
+                    f("threadKey", "Codice conversazione", FieldType.TEXT),
                     f("messageId", "Message-Id", FieldType.TEXT)
             ), new NumberingSpec("number", "TT", false, 0, "-")),
             new ObjectSpec("document", "Documento", "Documenti", "file", "#64748B", List.of(
@@ -498,6 +498,19 @@ public class ObjectTypeSeeder implements ApplicationRunner {
             // i campi mancanti si aggiungono anche ai tipi già esistenti
             Set<String> existingKeys = fieldDefRepository.findByObjectTypeId(obj.getId())
                     .stream().map(FieldDef::getKey).collect(Collectors.toSet());
+
+            // threadKey e' nato DATETIME per errore: dove e' gia' stato creato cosi', ogni mail in arrivo
+            // falliva la validazione ("data non valida") e non diventava un ticket. Si corregge solo quel
+            // campo: i tipi cambiati a mano dall'utente sugli altri campi non si toccano
+            if (spec.key().equals("ticket")) {
+                fieldDefRepository.findByObjectType_IdAndKey(obj.getId(), "threadKey")
+                        .filter(fd -> fd.getType() == FieldType.DATETIME)
+                        .ifPresent(fd -> {
+                            fd.setType(FieldType.TEXT);
+                            fieldDefRepository.save(fd);
+                            log.info("seed: ticket.threadKey DATETIME -> TEXT");
+                        });
+            }
 
             int fieldOrder = existingKeys.size();
             for(FieldSpec fs : spec.fields()) {
