@@ -81,10 +81,9 @@ public class MailboxService {
     // @Transactional: il lock va committato subito, se no lo scheduler non lo vede, e un messaggio
     // che fallisce segnerebbe rollback-only tutta la scansione
     public void scanNow(UUID id) {
-        MailboxConfig m = find(id);
-        if (!mailScannerService.acquire(m)) {
-            throw new BadRequestException("Scansione già in corso su questa casella, riprova fra poco");
-        }
+        find(id); // 404 se non esiste, prima di confonderlo con "già in corso"
+        MailboxConfig m = mailScannerService.acquire(id).orElseThrow(() ->
+                new BadRequestException("Scansione già in corso su questa casella, riprova fra poco"));
         try {
             mailScannerService.scan(m);
             m.setLastError(null);

@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +36,10 @@ public class MailScannerService {
     // @EnableScheduling è già attivo (lo usa WorkflowScheduler)
     @Scheduled(fixedDelayString = "${app.mailscanner.delay-ms:120000}")
     public void scanAll() {
-        for (MailboxConfig box : mailboxConfigRepository.findByActiveTrue()) {
-            if (!acquire(box)) continue; // qualcun altro sta girando
+        for (MailboxConfig listed : mailboxConfigRepository.findByActiveTrue()) {
+            Optional<MailboxConfig> locked = acquire(listed.getId());
+            if (locked.isEmpty()) continue; // qualcun altro sta girando
+            MailboxConfig box = locked.get();
 
             try {
                 scan(box);
@@ -52,17 +56,16 @@ public class MailScannerService {
         }
     }
 
-    // il lock è ottimistico come cosa e sta su una colonna: oggi l'istanza è una sola e non serve
-    // il giorno che saranno due i ticket doppi, non si vedono finché non li conta un cliente
-    boolean acquire(MailboxConfig box) {
+    // il lock sta sulla riga, non sull'oggetto in memoria: la lista di scanAll è caricata a inizio giro
+    // e quando si arriva a una casella può essere vecchia di minuti (nel frattempo "Scarica ora" può
+    // averla già scansionata). Dopo il lock la casella si rilegge, così lastUid è quello vero e il save
+    // finale non lo riporta indietro: altrimenti la stessa mail diventa due ticket
+    Optional<MailboxConfig> acquire(UUID id) {
         Instant now = Instant.now();
-        if (box.getLockedUntil() != null && box.getLockedUntil().isAfter(now)) {
-            return false;
+        if (mailboxConfigRepository.tryLock(id, now, now.plus(LOCK)) == 0) {
+            return Optional.empty();
         }
-
-        box.setLockedUntil(now.plus(LOCK));
-        mailboxConfigRepository.save(box);
-        return true;
+        return mailboxConfigRepository.findById(id);
     }
 
 
