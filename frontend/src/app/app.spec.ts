@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { App } from './app';
 
@@ -8,8 +9,8 @@ describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      // App inietta AuthService (-> HttpClient) e usa il router-outlet
-      providers: [provideRouter([]), provideHttpClient()]
+      // App inietta AuthService (-> HttpClient), usa il router-outlet e PwaUpdateService (-> SwUpdate, spento nei test)
+      providers: [provideRouter([]), provideHttpClient(), provideServiceWorker('ngsw-worker.js', { enabled: false })]
     }).compileComponents();
   });
 
