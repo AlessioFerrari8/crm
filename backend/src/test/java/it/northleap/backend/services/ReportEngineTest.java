@@ -12,6 +12,7 @@ import it.northleap.backend.repositories.RecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // con i mock qui non si prova niente. Il valore è proprio nell'SQL che gira.
 // AbstractIntegrationTest porta su un postgres:16-apline usa e getta
+// @Transactional: il seed di ogni test torna indietro a fine test, se no il secondo trova gia' test_deal
+@Transactional
 class ReportEngineTest extends AbstractIntegrationTest {
 
     @Autowired private ReportEngine reportEngine;
