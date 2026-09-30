@@ -63,7 +63,7 @@ class WorkspaceServiceTest {
         when(workspaceRepository.findTopByOrderByCreatedAtAsc()).thenReturn(Optional.of(ws));
         UpdateWorkspaceDto dto = new UpdateWorkspaceDto();
         dto.setName("NorthLeap");
-        dto.setLegalName("NorthLeap S.r.l");
+        dto.setLegalName("NorthLeap S.r.l.");
         dto.setVatNumber("IT01234567890");
         dto.setTaxCode("01234567890");
         dto.setAddress("Via Esempio 10");

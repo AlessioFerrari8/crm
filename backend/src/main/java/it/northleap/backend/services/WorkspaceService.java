@@ -57,7 +57,7 @@ public class WorkspaceService {
         workspace.setVatNumber(blankToNull(dto.getVatNumber(), workspace.getVatNumber()));
         workspace.setTaxCode(blankToNull(dto.getTaxCode(), workspace.getTaxCode()));
         workspace.setAddress(blankToNull(dto.getAddress(), workspace.getAddress()));
-        workspace.setLegalName(blankToNull(dto.getContactLine(), workspace.getContactLine()));
+        workspace.setContactLine(blankToNull(dto.getContactLine(), workspace.getContactLine()));
 
         workspaceRepository.save(workspace);
         return toResponse(workspace);
