@@ -47,7 +47,7 @@ Lo schema lo crea Hibernate (`ddl-auto=update`). Non c'e' Flyway: le colonne nuo
 
 ## Variabili d'ambiente
 
-Tutte in `backend/.env` (gitignorato). Il modello completo è in `backend/.env.example`. Le quattro senza default, cioè quelle senza cui l'app non parte:
+Tutte in `backend/.env` (gitignorato). Il modello completo è in `backend/.env.example`. Le cinque senza default, cioè quelle senza cui l'app non parte:
 
 | Variabile            | A cosa serve                                         |
 |----------------------|------------------------------------------------------| 
@@ -55,6 +55,7 @@ Tutte in `backend/.env` (gitignorato). Il modello completo è in `backend/.env.e
 | `JWT_REFRESH_SECRET` | firma dei refresh token (30 giorni), segreto diverso |
 | `DB_USERNAME`        | utente Postgres                                      |
 | `DB_PASSWORD`        | password Postgres                                    |
+| `MFA_SECRET_KEY`     | cifra i segreti a riposo (TOTP, password IMAP), 32 byte base64 |
 
 Si generano con `openssl rand -base64 32`, uno diverso per ciascuno. Non hanno un default apposta: un segreto scritto nel repo è un segreto pubblico.
 
