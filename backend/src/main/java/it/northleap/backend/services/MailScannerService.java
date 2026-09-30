@@ -54,7 +54,7 @@ public class MailScannerService {
 
     // il lock è ottimistico come cosa e sta su una colonna: oggi l'istanza è una sola e non serve
     // il giorno che saranno due i ticket doppi, non si vedono finché non li conta un cliente
-    private boolean acquire(MailboxConfig box) {
+    boolean acquire(MailboxConfig box) {
         Instant now = Instant.now();
         if (box.getLockedUntil() != null && box.getLockedUntil().isAfter(now)) {
             return false;

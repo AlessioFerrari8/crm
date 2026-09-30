@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -75,10 +76,15 @@ public class MailboxService {
         }
     }
 
-    // scansione a mano, per il collaudo
-    @Transactional
+    // scansione a mano, per il collaudo. Prende lo stesso lock dello scheduler: senza, i due giri
+    // leggono lo stesso lastUid e la stessa mail diventa due ticket (o due note). Niente
+    // @Transactional: il lock va committato subito, se no lo scheduler non lo vede, e un messaggio
+    // che fallisce segnerebbe rollback-only tutta la scansione
     public void scanNow(UUID id) {
         MailboxConfig m = find(id);
+        if (!mailScannerService.acquire(m)) {
+            throw new BadRequestException("Scansione già in corso su questa casella, riprova fra poco");
+        }
         try {
             mailScannerService.scan(m);
             m.setLastError(null);
@@ -86,6 +92,8 @@ public class MailboxService {
             m.setLastError(e.getMessage());
             throw new BadRequestException(e.getMessage());
         } finally {
+            m.setLockedUntil(null);
+            m.setLastScanAt(Instant.now());
             mailboxConfigRepository.save(m);
         }
     }
