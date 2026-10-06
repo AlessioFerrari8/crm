@@ -1,0 +1,59 @@
+<div class="p-6 space-y-4">
+  <h1 class="text-xl font-semibold">Fatture elettroniche</h1>
+
+  <div class="join">
+    @for (f of filters; track f.label) {
+      <button class="btn btn-sm join-item" [class.btn-active]="status() === f.value" (click)="setFilter(f.value)">{{ f.label }}</button>
+    }
+  </div>
+
+  @if (rows().length === 0) {
+    <p class="text-sm text-base-content/60">Nessuna fattura elettronica in questo stato.</p>
+  } @else {
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Fattura</th>
+            <th>File</th>
+            <th>Stato</th>
+            <th>Inviata</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of rows(); track e.id) {
+            <tr>
+              <td><a class="link" [routerLink]="['/o', 'invoice', e.invoiceId]">{{ e.invoiceTitle }}</a></td>
+              <td class="font-mono text-xs">{{ e.filename }}</td>
+              <td><span class="badge badge-sm {{ BADGE[e.status] }}">{{ LABEL[e.status] }}</span></td>
+              <td>{{ e.sentAt ? (e.sentAt | date: 'dd/MM/yyyy HH:mm') : '-' }}</td>
+              <td class="flex gap-1 justify-end">
+                <ui-button variant="ghost" (click)="download(e)">XML</ui-button>
+                @if (e.status === 'DRAFT') {
+                  <ui-button variant="primary" [loading]="busy() === e.id" (click)="send(e)">Trasmetti</ui-button>
+                }
+                @if (e.status === 'READY') {
+                  <ui-button variant="primary" [loading]="busy() === e.id" (click)="markSent(e)">Segna come inviata</ui-button>
+                }
+                @if (e.status !== 'DRAFT') {
+                  <label class="btn btn-ghost btn-sm rounded-sm">
+                    Carica ricevuta
+                    <input #f type="file" accept=".xml" class="hidden" (change)="upload(e, f)" />
+                  </label>
+                }
+              </td>
+            </tr>
+            @if (lastRejection(e); as msg) {
+              <tr>
+                <td colspan="5">
+                  <div class="alert alert-error rounded-sm py-2 text-sm whitespace-pre-line">{{ msg }}</div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
