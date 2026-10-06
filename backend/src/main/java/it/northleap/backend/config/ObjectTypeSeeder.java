@@ -72,7 +72,17 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("email", "Email", FieldType.EMAIL),
                     f("phone", "Telefono", FieldType.PHONE),
                     f("industry", "Settore", FieldType.TEXT),
-                    f("address", "Indirizzo", FieldType.LONGTEXT)
+                    f("address", "Indirizzo", FieldType.LONGTEXT),
+                    // fattura elettronica: non required, le anagrafiche esistenti devono chiaramente continuare a
+                    // salvarsi. Cos amanca per fatturare lo dice il generatore, record x record
+                    f("taxCode", "Codice fiscale", FieldType.TEXT),
+                    f("street", "Via e civico", FieldType.TEXT),
+                    f("zipCode", "CAP", FieldType.TEXT),
+                    f("city", "Comune", FieldType.TEXT),
+                    f("province", "Provincia (sigla)", FieldType.TEXT),
+                    f("country", "Nazione (IT, DE...)", FieldType.TEXT),
+                    f("sdiCode", "Codice destinatario SDI", FieldType.TEXT),
+                    f("pec", "PEC", FieldType.EMAIL)
             )),
             new ObjectSpec("contact", "Contatto", "Contatti", "user", "#2DD4FF", List.of(
                     fReq("firstName", "Nome", FieldType.TEXT),
@@ -82,7 +92,22 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("role", "Ruolo", FieldType.TEXT),
                     fOpts("type", "Tipo", FieldType.SELECT, true,
                             List.of(opt("company", "Aziendale"), opt("private", "Privato"))),
-                    fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false))
+                    fRelation("company", "Azienda", Map.of("targetObject", "company", "multiple", false)),
+                    // fattura elettronica: non required, le anagrafiche esistenti devono chiaramente continuare a
+                    // salvarsi. Cos amanca per fatturare lo dice il generatore, record x record
+                    f("taxCode", "Codice fiscale", FieldType.TEXT),
+                    f("street", "Via e civico", FieldType.TEXT),
+                    f("zipCode", "CAP", FieldType.TEXT),
+                    f("city", "Comune", FieldType.TEXT),
+                    f("province", "Provincia (sigla)", FieldType.TEXT),
+                    f("country", "Nazione (IT, DE...)", FieldType.TEXT),
+                    f("sdiCode", "Codice destinatario SDI", FieldType.TEXT),
+                    f("pec", "PEC", FieldType.EMAIL),
+                    // GDPR 8.4: consenso con data e provenienza, opt-out definitivo sul contatto
+                    f("consentAt", "Consenso marketing il", FieldType.DATETIME),
+                    f("consentSource", "Provenienza del consenso", FieldType.TEXT),
+                    f("marketingOptOut", "Disiscritto dal marketing", FieldType.BOOLEAN),
+                    f("marketingOptOutAt", "Disiscritto il", FieldType.DATETIME)
             )),
             new ObjectSpec("lead", "Lead", "Lead", "target", "#F59E0B", List.of(
                     fReq("name", "Nome", FieldType.TEXT),
@@ -227,6 +252,11 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("issueDate", "Emissione", FieldType.DATE),
                     f("dueDate", "Scadenza", FieldType.DATE),
                     fRelation("company", "Nome azienda", Map.of("targetObject", "company", "multiple", false)),
+                    // cliente privato. senza azienda si fattura al contatto
+                    fRelation("contact", "Contatto (privato)", Map.of("targetObject", "contact", "multiple", false)),
+                    fOpts("documentType", "Tipo documento", FieldType.SELECT, false, List.of(
+                            opt("TD01", "Fattura"), opt("TD04", "Nota di credito"))),
+                    fRelation("originalInvoice", "Fattura rettificata", Map.of("targetObject", "invoice", "multiple", false)),
                     fRelation("salesOrder", "Ordine", Map.of("targetObject", "sales_order", "multiple", false)),
                     fRelation("paymentMethod", "Modalità di pagamento", Map.of("targetObject", "payment_method", "multiple", false)),
                     f("shippingCost", "Spese di trasporto", FieldType.CURRENCY),
