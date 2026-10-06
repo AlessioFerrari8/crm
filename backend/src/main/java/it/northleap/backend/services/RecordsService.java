@@ -90,7 +90,11 @@ public class RecordsService {
         // da un fallback
         String numberField = obj.getNumberingField();
         if (numberField != null && data.get(numberField) == null) {
-            String generated = documentNumberService.next(obj);
+            // fattura: il numero si prende nella stessa transazione del salvataggio, se il salvataggio fallisce
+            // torna indietro anche il contatore e non resta un buco
+            String generated = "invoice".equals(key)
+                    ? documentNumberService.nextGapless(obj)
+                    : documentNumberService.next(obj);
             if (generated != null) {
                 data.put(numberField, generated);
             }

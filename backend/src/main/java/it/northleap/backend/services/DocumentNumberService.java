@@ -56,6 +56,14 @@ public class DocumentNumberService {
         return format(objectType, year, seq.getCounter());
     }
 
+    // variante senza buchi, per le fatture. MANDATORY: dee girare dentro la transazione di chi crea il record,
+    // così il lock sulla riga del contatore resta fino al commit e un rollback riporta indietro anche il numero.
+    // Il prezzo: due fatture create insieme si mettono in fila
+    @Transactional(propagation = Propagation.MANDATORY)
+    public String nextGapless(ObjectType objectType) {
+        return next(objectType);
+    }
+
     private String format(ObjectType type, int year, long counter) {
         String number = type.getNumberingPadding() > 0
                 ? String.format("%0" + type.getNumberingPadding() + "d", counter)
