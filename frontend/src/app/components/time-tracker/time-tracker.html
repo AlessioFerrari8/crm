@@ -1,0 +1,6 @@
+@if (time.running(); as t) {
+<div class="flex items-center gap-2 text-sm font-mono">
+  <a class="link link-hover" [routerLink]="['/o', t.objectKey, t.recordId]">{{ elapsed() }}</a>
+  <button class="btn btn-error btn-xs rounded-sm" (click)="stop()">Stop</button>
+</div>
+}

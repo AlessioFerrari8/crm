@@ -13,6 +13,7 @@ import { errorKey } from '../../core/error-message';
 import { I18nService } from '../../services/i18n';
 import { Workspace } from '../../services/workspace';
 import { QuickCreate } from '../quick-create/quick-create';
+import { TimeTracker } from '../time-tracker/time-tracker';
 
 const NOTIFICATION_POLL_MS = 300_000;
 
@@ -24,7 +25,7 @@ const NOTIFICATION_POLL_MS = 300_000;
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, UiPasswordRules, QuickCreate],
+  imports: [RouterLink, LucideAngularModule, UiPasswordRules, QuickCreate, TimeTracker],
   templateUrl: './topbar.html',
   styles: ':host { display: contents; }'
 })
