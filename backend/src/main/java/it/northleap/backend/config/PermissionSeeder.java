@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 @Order(3)
 public class PermissionSeeder implements ApplicationRunner {
 
-    private static final List<String> FIXED_RESOURCES = List.of("page", "chart", "workflow", "user", "apikey");
+    private static final List<String> FIXED_RESOURCES = List.of("page", "chart", "workflow", "user", "apikey", "time", "campaign");
 
     // inject
     private final RoleRepository roleRepository;
@@ -70,6 +70,10 @@ public class PermissionSeeder implements ApplicationRunner {
             case "agent" -> {
                 permission.setCanRead(true);
                 permission.setCanWrite(true);
+                // le ore: un agente vede e scrive solo le sue, il manager invece quelle di tutti
+                if ("time".equals(resource)) permission.setScope(PermScope.OWN);
+                // una campagna manda migliaia di email che non si annullano: all'agente solo lettura
+                if ("campaign".equals(resource)) permission.setCanWrite(false);
             }
             case "viewer" -> permission.setCanRead(true);
             default -> {
