@@ -12,6 +12,12 @@ public record WorkspaceProfileResponse(
         String vatNumber,
         String taxCode,
         String address,
-        String contactLine
+        String contactLine,
+        String fiscalRegime,
+        String street,
+        String zipCode,
+        String city,
+        String province,
+        String countryCode
 ) {
 }

@@ -75,5 +75,23 @@ public class Workspace {
     @Column(name = "contact_line")
     private String contactLine; // "tel. 0464 .... - info@.... - www...."
 
+    // sede separata in pezzi: la fattura elettronica li vuole distinti, `address` resta per il PDF
+    @Column(name = "fiscal_regime", length = 4)
+    private String fiscalRegime = "RF01"; // ordinario
+
+    private String street; // via e numero civico
+
+    @Column(name = "zip_code", length = 5)
+    private String zipCode;
+
+    private String city;
+
+    @Column(length = 2)
+    private String province; // sigla, maiuscola
+
+    @Column(name = "country_code", length = 2)
+    private String countryCode = "IT";
+
+
 
 }

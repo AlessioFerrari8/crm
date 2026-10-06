@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 // App single-tenant: esiste un solo Workspace (creato all'onboarding, che si auto-blocca dopo il
 // primo), quindi "il workspace" e' sempre il primo per data di creazione - stesso accesso usato
 // da AuthService.isOnboarded().
@@ -29,7 +31,8 @@ public class WorkspaceService {
     public WorkspaceProfileResponse getProfile() {
         Workspace ws = currentWorkspace();
         return new WorkspaceProfileResponse(ws.getName(), ws.getBrandColor(), ws.getLogoUrl(), ws.getCalcomUrl(),
-                ws.getLegalName(), ws.getVatNumber(), ws.getTaxCode(), ws.getAddress(), ws.getContactLine());
+                ws.getLegalName(), ws.getVatNumber(), ws.getTaxCode(), ws.getAddress(), ws.getContactLine(),
+                ws.getFiscalRegime(), ws.getStreet(), ws.getZipCode(), ws.getCity(), ws.getProvince(), ws.getCountryCode());
     }
 
     @Transactional
@@ -58,6 +61,15 @@ public class WorkspaceService {
         workspace.setTaxCode(blankToNull(dto.getTaxCode(), workspace.getTaxCode()));
         workspace.setAddress(blankToNull(dto.getAddress(), workspace.getAddress()));
         workspace.setContactLine(blankToNull(dto.getContactLine(), workspace.getContactLine()));
+
+        // sede in pezzi e regime, per la fatttura elettronica
+        workspace.setFiscalRegime(blankToNull(dto.getFiscalRegime(), workspace.getFiscalRegime()));
+        workspace.setStreet(blankToNull(dto.getStreet(), workspace.getStreet()));
+        workspace.setZipCode(blankToNull(dto.getZipCode(), workspace.getZipCode()));
+        workspace.setCity(blankToNull(dto.getCity(), workspace.getCity()));
+        String prov = blankToNull(dto.getProvince(), workspace.getProvince());
+        workspace.setProvince(prov == null ? null : prov.toUpperCase());
+        workspace.setCountryCode(blankToNull(dto.getCountryCode(), workspace.getCountryCode()));
 
         workspaceRepository.save(workspace);
         return toResponse(workspace);
