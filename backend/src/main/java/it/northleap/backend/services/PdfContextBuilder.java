@@ -106,8 +106,17 @@ public class PdfContextBuilder {
         Map<String, Object> d = customer.getData();
         List<String> parts = new ArrayList<>();
         // `address` è un LONGTEXT libero: oggi CAP, comune, provincia e nazione stanno lì dentro.
-        // Diventeranno campi loro con la fatturazione elettronica, che li pretende separati (6.1)
-        add(parts, d.get("address"));
+        // Diventeranno campi loro con la fatturazione elettronica, separati
+        // se l'anagrafica ha già sede in pezzi, si usa quella, altrimenti si usa il vecchio campo libero
+        if (d.get("street") != null && !d.get("street").toString().isBlank()) {
+            add(parts, d.get("street"));
+            add(parts, String.join(" ", Stream.of(d.get("zipCode"), d.get("city"))
+                    .filter(v -> v != null && !v.toString().isBlank()).map(Object::toString).toList())
+                    + (d.get("province") == null || d.get("province").toString().isBlank() ? "" : " (" + d.get("province") + ")"));
+
+        } else {
+            add(parts, d.get("address"));
+        }
         // la chiave è `vat`: in ObjectTypeSeeder non esiste una sola chiave con l'underscore
         Object vat = d.get("vat");
         if (vat != null && !vat.toString().isBlank()) parts.add("P.IVA " + vat);
