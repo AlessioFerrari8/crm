@@ -34,10 +34,16 @@
       @if(printable()) {
         <ui-button variant="ghost" [loading]="printing()" (click)="print()">Stampa PDF</ui-button>
       }
+      @if(objectKey === 'invoice') {
+        <ui-button variant="ghost" [loading]="generating()" (click)="generateEInvoice()">Fattura elettronica</ui-button>
+      }
 
       @if(isQuote()) {
         <ui-button variant="ghost" (click)="revise()">Nuova revisione</ui-button>
         <ui-button variant="accent" [loading]="converting()" (click)="convertToOrder()">Converti in ordine</ui-button>
+      }
+      @if(eInvoiceError(); as msg) {
+        <div class="alert alert-error rounded-sm py-2 text-sm whitespace-pre-line">{{ msg }}</div>
       }
     </div>
 
@@ -206,6 +212,8 @@
       </div>
     }
 
+    <app-record-time [recordId]="recordId" />
+    
     <div class="mt-6">
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Allegati</h2>

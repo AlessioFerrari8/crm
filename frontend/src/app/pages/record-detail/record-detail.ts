@@ -44,11 +44,13 @@ import { TagPicker } from '../../components/tag-picker/tag-picker';
 import { DOCUMENT_KEYS } from '../../models/document-line';
 import { DocumentLineService } from '../../services/document-line.service';
 import { PdfService } from '../../services/pdf.service';
+import { EInvoiceService } from '../../services/e-invoice.service';
+import { RecordTime } from '../../components/record-time/record-time';
 
 @Component({
   selector: 'app-record-detail',
   standalone: true,
-  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner, DocumentLines, TagPicker],
+  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner, DocumentLines, TagPicker, RecordTime],
   templateUrl: './record-detail.html',
 })
 export class RecordDetail {
@@ -66,6 +68,7 @@ export class RecordDetail {
   private readonly destroyRef = inject(DestroyRef);
   private readonly lineService = inject(DocumentLineService);
   private readonly pdf = inject(PdfService);
+  private readonly eInvoices = inject(EInvoiceService);
 
   // NON readonly: navigando verso un altro record della stessa route (duplica, link tra record)
   // Angular riusa il componente, la subscription a paramMap nel costruttore aggiorna questi
@@ -81,6 +84,10 @@ export class RecordDetail {
   protected readonly printable = computed(() => ['quote', 'sales_order', 'delivery_note', 'invoice']
     .includes(this.record()?.objectType?.key ?? ''));
   protected readonly printing: WritableSignal<boolean> = signal(false);
+
+  protected readonly generating: WritableSignal<boolean> = signal(false);
+  // l'elenco di cosa manca, per intero: il taost lo taglierebbe
+  protected readonly eInvoiceError: WritableSignal<string | null> = signal(null);
 
   protected numberOf(key: string): number {
     return Number(this.record()?.data?.[key] ?? 0) || 0;
@@ -428,6 +435,21 @@ export class RecordDetail {
           this.toasts.success('Record eliminato');
           this.router.navigate(['/o', this.objectKey]);
         });
+    });
+  }
+
+  protected generateEInvoice(): void {
+    this.generating.set(true);
+    this.eInvoiceError.set(null);
+    this.eInvoices.generate(this.recordId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.generating.set(false);
+        this.router.navigate(['/e-invoices']);
+      },
+      error: (err) => {
+        this.generating.set(false);
+        this.eInvoiceError.set(err?.error?.message ?? 'Generazione non riuscita');
+      }
     });
   }
 

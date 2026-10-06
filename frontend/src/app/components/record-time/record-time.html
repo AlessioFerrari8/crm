@@ -1,0 +1,30 @@
+<div class="mt-6">
+  <div class="flex items-center justify-between mb-2">
+    <h2 class="font-semibold">Tempo <span class="text-sm font-normal text-base-content/60">{{ hours(totalMinutes()) }}</span></h2>
+    <button class="btn btn-sm rounded-sm" [class.btn-error]="runningHere()" [class.btn-primary]="!runningHere()" (click)="toggle()">
+      {{ runningHere() ? 'Ferma timer' : 'Avvia timer' }}
+    </button>
+  </div>
+
+  <div class="flex gap-2 mb-3">
+    <input type="number" min="1" class="input input-sm rounded-sm w-24" [value]="minutes()"
+           (input)="minutes.set(+$any($event.target).value)" aria-label="Minuti" />
+    <input class="input input-sm rounded-sm flex-1" placeholder="Cosa hai fatto" [value]="description()"
+           (input)="description.set($any($event.target).value)" />
+    <button class="btn btn-ghost btn-sm rounded-sm" (click)="addManual()">Registra</button>
+  </div>
+
+  @if (entries().length) {
+    <ul class="border border-base-300 rounded-sm divide-y divide-base-300 text-sm">
+      @for (e of entries(); track e.id) {
+        <li class="flex items-center gap-2 p-2">
+          <span class="w-28 text-base-content/60">{{ e.startedAt | date: 'dd/MM HH:mm' }}</span>
+          <span class="w-20 font-mono">{{ e.endedAt ? hours(e.minutes) : 'in corso' }}</span>
+          <span class="flex-1 truncate">{{ e.description }}</span>
+          @if (e.autoClosed) { <span class="badge badge-warning badge-sm" title="Chiuso dal sistema dopo 12 ore: controlla i minuti">auto</span> }
+          @if (e.endedAt) { <button class="btn btn-ghost btn-xs rounded-sm" (click)="remove(e)">Elimina</button> }
+        </li>
+      }
+    </ul>
+  }
+</div>
