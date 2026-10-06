@@ -1,0 +1,108 @@
+<div class="p-6 space-y-4">
+  <div class="flex justify-between items-center">
+    <h1 class="text-xl font-semibold">Campagne email</h1>
+    <div class="flex gap-2">
+      <a routerLink="/surveys" class="btn btn-ghost btn-sm rounded-sm">Sondaggi NPS</a>
+      <ui-button variant="primary" (click)="open(null)">Nuova campagna</ui-button>
+    </div>
+  </div>
+
+  @if (!editorOpen()) {
+    <table class="table table-sm">
+      <thead><tr><th>Nome</th><th>Stato</th><th>Avviata</th></tr></thead>
+      <tbody>
+        @for (c of rows(); track c.id) {
+          <tr class="cursor-pointer hover:bg-base-200" (click)="open(c)">
+            <td>{{ c.name }}</td><td>{{ c.status }}</td>
+            <td>{{ c.startedAt ? (c.startedAt | date: 'dd/MM/yyyy HH:mm') : '-' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (editorOpen()) {
+    <div class="border border-base-300 rounded-sm p-4 space-y-4">
+      <button class="link text-sm" (click)="close()">&larr; Tutte le campagne</button>
+      <ul class="steps w-full text-xs">
+        <li class="step" [class.step-primary]="true">Contenuto</li>
+        <li class="step" [class.step-primary]="step() !== 'content'">Pubblico e prova</li>
+        <li class="step" [class.step-primary]="step() === 'send'">Invio</li>
+      </ul>
+
+      @if (step() === 'content') {
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label><span class="block text-sm mb-1">Nome interno</span>
+            <input class="input rounded-sm w-full" [ngModel]="draft().name" (ngModelChange)="set('name', $event)" /></label>
+          <label><span class="block text-sm mb-1">Oggetto</span>
+            <input class="input rounded-sm w-full" [ngModel]="draft().subject" (ngModelChange)="set('subject', $event)" /></label>
+          <label class="sm:col-span-2"><span class="block text-sm mb-1">Anteprima nella casella (preheader)</span>
+            <input class="input rounded-sm w-full" [ngModel]="draft().preheader" (ngModelChange)="set('preheader', $event)"
+                   placeholder="La riga che si legge accanto all'oggetto" /></label>
+          <label class="sm:col-span-2"><span class="block text-sm mb-1">Corpo HTML (Thymeleaf, i campi del destinatario sono r.firstName, r.company...)</span>
+            <textarea rows="10" class="textarea rounded-sm w-full font-mono text-xs" [ngModel]="draft().bodyHtml"
+                      (ngModelChange)="set('bodyHtml', $event)"></textarea></label>
+          <label class="sm:col-span-2"><span class="block text-sm mb-1">Corpo testo (obbligatorio: senza, le email finiscono in spam)</span>
+            <textarea rows="5" class="textarea rounded-sm w-full font-mono text-xs" [ngModel]="draft().bodyText"
+                      (ngModelChange)="set('bodyText', $event)"></textarea></label>
+          <label><span class="block text-sm mb-1">Destinatari da</span>
+            <input class="input rounded-sm w-full" [ngModel]="draft().targetObjectKey" (ngModelChange)="set('targetObjectKey', $event)" /></label>
+        </div>
+        @if (draft().targetFilter; as f) {
+          <app-filter-builder [fields]="fields()" [value]="f" (valueChange)="setFilter($event)" />
+        }
+        <ui-button variant="primary" [loading]="busy()" (click)="saveAndCount()">Salva e conta i destinatari</ui-button>
+      }
+
+      @if (step() === 'audience') {
+        @if (audience(); as a) {
+          <div class="stats stats-vertical sm:stats-horizontal border border-base-300 rounded-sm">
+            <div class="stat"><div class="stat-title">Riceveranno</div><div class="stat-value text-primary">{{ a.sendable | number }}</div></div>
+            <div class="stat"><div class="stat-title">Disiscritti, saltati</div><div class="stat-value text-base">{{ a.optedOut | number }}</div></div>
+            <div class="stat"><div class="stat-title">Senza email</div><div class="stat-value text-base">{{ a.noEmail | number }}</div></div>
+            <div class="stat"><div class="stat-title">Doppioni</div><div class="stat-value text-base">{{ a.duplicates | number }}</div></div>
+          </div>
+          @if (a.missingVariables > 0) {
+            <div class="alert alert-warning rounded-sm text-sm">
+              {{ a.missingVariables }} destinatari hanno vuoto almeno un campo usato nel testo: vedranno il valore di riserva
+              (o niente, se non l'hai previsto con <code>?:</code>).
+            </div>
+          }
+          <p class="text-xs text-base-content/60">Esempi: {{ a.sample.join(', ') }}</p>
+          <div class="flex gap-2 items-end">
+            <ui-button variant="ghost" (click)="test()">Manda una prova a me</ui-button>
+            <ui-button variant="ghost" (click)="step.set('content')">Modifica</ui-button>
+          </div>
+          <div class="border-t border-base-300 pt-4 space-y-2">
+            <p class="text-sm">Per inviare, scrivi il numero dei destinatari: <strong>{{ a.sendable }}</strong>. Non si annulla.</p>
+            <div class="flex gap-2">
+              <input class="input rounded-sm w-40" inputmode="numeric" [value]="typed()" (input)="typed.set($any($event.target).value)" />
+              <ui-button variant="danger" [disabled]="!canSend()" [loading]="busy()" (click)="send()">
+                Invia a {{ a.sendable | number }} destinatari
+              </ui-button>
+            </div>
+          </div>
+        }
+      }
+
+      @if (step() === 'send' && editing(); as c) {
+        <p class="text-sm">Stato: <strong>{{ c.status }}</strong></p>
+        @if (stats(); as s) {
+          <div class="stats border border-base-300 rounded-sm">
+            <div class="stat"><div class="stat-title">Inviate</div><div class="stat-value">{{ s.sent | number }}</div>
+              <div class="stat-desc">{{ s.pending | number }} in coda</div></div>
+            <div class="stat"><div class="stat-title">Aperte</div><div class="stat-value">{{ rate(s.opened, s.sent) }}</div>
+              <div class="stat-desc">stima: molte caselle bloccano le immagini</div></div>
+            <div class="stat"><div class="stat-title">Click</div><div class="stat-value">{{ rate(s.clicked, s.sent) }}</div></div>
+            <div class="stat"><div class="stat-title">Fallite</div><div class="stat-value text-error">{{ s.failed | number }}</div></div>
+          </div>
+        }
+        <div class="flex gap-2">
+          <ui-button variant="ghost" (click)="refreshStats()">Aggiorna</ui-button>
+          @if (c.status === 'SENDING') { <ui-button variant="danger" (click)="pause()">Pausa</ui-button> }
+          @if (c.status === 'PAUSED') { <ui-button variant="primary" (click)="step.set('audience'); saveAndCount()">Riprendi</ui-button> }
+        </div>
+      }
+    </div>
+  }
+</div>
