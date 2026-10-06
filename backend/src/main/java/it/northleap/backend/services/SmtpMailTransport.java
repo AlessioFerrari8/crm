@@ -39,6 +39,26 @@ public class SmtpMailTransport implements MailTransport {
                 && mailSenderProvider.getIfAvailable() != null;
     }
 
+    // multipart/alternative con la parte testo, e gli header che Gmail e Outlook leggono per decidere se sei spam.
+    // Le eccezioni risalgono: la registra il destinatario della campagna
+    @Override
+    public void sendMessage(Outgoing m) {
+        if (!isConfigured()) throw new IllegalStateException("SMTP non configurato");
+        try {
+            JavaMailSender mailSender = mailSenderProvider.getObject();
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(m.to());
+            helper.setSubject(m.subject());
+            helper.setText(m.text(), m.html());
+            for (var h : m.headers().entrySet()) message.setHeader(h.getKey(), h.getValue());
+            mailSender.send(message);
+        } catch (jakarta.mail.MessagingException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
     @Override
     public boolean send(String from, String to, String subject, String html) {
         if (!isConfigured()) {

@@ -42,6 +42,12 @@ public class EmailService {
         return t != null && t.isConfigured();
     }
 
+    public void sendMessage(MailTransport.Outgoing m) {
+        MailTransport t = transport();
+        if (t == null || !t.isConfigured()) throw new IllegalStateException("Invio email non configurato");
+        t.sendMessage(m);
+    }
+
     public boolean send(String to, String subject, String html) {
         return send(null, to, subject, html);
     }
