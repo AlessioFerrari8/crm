@@ -27,7 +27,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/api/integrations/calcom/webhook",
             // sei cifre senza limite di tentativi sono un milione di possibilità probabili in pochi
             // minuti: senza questa riga il secondo fattore è decorativo
-            "/api/auth/mfa/verify"
+            "/api/auth/mfa/verify",
+            // il bersaglio più ovvio del sistema: una pagina di login aperta a persone esterne
+            "/api/portal/auth/login", "/api/portal/auth/accept-invite"
     );
 
     private final RateLimiter rateLimiter;
@@ -37,7 +39,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         if ("POST".equalsIgnoreCase(method)) {
             // form pubblici: path dinamico, match per prefisso
-            return LIMITED_POST_PATHS.contains(path) || path.startsWith("/api/public/forms/");
+            return LIMITED_POST_PATHS.contains(path) || path.startsWith("/api/public/forms/") ||
+                    path.startsWith("/api/public/nps/") || path.startsWith("/api/public/quote/");
         }
         // brute-force della password attuale via cambio password self-service
         return "PATCH".equalsIgnoreCase(method) && "/api/auth/password".equals(path);
