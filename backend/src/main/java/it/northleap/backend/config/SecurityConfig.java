@@ -152,11 +152,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/accept-invite").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/in/*").permitAll()
                         // webhook Cal.com: pubblico, protetto dalla firma HMAC nel service (e
-                        // spento del tutto finche' CALCOM_WEBHOOK_SECRET non e' configurato)
+                        // spento del tutto finché CALCOM_WEBHOOK_SECRET non è configurato)
                         .requestMatchers(HttpMethod.POST, "/api/integrations/calcom/webhook").permitAll()
                         // form pubblici di lead capture: opt-in per tipo (publicForm=true),
                         // honeypot + rate limit per IP, 404 per i tipi non esposti
                         .requestMatchers("/api/public/forms/*").permitAll()
+                        // campagne: pixel, click firmati, disiscrizione
+                        .requestMatchers("/api/public/c/**").permitAll()
+                        .requestMatchers("/api/public/nps/*").permitAll()
+                        .requestMatchers("/api/public/quote/**").permitAll()
+                        // portale clienti: per Spring Security è già pubblico, l'autenticazione la fa
+                        // PortalAuthenticationFilter e ogni rotta pretende un PortalPrincipal (401 senza)
+                        .requestMatchers("/api/portal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
