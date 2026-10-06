@@ -7,7 +7,7 @@ import { Workspace } from '../../../services/workspace';
 
 // Tab "Azienda" (solo admin): legge il profilo da /profile per il prefill e salva i campi brand
 // (nome, colore, logo) via PATCH. updateBrand aggiorna il signal brand condiviso -> la topbar si
-// aggiorna all'istante.
+// aggiorna all'istante
 @Component({
   selector: 'app-company-tab',
   standalone: true,
@@ -34,7 +34,14 @@ export class CompanyTab {
     vatNumber: ['', [Validators.maxLength(20)]],
     taxCode: ['', [Validators.maxLength(20)]],
     address: ['', [Validators.maxLength(1000)]],
-    contactLine: ['', [Validators.maxLength(255)]]
+    contactLine: ['', [Validators.maxLength(255)]],
+    // sede in pezzi per la fattura elettronica: stessi pattern dell'XSD e di UpdateWorkspaceDto
+    fiscalRegime: ['RF01', [Validators.pattern(/^RF(0[1-9]|1[0-9])$/)]],
+    street: ['', [Validators.maxLength(60)]],
+    zipCode: ['', [Validators.pattern(/^$|^[0-9]{5}$/)]],
+    city: ['', [Validators.maxLength(60)]],
+    province: ['', [Validators.pattern(/^$|^[A-Za-z]{2}$/)]],
+    countryCode: ['IT', [Validators.pattern(/^[A-Z]{2}$/)]]
   });
 
   constructor() {
@@ -54,7 +61,13 @@ export class CompanyTab {
               vatNumber: p.vatNumber ?? '',
               taxCode: p.taxCode ?? '',
               address: p.address ?? '',
-              contactLine: p.contactLine ?? ''
+              contactLine: p.contactLine ?? '',
+              fiscalRegime: p.fiscalRegime ?? 'RF01',
+              street: p.street ?? '',
+              zipCode: p.zipCode ?? '',
+              city: p.city ?? '',
+              province: p.province ?? '',
+              countryCode: p.countryCode ?? 'IT'
             },
             { emitEvent: false }
           );
@@ -82,7 +95,13 @@ export class CompanyTab {
         vatNumber: v.vatNumber.trim(),
         taxCode: v.taxCode.trim(),
         address: v.address.trim(),
-        contactLine: v.contactLine.trim()
+        contactLine: v.contactLine.trim(),
+        fiscalRegime: v.fiscalRegime.trim(),
+        street: v.street.trim(),
+        zipCode: v.zipCode.trim(),
+        city: v.city.trim(),
+        province: v.province.trim().toUpperCase(),
+        countryCode: v.countryCode
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

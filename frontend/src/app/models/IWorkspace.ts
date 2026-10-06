@@ -18,6 +18,12 @@ export interface IWorkspaceProfile {
   taxCode: string | null;
   address: string | null;
   contactLine: string | null;
+  fiscalRegime: string | null;
+  street: string | null;
+  zipCode: string | null;
+  city: string | null;
+  province: string | null;
+  countryCode: string | null;
 }
 
 // payload della PATCH /api/workspace
@@ -31,4 +37,10 @@ export interface IWorkspaceUpdate {
   taxCode?: string;
   address?: string;
   contactLine?: string;
+  fiscalRegime?: string;
+  street?: string;
+  zipCode?: string;
+  city?: string;
+  province?: string;
+  countryCode?: string;
 }

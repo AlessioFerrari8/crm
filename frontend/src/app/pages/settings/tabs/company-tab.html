@@ -63,6 +63,43 @@
         placeholder="tel. 0464 000000 - info@miaazienda.it - www.miaazienda.it" />
     </div>
 
+    <div class="divider text-xs uppercase tracking-wide text-base-content/50">Fattura elettronica</div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+      <div class="sm:col-span-4">
+        <label class="block text-sm mb-1">Via e civico</label>
+        <input type="text" formControlName="street" class="input rounded-sm w-full" placeholder="Via Roma 1" />
+      </div>
+
+      <div class="sm:col-span-2">
+        <label class="block text-sm mb-1">CAP</label>
+        <input type="text" formControlName="zipCode" inputmode="numeric" maxlength="5" class="input rounded-sm w-full" />
+      </div>
+
+      <div class="sm:col-span-3">
+        <label class="block text-sm mb-1">Comune</label>
+        <input type="text" formControlName="city" class="input rounded-sm w-full" />
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1">Prov.</label>
+        <input type="text" formControlName="province" maxlength="2" class="input rounded-sm w-full uppercase" />
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1">Nazione</label>
+        <input type="text" formControlName="countryCode" maxlength="2" class="input rounded-sm w-full uppercase" />
+      </div>
+
+      <div>
+        <label class="block text-sm mb-1">Regime</label>
+        <input type="text" formControlName="fiscalRegime" maxlength="4" class="input rounded-sm w-full" />
+      </div>
+    </div>
+
+    <p class="text-xs text-base-content/50">RF01 = ordinario, RF19 = forfettario. Senza via, CAP e comune la fattura
+      elettronica non si genera.</p>
+
     <ui-button type="submit" variant="primary" [loading]="submitting()">Salva</ui-button>
   </form>
 
