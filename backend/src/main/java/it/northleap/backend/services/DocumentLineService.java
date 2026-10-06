@@ -33,6 +33,7 @@ public class DocumentLineService {
     private final DocumentLineCalculator documentLineCalculator;
     private final RbacService rbacService;
     private final DocumentTotalService documentTotalService;
+    private final DocumentLockGuard documentLockGuard;
 
     public List<DocumentLine> list(Actor actor, UUID documentId) {
         assertPerm(actor, documentId, PermAction.READ);
@@ -43,6 +44,9 @@ public class DocumentLineService {
     @Transactional
     public List<DocumentLine> replaceAll(Actor actor, UUID documentId, List<DocumentLineDto> dtos) {
         Record document = assertPerm(actor, documentId, PermAction.WRITE);
+
+        // le righe sono la fattura quanto la testata: bloccare solo RecordsService lascerebbe la porta aperta
+        documentLockGuard.assertEditable(document.getObjectType().getKey(), documentId);
 
         // cancella e riscrive: il diff per riga costerebbe più codice di quanto valga
         // e le righe di un documento sono poche decine

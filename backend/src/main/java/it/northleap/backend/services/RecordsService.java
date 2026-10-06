@@ -52,6 +52,7 @@ public class RecordsService {
     private final ApplicationEventPublisher events;
     private final DocumentNumberService documentNumberService;
     private final RelationTitleService relationTitleService;
+    private final DocumentLockGuard documentLockGuard;
 
     public RecordQueryResponse query(Actor actor, String key, QueryRecordsDto q) {
         PermScope scope = authorize(actor, key, PermAction.READ);
@@ -124,6 +125,7 @@ public class RecordsService {
                 .orElseThrow(() -> new NotFoundException("Record non trovato"));
 
         assertOwnership(scope, actor, existing, "Puoi modificare solo i tuoi record");
+        documentLockGuard.assertEditable(key, id);
 
         Map<String, Object> merged = new LinkedHashMap<>(existing.getData());
         merged.putAll(dto.getData());
@@ -155,6 +157,7 @@ public class RecordsService {
         // stessa enforcement OWN-scope di update()/bulk(): senza questo un attore con WRITE in
         // scope OWN poteva cancellare (soft-delete) record altrui — lo scope qui veniva ignorato
         assertOwnership(scope, actor, existing, "Puoi eliminare solo i tuoi record");
+        documentLockGuard.assertEditable(key, id);
 
         existing.setDeleted(true);
         recordRepository.save(existing);
@@ -181,6 +184,9 @@ public class RecordsService {
         List<Record> records = ownScope
                 ? recordRepository.findByIdInAndObjectType_IdAndOwnerIdAndIsDeletedFalse(ids, obj.getId(), actor.id())
                 : recordRepository.findByIdInAndObjectType_IdAndIsDeletedFalse(ids, obj.getId());
+
+        // anche in bulk: una sola fattura trasmessa blocca tutta l'operazione, meglio di un "fatto" parziale
+        records.forEach(r -> documentLockGuard.assertEditable(key, r.getId()));
 
         if (req.getAction() == BulkAction.DELETE) {
             records.forEach(r -> r.setDeleted(true));

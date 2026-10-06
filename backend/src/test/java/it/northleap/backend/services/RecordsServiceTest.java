@@ -48,6 +48,8 @@ import static org.mockito.Mockito.when;
 class RecordsServiceTest {
 
     @Mock
+    private DocumentLockGuard documentLockGuard;
+    @Mock
     private ObjectTypeRepository objectTypeRepository;
     @Mock
     private RecordRepository recordRepository;
@@ -74,7 +76,7 @@ class RecordsServiceTest {
     void setUp() {
         service = new RecordsService(objectTypeRepository, recordRepository, recordLinkRepository,
                 new RecordValidator(), recordQueryService, rbacService, auditService, events,
-                documentNumberService, relationTitleService);
+                documentNumberService, relationTitleService, documentLockGuard);
         objectType = new ObjectType();
         objectType.setId(UUID.randomUUID());
         objectType.setKey("lead");
