@@ -83,4 +83,8 @@ public class User {
     // l'ultimo contatore accettato: è l'anti replay
     @Column(name = "mfa_last_counter")
     private Long mfaLastCounter;
+
+    // tariffa oraria per il time tracking: si copia su ogni registrazione alla chiusura
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private java.math.BigDecimal hourlyRate;
 }
