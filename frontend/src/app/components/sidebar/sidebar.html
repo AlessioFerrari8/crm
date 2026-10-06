@@ -66,6 +66,34 @@
     </a>
 
     <a
+      routerLink="/e-invoices"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Fatture elettroniche"
+    >
+      <lucide-icon [img]="EInvoicesIcon" [size]="20" />
+      @if(showLabels()) {
+        <span>Fatture elettroniche</span>
+      }
+    </a>
+
+    <a
+      routerLink="/campaigns"
+      routerLinkActive="active"
+      class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
+      [class.justify-center]="!showLabels()"
+      [class.justify-start]="showLabels()"
+      title="Campagne"
+    >
+      <lucide-icon [img]="CampaingsIcon" [size]="20" />
+      @if(showLabels()) {
+        <span>Campagne</span>
+      }
+    </a>
+
+    <a
       routerLink="/duplicates"
       routerLinkActive="active"
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"

@@ -61,6 +61,16 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/search/search').then((m) => m.Search)
       },
       {
+        path: 'e-invoices',
+        title: 'Fatture elettroniche · NorthLeap',
+        loadComponent: () => import('./pages/e-invoices/e-invoices').then((m) => m.EInvoices)
+      },
+      {
+        path: 'campaigns',
+        title: 'Campagne · NorthLeap',
+        loadComponent: () => import('./pages/campaigns/campaigns').then((m) => m.Campaigns)
+      },
+      {
         path: 'settings',
         title: 'Impostazioni · NorthLeap',
         loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings)

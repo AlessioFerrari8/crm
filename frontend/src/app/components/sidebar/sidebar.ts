@@ -1,7 +1,7 @@
 import { Component, DestroyRef, NgZone, Renderer2, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { CalendarDays, ChartColumn, LucideAngularModule, Settings, Copy, FileText, LayoutDashboard } from 'lucide-angular';
+import { CalendarDays, ChartColumn, LucideAngularModule, Settings, Copy, FileText, LayoutDashboard, FileCode, Megaphone } from 'lucide-angular';
 
 import { resolveObjectIcon } from '../../core/object-icons';
 import { ObjectType } from '../../models/object-type';
@@ -46,6 +46,8 @@ export class Sidebar {
   protected readonly DashboardsIcon = LayoutDashboard;
   protected readonly ReportsIcon = FileText;
   protected readonly DuplicatesIcon = Copy;
+  protected readonly EInvoicesIcon = FileCode;
+  protected readonly CampaingsIcon = Megaphone;
 
   // estremi esposti al template (per gli attributi aria della maniglia)
   protected readonly MIN_WIDTH = MIN_WIDTH;
