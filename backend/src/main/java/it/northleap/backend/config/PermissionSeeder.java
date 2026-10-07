@@ -39,7 +39,7 @@ public class PermissionSeeder implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         List<String> objectTypeKeys = objectTypeRepository.findAll().stream().map(ObjectType::getKey).toList();
-        List<String> resources = Stream.concat(FIXED_RESOURCES.stream(), objectTypeKeys.stream()).toList();
+        List<String> resources = Stream.concat(FIXED_RESOURCES.stream(), objectTypeKeys.stream()).distinct().toList();
 
         List<Permission> toCreate = new ArrayList<>();
         for (Role role : roleRepository.findAll()) {
