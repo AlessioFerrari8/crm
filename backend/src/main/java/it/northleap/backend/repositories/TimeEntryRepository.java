@@ -21,7 +21,7 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, UUID> {
     @Query("""
         select t from TimeEntry except 
             where (:recordId is null or t.recordId = :recordId)
-                and (:userId is null ot t.userId = :userId)
+                and (:userId is null or t.userId = :userId)
                 and t.startedAt >= :from and t.startedAt < :to
             order by t.startedAt desc
         """)
