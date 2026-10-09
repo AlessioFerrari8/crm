@@ -1,0 +1,36 @@
+<div class="p-6 space-y-4 max-w-3xl">
+  <h1 class="text-xl font-semibold">Sondaggi NPS</h1>
+  <p class="text-sm text-base-content/70">
+    Per mandarli alla chiusura di un ticket: un workflow su "stato cambiato in chiuso" con l'azione <code>create_nps_response</code> e l'id del sondaggio.
+    Chi ha già ricevuto un sondaggio negli ultimi giorni di pausa viene saltato.
+  </p>
+
+  @for (s of surveys(); track s.id) {
+    <div class="border border-base-300 rounded-sm p-4 flex justify-between items-center">
+      <div>
+        <p class="font-medium">{{ s.name }} @if (!s.active) { <span class="badge badge-ghost badge-sm">spento</span> }</p>
+        <p class="text-xs text-base-content/60 font-mono select-all">{{ s.id }}</p>
+        @if (stats()[s.id]; as st) {
+          <p class="text-sm mt-1">
+            @if (st.nps !== null) { NPS <strong class="text-lg">{{ st.nps }}</strong> su {{ st.answered }} risposte, }
+            {{ st.responseRatePercent }}% di risposta ({{ st.sent }} inviati)
+          </p>
+          @if (st.tooFewAnswers) {
+            <p class="text-xs text-warning">Meno di 30 risposte: il numero e' ancora rumore.</p>
+          }
+        }
+      </div>
+      <ui-button variant="ghost" (click)="toggle(s)">{{ s.active ? 'Spegni' : 'Accendi' }}</ui-button>
+    </div>
+  }
+
+  <div class="border border-base-300 rounded-sm p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <input class="input rounded-sm" placeholder="Nome del sondaggio" [ngModel]="draft().name"
+           (ngModelChange)="draft.set({ ...draft(), name: $event })" />
+    <label class="flex items-center gap-2 text-sm">Pausa fra due invii alla stessa persona
+      <input type="number" min="0" class="input input-sm rounded-sm w-20" [ngModel]="draft().cooldownDays"
+             (ngModelChange)="draft.set({ ...draft(), cooldownDays: +$event })" /> giorni</label>
+    <input class="input rounded-sm sm:col-span-2" [ngModel]="draft().question" (ngModelChange)="draft.set({ ...draft(), question: $event })" />
+    <ui-button variant="primary" (click)="create()">Crea sondaggio</ui-button>
+  </div>
+</div>

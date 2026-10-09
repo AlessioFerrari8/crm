@@ -29,6 +29,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/public-form/public-form').then((m) => m.PublicForm)
   },
   {
+    path: 'nps/:token',
+    title: 'Un minuto per noi · NorthLeap',
+    loadComponent: () => import('./pages/nps-public/nps-public').then((m) => m.NpsPublic)
+  },
+  {
     path: '',
     canActivate: [authGuard],
     children: [
@@ -64,6 +69,11 @@ export const routes: Routes = [
         path: 'e-invoices',
         title: 'Fatture elettroniche · NorthLeap',
         loadComponent: () => import('./pages/e-invoices/e-invoices').then((m) => m.EInvoices)
+      },
+      {
+        path: 'surveys',
+        title: 'Sondaggi NPS · NorthLeap',
+        loadComponent: () => import('./pages/nps/nps').then((m) => m.Nps)
       },
       {
         path: 'campaigns',

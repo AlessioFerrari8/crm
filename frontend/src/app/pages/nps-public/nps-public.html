@@ -1,0 +1,24 @@
+<main class="min-h-screen flex items-center justify-center p-4 bg-base-200">
+  <div class="w-full max-w-lg bg-base-100 rounded-sm p-6 space-y-4 text-center">
+    @switch (state()) {
+      @case ('loading') { <p>...</p> }
+      @case ('ask') {
+        <h1 class="text-lg font-semibold">{{ question() }}</h1>
+        <div class="grid grid-cols-6 sm:grid-cols-11 gap-2">
+          @for (n of scores; track n) {
+            <button class="btn rounded-sm h-12" (click)="pick(n)">{{ n }}</button>
+          }
+        </div>
+        <div class="flex justify-between text-xs text-base-content/60"><span>Per niente</span><span>Sicuramente</span></div>
+      }
+      @case ('comment') {
+        <p class="text-lg">Hai scelto <strong>{{ score() }}</strong>. Vuoi dirci perché?</p>
+        <textarea rows="4" maxlength="2000" class="textarea rounded-sm w-full" [value]="comment()" (input)="comment.set($any($event.target).value)" placeholder="Facoltativo"></textarea>
+        <button class="btn btn-primary rounded-sm w-full" (click)="submit()">Invia</button>
+      }
+      @case ('done') { <p class="text-lg">Grazie, la tua risposta è arrivata.</p> }
+      @case ('gone') { <p class="text-lg">Hai già risposto, grazie.</p> }
+      @default { <p class="text-lg">Questo link non è valido.</p> }
+    }
+  </div>
+</main>
