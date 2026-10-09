@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -41,6 +42,7 @@ public class WorkflowActionExecutor {
     private final ObjectMapper objectMapper;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final NpsService npsService;
 
     @Transactional
     public Map<String, Object> execute(Map<String, Object> action, Record record) {
@@ -54,6 +56,7 @@ public class WorkflowActionExecutor {
             case "create_calendar_event" -> createCalendarEvent(action, record);
             case "notify_user" -> notifyUser(action, record);
             case "send_email" -> sendEmail(action, record);
+            case "create_nps_response" -> createNpsResponse(action, record);
             case "send_webhook", "call_api" -> sendWebhook(action, record);
             // l'originale non dorme qui: il vero sleep accade solo nei nodi "delay" del grafo
             // (graph-runner.ts), mai in questo switch lineare - questo case e' vestigiale, non un bug
@@ -208,6 +211,23 @@ public class WorkflowActionExecutor {
 
         boolean sent = emailService.send(from, to, subject, html);
         return Map.of("email", sent);
+    }
+
+    // ON_TICKET_CLOSED è un workflow (field.changed su status) con questa azione: tutta l'integrazione è questo case.
+    // Il contatto è il record stesso o la sua relation "contact"
+    private Map<String, Object> createNpsResponse(Map<String, Object> action, Record record) {
+        Object survey = action.get("surveyId");
+        if (survey == null) return Map.of("skipped", "no surveyId");
+        UUID contactId = "contact".equals(record.getObjectType().getKey()) ? record.getId() : relationId(record, "contact");
+        if (contactId == null) return Map.of("skipped", "no contact");
+        boolean sent = npsService.invite(UUID.fromString(survey.toString()), contactId).isPresent();
+        return Map.of("nps", sent ? "sent" : "skipped (cooldown, opt-out o email mancante)");
+    }
+
+    private UUID relationId(Record record, String key) {
+        Object v = record.getData() == null ? null : record.getData().get(key);
+        if (v instanceof Collection<?> c) v = c.isEmpty() ? null : c.iterator().next();
+        return v == null || v.toString().isBlank() ? null : UUID.fromString(v.toString());
     }
 
     private Map<String, Object> sendWebhook(Map<String, Object> action, Record record) {

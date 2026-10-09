@@ -51,6 +51,16 @@ public class GlobalExceptionAdvice {
         );
     }
 
+    // 401 del portale, 410 del link NPS già usato: senza questo handler li prenderebbe quello generico qui sotto
+    // e diventerebbero 500
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", ex.getStatusCode().value(),
+                "message", ex.getReason() == null ? "" : ex.getReason()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex) {
         log.error("Eccezione non gestita da nessuna advice più specifica", ex);

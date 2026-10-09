@@ -44,6 +44,9 @@ class WorkflowActionExecutorTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private NpsService npsService;
+
     private WorkflowActionExecutor executor;
 
     @BeforeEach
@@ -61,7 +64,7 @@ class WorkflowActionExecutorTest {
         executor = new WorkflowActionExecutor(
                 objectTypeRepository, recordRepository, recordLinkRepository,
                 new RecordValidator(), new ConditionEvaluator(), JsonMapper.builder().build(),
-                emailService, notificationService);
+                emailService, notificationService, npsService);
     }
 
     private ObjectType objectType(String key, FieldDef... fields) {
