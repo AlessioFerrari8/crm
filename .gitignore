@@ -6,6 +6,7 @@ REVIEW-A7.md
 docs/devlogs/
 # appunti di lavoro e materiale di riferimento, non fanno parte del progetto
 devlogs.md
+devlogs_terra.md
 tests.md
 # solo la cartella resources/ alla RADICE (screenshot): senza la barra la regola
 # valeva per ogni cartella "resources", compresa quella del backend
