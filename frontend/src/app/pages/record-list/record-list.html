@@ -220,6 +220,7 @@
                 <span class="truncate flex-1">{{ rec.title || '(senza titolo)' }}</span>
                 <span class="text-xs text-base-content/40 shrink-0">{{ trashDate(rec) }}</span>
                 <button class="btn btn-ghost btn-xs rounded-sm shrink-0" (click)="restoreRecord(rec)">Ripristina</button>
+                <button class="btn btn-ghost btn-xs rounded-sm shrink-0 text-error" (click)="purgeRecord(rec)">Elimina per sempre</button>
               </li>
             }
           </ul>

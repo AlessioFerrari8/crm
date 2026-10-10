@@ -407,6 +407,21 @@ export class RecordList {
       });
   }
 
+  // non si annulla, la conferma dice cosa sparisce davvero
+  protected async purgeRecord(rec: RecordItem): Promise<void> {
+    const ok = await this.confirmService.ask(
+      `Eliminare per sempre "${rec.title || rec.id}"? Spariscono anche righe, allegati, note e ore registrate. Non si può annullare.`
+    );
+    if (!ok) return;
+    this.recordsService
+      .purge(this.objectKey(), rec.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.toasts.success('Eliminato definitivamente');
+        this.loadTrash();
+      });
+  }
+
   protected trashDate(rec: RecordItem): string {
     return new Date(rec.updatedAt).toLocaleString('it-IT');
   }

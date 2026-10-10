@@ -72,6 +72,11 @@ export class RecordsService {
     return this.http.post<RecordItem>(`${this.base}/${key}/${id}/restore`, {});
   }
 
+  // cancellazione definitiva dal cestino
+  purge(key: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${key}/trash/${id}`);
+  }
+
   // azione di massa su più record (update di un campo o delete). Il backend applica RBAC + scope OWN
   // e cappa a 500 id lato server.
   bulk(key: string, body: BulkRecordsRequest): Observable<BulkResult> {
