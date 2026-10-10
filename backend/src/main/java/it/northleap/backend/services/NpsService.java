@@ -10,7 +10,7 @@ import it.northleap.backend.repositories.NpsResponseRepository;
 import it.northleap.backend.repositories.NpsSurveyRepository;
 import it.northleap.backend.repositories.RecordRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

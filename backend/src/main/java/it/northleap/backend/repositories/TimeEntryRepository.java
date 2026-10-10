@@ -19,7 +19,7 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, UUID> {
 
     // i filtri nulli si spengono da soli: una query invece di otto metodi derivati
     @Query("""
-        select t from TimeEntry except 
+        select t from TimeEntry t
             where (:recordId is null or t.recordId = :recordId)
                 and (:userId is null or t.userId = :userId)
                 and t.startedAt >= :from and t.startedAt < :to
