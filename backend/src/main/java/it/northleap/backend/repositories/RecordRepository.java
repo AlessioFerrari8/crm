@@ -13,6 +13,22 @@ import java.util.UUID;
 @Repository
 public interface RecordRepository extends JpaRepository<Record, UUID> {
     Optional<Record> findByIdAndIsDeletedFalse(UUID id);
+
+    // full-text sui valori del jsonb più il titolo, già filtrata per permessi. La stessa espressione dell'indice
+    // idx_record_data_fts (IndexRunner), o l'indice non viene usato
+    @Query(value = """
+        select r.* from record r
+            where r.is_deleted = false
+            and (r.object_type_id in (:allTypes) or (r.object_type_id in (:ownTypes) and r.owner_id = :me))
+            and (to_tsvector('italian', r.data) @@ plainto_tsquery('italian', :q)
+                or r.title ilike concat('%', :q, '%'))
+            order by ts_rank(to_tsvector('italian', r.data), plainto_tsquery('italian', :q)) desc, r.updated_at desc
+            limit 30
+           """, nativeQuery = true)
+    List<Record> fullTextSearch(@Param("q") String q, @Param("allTypes") List<UUID> allTypes,
+                                      @Param("ownTypes") List<UUID> ownTypes, @Param("me") UUID me);
+
+
     List<Record> findByIsDeletedFalseAndTitleContainingOrderByUpdatedAtDesc(String title);
     List<Record> findByIdInAndObjectType_IdAndIsDeletedFalse(List<UUID> ids, UUID objectTypeId);
     List<Record> findByIdInAndObjectType_IdAndOwnerIdAndIsDeletedFalse(List<UUID> ids, UUID objectTypeId, UUID ownerId);

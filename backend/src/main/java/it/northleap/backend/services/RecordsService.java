@@ -246,29 +246,30 @@ public class RecordsService {
         return record;
     }
 
+    // full-text sul jsonb. I permessi si risolvono prima e vanno dentro la query: filtrare dopo un limit restituirebbe
+    // meno risultati di quelli che ci sono, e una ricerca che ignora lo scope è un buco
     public List<Record> globalSearch(Actor actor, String q) {
-        if (q == null || q.length() < 2) {
+        if (q == null || q.strip().length() < 2) {
             return List.of();
         }
         List<Record> candidates = recordRepository.findByIsDeletedFalseAndTitleContainingOrderByUpdatedAtDesc(q)
                 .stream().limit(30).toList();
 
-        Map<UUID, RbacService.Resolution> cache = new LinkedHashMap<>();
-        return candidates.stream()
-                .filter(r -> {
-                    RbacService.Resolution res = cache.computeIfAbsent(r.getObjectType().getId(),
-                            oid -> rbacService.resolve(actor.roleIds(), r.getObjectType().getKey(), PermAction.READ));
-                    if (!res.allowed()) {
-                        return false;
-                    }
-                    // sotto scope OWN la ricerca globale non deve esporre i titoli dei record altrui
-                    // (stesso confine record-level che query() applica via owner_id)
-                    if (res.scope() == PermScope.OWN && actor.type() == ActorType.USER) {
-                        return actor.id().equals(r.getOwnerId());
-                    }
-                    return true;
-                })
-                .toList();
+        List<UUID> all = new ArrayList<>();
+        List<UUID> own = new ArrayList<>();
+        for (ObjectType t : objectTypeRepository.findAll()) {
+            RbacService.Resolution res = rbacService.resolve(actor.roleIds(), t.getKey(), PermAction.READ);
+            if (!res.allowed()) continue;
+            // sotto scope OWN la ricerca non deve esporre i titoli dei record altrui
+            if (res.scope() == PermScope.OWN && actor.type() == ActorType.USER) own.add(t.getId());
+            else all.add(t.getId());
+        }
+
+        if (all.isEmpty() && own.isEmpty()) return List.of();
+        // in () vuoto è un errore di sintassi in SQL: un UUID che non esiste tiene la lista non vuota
+        UUID none = new UUID(0, 0);
+        return recordRepository.fullTextSearch(q.strip(), all.isEmpty() ? List.of(none) : all, own.isEmpty() ?
+                List.of(none) : own, actor.id());
     }
 
     // L'originale (records.service.ts) usa sempre `dto.ownerId ?? actor.id` a prescindere dallo
