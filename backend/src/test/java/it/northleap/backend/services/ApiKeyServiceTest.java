@@ -39,8 +39,10 @@ class ApiKeyServiceTest {
     @Test
     void createGeneratesPrefixedKeyAndStoresOnlyHash() {
         ApiKeyService svc = newService();
+        when(roleRepository.findByKey("agent")).thenReturn(Optional.of(new Role()));
         CreateApiKeyDto dto = new CreateApiKeyDto();
         dto.setName("integration");
+        dto.setRoleKey("agent");
 
         ApiKeyCreatedResponse result = svc.create(dto);
 
@@ -52,6 +54,14 @@ class ApiKeyServiceTest {
         ApiKey saved = captor.getValue();
         assertEquals(HashUtil.sha256Hex(result.apiKey()), saved.getKeyHash());
         assertEquals(result.apiKey().substring(0, 10), saved.getPrefix());
+    }
+
+    // una chiave senza ruolo risponderebbe 403 a tutto: si rifiuta alla creazione
+    @Test
+    void createWithoutRoleIsRefused() {
+        CreateApiKeyDto dto = new CreateApiKeyDto();
+        dto.setName("integration");
+        assertThrows(it.northleap.backend.exceptions.BadRequestException.class, () -> newService().create(dto));
     }
 
     @Test

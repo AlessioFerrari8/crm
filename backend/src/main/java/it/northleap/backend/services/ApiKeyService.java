@@ -44,6 +44,12 @@ public class ApiKeyService {
                 ? roleRepository.findByKey(dto.getRoleKey()).orElse(null)
                 : null;
 
+        // una chiave senza ruolo ha roleIds vuoto: RbacService nega tutto e ogni chiamata risponde 403.
+        // sembra rotta, quindi non si crea
+        if (role == null) {
+            throw new it.northleap.backend.exceptions.BadRequestException("Scegli un ruolo per la chiave");
+        }
+
         ApiKey key = new ApiKey();
         key.setName(dto.getName());
         key.setKeyHash(HashUtil.sha256Hex(raw));

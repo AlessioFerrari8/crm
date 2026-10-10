@@ -5,13 +5,17 @@
       <input formControlName="name" class="input rounded-sm w-full" placeholder="es. Integrazione Zapier" />
     </div>
     <div>
-      <label class="block text-sm mb-1">Ruolo (opzionale)</label>
+      <label class="block text-sm mb-1">Ruolo <span class="text-error">*</span></label>
+      <!-- senza ruolo la chiave risponde 403 a tutto: il backend la rifiuta -->
       <select formControlName="roleKey" class="select rounded-sm">
-        <option value="">—</option>
         @for (r of roleKeys; track r) { <option [value]="r">{{ r }}</option> }
       </select>
     </div>
     <ui-button type="submit" variant="primary" [loading]="submitting()">Crea chiave</ui-button>
+    <!-- con scope OWN il filtro è ownerId = id della CHIAVE, che nessun record ha -->
+    <p class="w-full text-xs text-base-content/60">Per un client AI (server MCP su /api/mcp) usa un ruolo con scope TEAM o ALL: con scope OWN
+      la chiave non vede nessun record, perché nessun record ha la chiave come proprietario.
+    </p>
   </form>
 
   @if (createdKey(); as key) {

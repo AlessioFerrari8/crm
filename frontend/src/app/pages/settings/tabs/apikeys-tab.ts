@@ -43,7 +43,7 @@ export class ApiKeysTab {
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
-    roleKey: ['']
+    roleKey: ['agent', Validators.required]
   });
 
   protected create(): void {
@@ -60,7 +60,7 @@ export class ApiKeysTab {
         next: (res) => {
           this.submitting.set(false);
           this.createdKey.set(res.apiKey);
-          this.form.reset({ roleKey: '' });
+          this.form.reset({ roleKey: 'agent' });
           this.reload$.next();
         },
         error: () => this.submitting.set(false)
