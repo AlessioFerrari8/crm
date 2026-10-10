@@ -1,0 +1,27 @@
+<main class="min-h-screen bg-base-200 p-4 flex justify-center">
+  <div class="w-full max-w-3xl bg-base-100 rounded-sm p-6 space-y-4">
+    @switch (state()) {
+      @case ('loading') { <p>...</p> }
+      @case ('invalid') { <p class="text-lg">Questo link non è valido o è stato sostituito da uno più recente.</p> }
+      @default {
+        @if (quote(); as q) {
+          <h1 class="text-xl font-semibold">Preventivo {{ q.number }}</h1>
+          <p class="text-sm text-base-content/70">Per {{ q.customer }} · Totale <strong>{{ num(q.total) | number: '1.2-2' : 'it' }} EUR</strong>
+            @if (q.validUntil) { · valido fino al {{ q.validUntil }} }</p>
+          @if (preview(); as url) {
+            <iframe [src]="url" title="Preventivo in PDF" class="w-full h-[70vh] border border-base-300 rounded-sm"></iframe>
+          }
+          <a [href]="pdfUrl" class="link text-sm">Scarica il PDF</a>
+          @if (state() === 'done') {
+            <div class="alert alert-success rounded-sm">Preventivo accettato. Ti contatteremo a breve per i prossimi passi.</div>
+          } @else {
+            <textarea rows="3" maxlength="1000" class="textarea rounded-sm w-full" placeholder="Una nota per noi (facoltativa)"
+                      [value]="note()" (input)="note.set($any($event.target).value)"></textarea>
+            @if (error()) { <div class="alert alert-error rounded-sm text-sm">{{ error() }}</div> }
+            <button class="btn btn-primary rounded-sm w-full" [disabled]="busy()" (click)="accept()">Accetto il preventivo</button>
+          }
+        }
+      }
+    }
+  </div>
+</main>

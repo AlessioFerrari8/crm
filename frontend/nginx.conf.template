@@ -37,7 +37,7 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-cSbqQyUlm50kEtNX2ujzgNMdR4Bu/UJUXzXH8cy3e1Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ${API_ORIGIN}; frame-src https://cal.com https://*.cal.com; frame-ancestors 'self'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-cSbqQyUlm50kEtNX2ujzgNMdR4Bu/UJUXzXH8cy3e1Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ${API_ORIGIN}; frame-src blob: https://cal.com https://*.cal.com; frame-ancestors 'self'; worker-src 'self'" always;
         try_files $uri $uri/ /index.html;
     }
 

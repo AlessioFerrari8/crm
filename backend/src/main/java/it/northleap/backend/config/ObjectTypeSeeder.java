@@ -154,7 +154,13 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     f("notes", "Note", FieldType.LONGTEXT),
                     f("paymentTerms", "Condizioni di pagamento", FieldType.TEXT),
                     f("billingAddress", "Indirizzo di fatturazione", FieldType.LONGTEXT),
-                    f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT)
+                    f("shippingAddress", "Indirizzo di spedizione", FieldType.LONGTEXT),
+                    // accettazione da link. Il token è casuale e non è l'id: revocarlo è riscrivere un campo
+                    f("sentAt", "Inviato al cliente il", FieldType.DATETIME),
+                    f("acceptedAt", "Accettato il", FieldType.DATETIME),
+                    f("acceptNote", "Nota del cliente", FieldType.LONGTEXT),
+                    f("acceptIp", "IP di accettazione", FieldType.TEXT),
+                    f("acceptToken", "Token del link", FieldType.TEXT)
             ), new NumberingSpec("number", null, true, 0, "-")),
             new ObjectSpec("product", "Prodotto/Servizio", "Prodotti/Servizi", "box", "#6366F1", List.of(
                     fReq("name", "Nome", FieldType.TEXT),

@@ -46,6 +46,8 @@ import { DocumentLineService } from '../../services/document-line.service';
 import { PdfService } from '../../services/pdf.service';
 import { EInvoiceService } from '../../services/e-invoice.service';
 import { RecordTime } from '../../components/record-time/record-time';
+import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../core/api-config';
 
 @Component({
   selector: 'app-record-detail',
@@ -69,6 +71,7 @@ export class RecordDetail {
   private readonly lineService = inject(DocumentLineService);
   private readonly pdf = inject(PdfService);
   private readonly eInvoices = inject(EInvoiceService);
+  private readonly http = inject(HttpClient);
 
   // NON readonly: navigando verso un altro record della stessa route (duplica, link tra record)
   // Angular riusa il componente, la subscription a paramMap nel costruttore aggiorna questi
@@ -436,6 +439,17 @@ export class RecordDetail {
           this.router.navigate(['/o', this.objectKey]);
         });
     });
+  }
+
+  // il link firmato da mandare al cliente. Rigenerarlo revoca il precedente
+  protected copyAcceptLink(): void {
+    this.http
+      .post<{ url: string }>(`${API_BASE_URL}/api/quotes/${this.recordId}/acceptLink`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((r) => {
+        void navigator.clipboard.writeText(r.url);
+        this.toasts.success('Link copiato: incollalo nelle mail al cliente');
+      });
   }
 
   protected generateEInvoice(): void {

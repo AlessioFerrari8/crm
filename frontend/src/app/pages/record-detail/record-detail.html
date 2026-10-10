@@ -34,6 +34,9 @@
       @if(printable()) {
         <ui-button variant="ghost" [loading]="printing()" (click)="print()">Stampa PDF</ui-button>
       }
+      @if(isQuote() && !record()?.data?.['acceptedAt']) {
+        <ui-button variant="ghost" (click)="copyAcceptLink()">Link di accettazione</ui-button>
+      }
       @if(objectKey === 'invoice') {
         <ui-button variant="ghost" [loading]="generating()" (click)="generateEInvoice()">Fattura elettronica</ui-button>
       }

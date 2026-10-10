@@ -34,6 +34,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/nps-public/nps-public').then((m) => m.NpsPublic)
   },
   {
+    path: 'q/:id',
+    title: 'Preventivo · NorthLeap',
+    loadComponent: () => import('./pages/quote-accept/quote-accept').then((m) => m.QuoteAccept)
+  },
+  {
     path: '',
     canActivate: [authGuard],
     children: [

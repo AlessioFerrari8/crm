@@ -47,6 +47,16 @@ public class PdfService {
         return new Rendered(bytes, filename(doc));
     }
 
+    // stampa senza Actor, per il link pubblico del preventivo. Il chiamante ha già verificato token e firma: questo
+    // metodo non controlla niente, e per questo non è raggiungibile da nessun controller interno. Preferenze di
+    // default: il cliente non ha un profilo
+    @Transactional(readOnly = true)
+    public Rendered printPublic(Record doc) {
+        PdfTemplate template = pick(doc.getObjectType().getKey(), null);
+        byte[] bytes = pdfRenderService.render(template, pdfContextBuilder.build(doc, new UserPreference()));
+        return new Rendered(bytes, filename(doc));
+    }
+
     // anteprima
     @Transactional(readOnly = true)
     public byte[] preview(Actor actor, PdfPreviewDto dto) {
