@@ -193,30 +193,9 @@
       }
     </div>
 
-    @if (history(); as h) {
-      <div class="mt-6">
-        <h2 class="font-semibold mb-2">Cronologia</h2>
-        @if (h.length === 0) {
-          <p class="text-sm text-base-content/50">Nessuna modifica registrata.</p>
-        } @else {
-          <ul class="border border-base-300 rounded-sm divide-y divide-base-300">
-            @for (e of h; track $index) {
-              <li class="flex flex-wrap items-center gap-2 p-2 text-sm">
-                <span class="badge badge-ghost badge-sm rounded-sm">{{ e.action }}</span>
-                <span>{{ e.author }}</span>
-                @if (e.fields.length > 0) {
-                  <span class="text-xs text-base-content/50">campi: {{ e.fields.join(', ') }}</span>
-                }
-                <span class="ml-auto text-xs text-base-content/40">{{ e.date }}</span>
-              </li>
-            }
-          </ul>
-        }
-      </div>
-    }
-
+    <app-record-history [objectKey]="objectKey" [recordId]="recordId" [version]="record()?.updatedAt" />
     <app-record-time [recordId]="recordId" />
-    
+
     <div class="mt-6">
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Allegati</h2>

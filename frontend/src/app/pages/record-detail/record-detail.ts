@@ -16,7 +16,6 @@ import {
   catchError,
   debounceTime,
   distinctUntilChanged,
-  forkJoin,
   map,
   of,
   startWith,
@@ -48,11 +47,12 @@ import { EInvoiceService } from '../../services/e-invoice.service';
 import { RecordTime } from '../../components/record-time/record-time';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '../../core/api-config';
+import { RecordHistory } from '../../components/record-history/record-history';
 
 @Component({
   selector: 'app-record-detail',
   standalone: true,
-  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner, DocumentLines, TagPicker, RecordTime],
+  imports: [RouterLink, Drawer, DynamicForm, UiButton, UiSpinner, DocumentLines, TagPicker, RecordTime, RecordHistory],
   templateUrl: './record-detail.html',
 })
 export class RecordDetail {
@@ -277,33 +277,6 @@ export class RecordDetail {
     return new Date(n.createdAt).toLocaleString('it-IT');
   }
 
-  // ── cronologia modifiche (audit) ────────────────────────────────────────────
-  // richiede il permesso RBAC "user" READ (stesso gating di GET /api/logs e /api/users): per chi
-  // non ce l'ha le chiamate falliscono e la sezione semplicemente non compare (null).
-  protected readonly history = toSignal(
-    this.reload$.pipe(
-      startWith(undefined),
-      switchMap(() =>
-        forkJoin({
-          logs: this.admin.listLogs(this.objectKey, this.recordId),
-          users: this.admin.listUsers(),
-        }).pipe(
-          map(({ logs, users }) => {
-            const names = new Map(users.map((u) => [u.id, u.name || u.email]));
-            return logs.map((l) => ({
-              action: HISTORY_LABELS[l.action] ?? l.action,
-              author:
-                (l.actorId && names.get(l.actorId)) || (l.actorType === 'APIKEY' ? 'API key' : '—'),
-              date: new Date(l.createdAt).toLocaleString('it-IT'),
-              fields: changedFields(l.diff),
-            }));
-          }),
-          catchError(() => of(null)),
-        ),
-      ),
-    ),
-    { initialValue: null },
-  );
 
   // ── duplica record ──────────────────────────────────────────────────────────
   protected readonly duplicating = signal(false);
@@ -488,20 +461,3 @@ export class RecordDetail {
   }
 }
 
-// etichette italiane per le azioni dell'audit log mostrate in cronologia
-const HISTORY_LABELS: Record<string, string> = {
-  create: 'Creato',
-  update: 'Modificato',
-  delete: 'Eliminato',
-  bulk_update: 'Modifica di massa',
-  bulk_delete: 'Eliminazione di massa',
-};
-
-// dal diff {before, after} dell'audit ricava le chiavi effettivamente cambiate
-function changedFields(diff: Record<string, unknown> | null): string[] {
-  if (!diff) return [];
-  const before = (diff['before'] ?? {}) as Record<string, unknown>;
-  const after = (diff['after'] ?? {}) as Record<string, unknown>;
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
-}

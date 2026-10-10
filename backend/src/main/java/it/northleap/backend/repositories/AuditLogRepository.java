@@ -13,4 +13,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     List<AuditLog> findTop100ByResourceOrderByCreatedAtDesc(String resource);
     List<AuditLog> findTop100ByResourceIdOrderByCreatedAtDesc(String resourceId);
     List<AuditLog> findTop100ByOrderByCreatedAtDesc();
+
+    // paginata sempre, le voci di un record vissuto sono centinaia
+    org.springframework.data.domain.Page<AuditLog> findByResourceAndResourceIdOrderByCreatedAtDesc(String resource,
+                                            String resourceId, org.springframework.data.domain.Pageable page);
 }

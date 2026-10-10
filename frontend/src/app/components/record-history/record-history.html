@@ -1,0 +1,27 @@
+@if (data(); as d) {
+  <div class="mt-6">
+    <h2 class="font-semibold mb-2">Cronologia</h2>
+    @if (d.items.length === 0) {
+      <p class="text-sm text-base-content/50">Nessuna modifica registrata.</p>
+    } @else {
+      <ol class="border-l-2 border-base-300 ml-2 space-y-4">
+        @for (e of d.items; track $index) {
+          <li class="pl-4 relative">
+            <span class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-base-content/40"></span>
+            <p class="text-sm"><span class="font-medium">{{ e.action }}</span> · {{ e.author }}
+              <span class="text-xs text-base-content/50">{{ e.at | date: 'dd/MM/yyyy HH:mm' }}</span></p>
+            @for (c of e.changes; track c.field) {
+              <p class="text-sm text-base-content/70">{{ c.field }}: <s class="text-base-content/50">{{ c.from }}</s> &rarr; {{ c.to }}</p>
+            }
+          </li>
+        }
+      </ol>
+    @if (d.totalPages > 1) {
+        <div class="flex gap-2 mt-3">
+          <button class="btn btn-ghost btn-xs rounded-sm" [disabled]="page() === 0" (click)="page.set(page() - 1)">Piu' recenti</button>
+          <button class="btn btn-ghost btn-xs rounded-sm" [disabled]="page() + 1 >= d.totalPages" (click)="page.set(page() + 1)">Meno recenti</button>
+        </div>
+      }
+    }
+  </div>
+}
