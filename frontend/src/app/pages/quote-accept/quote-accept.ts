@@ -25,10 +25,10 @@ export class QuoteAccept {
   // servizi
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly id = this.route.paramMap.get('id') ?? '';
+  private readonly id = this.route.snapshot.paramMap.get('id') ?? '';
   private readonly params = new HttpParams()
-    .set('t', this.route.queryParamMap.get('t') ?? '')
-    .set('s', this.route.queryParamMap.get('s') ?? '');
+    .set('t', this.route.snapshot.queryParamMap.get('t') ?? '')
+    .set('s', this.route.snapshot.queryParamMap.get('s') ?? '');
   private readonly base = `${API_BASE_URL}/api/public/quote/${this.id}`
 
   protected readonly quote: WritableSignal<PublicQuote | null> = signal(null);
