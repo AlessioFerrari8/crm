@@ -76,7 +76,7 @@ public class QuoteAcceptService {
     // un click, timestamp, IP. Poi partono i workflow che esistono già (conversione in ordine, notifiche)
     @Transactional
     public void accept(UUID id, String token, String sig, String note, String ip) {
-        accept(load(ip, token, sig), note, ip);
+        accept(load(id, token, sig), note, ip);
     }
 
     // stessa accettazione dal portale clienti: lì l'appartenenza l'ha già verificata PortalAccessService.assertOwned, qui
@@ -105,7 +105,7 @@ public class QuoteAcceptService {
     // 404 per tutto: token sbagliato, firma sbagliata, record inesistente. Un 403 confermerebbe che esiste
     private Record load(UUID id, String token, String sig) {
         if (token == null || sig == null) throw new NotFoundException("Link non valido");
-        if (!MessageDigest.isEqual(sign(id, token).getBytes(StandardCharsets.UTF_8))) {
+        if (!MessageDigest.isEqual(sign(id, token).getBytes(StandardCharsets.UTF_8), sig.getBytes(StandardCharsets.UTF_8))) {
             throw new NotFoundException("Link non valido");
         }
         Record q = recordRepository.findByIdAndIsDeletedFalse(id)
