@@ -1,0 +1,14 @@
+<main class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+      <form class="w-full max-w-sm bg-base-100 rounded-sm p-6 space-y-3" (ngSubmit)="submit()">
+        <h1 class="text-xl font-semibold">{{ token ? 'Scegli la tua password' : 'Area clienti' }}</h1>
+        @if (!token) {
+          <input name="email" type="email" autocomplete="username" class="input rounded-sm w-full" placeholder="Email"
+                 [(ngModel)]="email" required />
+        }
+        <input name="password" type="password" [attr.autocomplete]="token ? 'new-password' : 'current-password'"
+               class="input rounded-sm w-full" placeholder="Password" [(ngModel)]="password" required />
+        @if (error()) { <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div> }
+        @if (info()) { <div class="alert alert-success rounded-sm py-2 text-sm">{{ info() }}</div> }
+        <button class="btn btn-primary rounded-sm w-full" [disabled]="busy()">{{ token ? 'Salva password' : 'Accedi' }}</button>
+      </form>
+    </main>
