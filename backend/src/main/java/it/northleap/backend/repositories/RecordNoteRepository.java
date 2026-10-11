@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface RecordNoteRepository extends JpaRepository<RecordNote, UUID> {
     List<RecordNote> findByRecordIdOrderByCreatedAtDesc(UUID recordId);
+
+    List<it.northleap.backend.entities.RecordNote> findByRecordIdAndCustomerVisibleTrueOrderByCreatedAtAsc(java.util.UUID recordId);
 }

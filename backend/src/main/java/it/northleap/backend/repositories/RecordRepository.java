@@ -28,6 +28,20 @@ public interface RecordRepository extends JpaRepository<Record, UUID> {
     List<Record> fullTextSearch(@Param("q") String q, @Param("allTypes") List<UUID> allTypes,
                                       @Param("ownTypes") List<UUID> ownTypes, @Param("me") UUID me);
 
+    // I record di un tipo collegati a un contatto o alla sua azienda. jsonb_exists e non l'operatore ?, che in una
+    // query JDBC viene preso per un parametro posizionale
+    @Query(value = """
+            select r.* from record r
+                where r.object_type_id in (:types) and r.is_deleted = false
+                and (r.data->>'contact' = :contact or jsonb_exists(coalesce(r.data->'contact', '[]'::jsonb), :contact)
+                    or (:company is not null and (r.data->>'company' = :company
+                        or jsonb_exists(coalesce(r.data->'company', '[]'::jsonb), :company))))
+                order by r.created_at desc
+                limit 200
+               """, nativeQuery = true)
+    List<Record> findForPortal(@Param("types") List<UUID> types, @Param("contact") String contact,
+                                       @Param("company") String company);
+
 
     List<Record> findByIsDeletedFalseAndTitleContainingOrderByUpdatedAtDesc(String title);
     List<Record> findByIdInAndObjectType_IdAndIsDeletedFalse(List<UUID> ids, UUID objectTypeId);

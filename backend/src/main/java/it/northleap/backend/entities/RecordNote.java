@@ -37,6 +37,11 @@ public class RecordNote {
     @Column(nullable = false, columnDefinition = "text")
     private String body;
 
+    // il portale mostra al cliente solo le note marcate così. Default false: una nota interna che finisce davanti
+    // al cliente è l'incidente peggiore che il portale possa fare
+    @Column(name = "customer_visible", nullable = false)
+    private boolean customerVisible = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

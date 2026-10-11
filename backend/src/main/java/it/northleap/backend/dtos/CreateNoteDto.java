@@ -13,4 +13,7 @@ public class CreateNoteDto {
     @NotBlank
     @Size(max = 4000)
     private String body;
+
+    // visibile nel portale clienti
+    private boolean customerVisible;
 }

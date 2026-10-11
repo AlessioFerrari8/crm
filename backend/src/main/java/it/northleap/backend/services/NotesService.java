@@ -43,6 +43,7 @@ public class NotesService {
         note.setAuthorId(actor.id());
         note.setAuthorName(resolveAuthorName(actor));
         note.setBody(dto.getBody().trim());
+        note.setCustomerVisible(dto.isCustomerVisible());
         return recordNoteRepository.save(note);
     }
 
