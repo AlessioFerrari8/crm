@@ -16,7 +16,7 @@ export class PortalLogin {
 
   private readonly portal = inject(PortalService);
   private readonly router = inject(Router);
-  private readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token');
+  protected readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token');
 
   protected email = '';
   protected password = '';
