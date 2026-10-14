@@ -11,3 +11,7 @@ tests.md
 # solo la cartella resources/ alla RADICE (screenshot): senza la barra la regola
 # valeva per ogni cartella "resources", compresa quella del backend
 /resources/
+
+SESSION-CONTEXT.md
+
+md/
