@@ -1,4 +1,6 @@
-<div align="center>
+> **Heads up:** the interface is in Italian for now, and i18n is still on my to-do list. Until then, please use the built-in translate widget (bottom-left corner of the app) or your browser's translator. Sorry about that, and thank you!
+
+<div align="center">
 
 # CRM
 
