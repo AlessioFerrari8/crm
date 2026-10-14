@@ -1,138 +1,144 @@
+<div align="center>
+
 # CRM
 
-CRM per aziende italiane. Anagrafiche, preventivi e fatture con righe e IVA per aliquota, ticket, report, dashboard, workflow automatici e stampa PDF.
+**An open-source CRM for Italian small businesses: contacts, quotes and invoices with VAT, tickets, reports, workflows, e-invoicing and a customer portal.**
 
-L'architettura è **metadata-driven**: non esistono tabelle `contatti` o `aziende`. Esiste un'unica entità `Record`, il cui `objectType` dice che cosa sia e i cui campi vivono in una colonna `jsonb`. La forma dei campi è descritta da righe `ObjectType`/`FieldDef`, non dallo schema SQL. Aggiungere un modulo non richiede una migrazione, richiede semplicemente un record di configurazione.
+[Live demo](https://crm.alessio.hackclub.app) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Architecture](#architecture)
 
-Le uniche due eccezioni volute sono le righe documento (`document_line`) e i totali, che sono colonne vere perché ci si fanno somme.
+![Java 21](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F)
+![Angular](https://img.shields.io/badge/Angular-22-DD0031)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-## Stack 
+![NorthLeap CRM dashboard](docs/screenshots/dashboard.png)
 
-| Parte      | Tecnologia                                               |
-|------------|----------------------------------------------------------|
-| Backend    | Java 21, Spring Boot 4.1, Spring Security, Hibernate 7   |
-| Database   | PostgreSQL 16 (`jsonb`, `pg_trgm`)                       |
-| Frontend   | Angular 22 standalone, Tailwind 4 + daisyUI, Chart.js    |
-| PDF        | Thymeleaf (template su DB) + openhtmltopdf               |
-| Build      | Gradle wrapper (backend), npm (frontend), Docker Compose |
+</div>
 
-## Avvio rapido, con Docker
+## Try it now
+
+| | |
+|---|---|
+| **URL** | https://crm.alessio.hackclub.app |
+| **Email** | `demo@northleap.it` |
+| **Password** | `HackClub-Demo-2026!` |
+
+The demo account is **read-only** (`viewer` role) and comes with realistic fake data: companies, contacts, quotes, invoices, tickets and campaigns. Outgoing email is switched off on the demo.
+Sample data is preloaded so you can explore the CRM without first filling in dozens of fields.
+
+## Features
+
+- 🗂️ **Dynamic modules**: companies, contacts, leads, opportunities, tickets, projects, assets, todos and more. New modules and fields are configuration, not code.
+- 🧾 **Quotes, orders and invoices** with line items, per-line and header discounts, shipping and **VAT by rate**. One service computes every total.
+- 🖨️ **PDF generation** from editable HTML templates, with live preview on your last real document.
+- 🇮🇹 **Italian e-invoicing (FatturaPA / SDI)** XML generation.
+- ✍️ **Quote acceptance by signed link**: your customer accepts online, no account needed.
+- 🧑‍💼 **Customer portal** for tickets and documents (separate login and token).
+- 📧 **Email campaigns** with batching, open/click tracking and unsubscribe links.
+- 📥 **Mail scanner**: IMAP mailboxes are turned into tickets, threads included.
+- ⭐ **NPS surveys** with a public response form.
+- ⚙️ **Workflow engine**: triggers, conditions and actions (email, webhooks with SSRF protection, field updates).
+- 📊 **Dashboards and reports**: multi-tab dashboards, charts, a report builder, saved views.
+- 🔎 **Full-text search** across every module (`pg_trgm`).
+- 🏷️ **Tags, duplicate detection and merge, time tracking, trash and restore.**
+- 🔐 **Roles and permissions** per module and action, with `OWN` / `TEAM` / `ALL` scope; **MFA (TOTP)**; **API keys**.
+- 🤖 **MCP server**: let an AI assistant read your CRM through the Model Context Protocol, with a scoped API key.
+- 🔔 **Real-time notifications** (SSE) and an **installable PWA**.
+- 🔌 Webhooks in and out, Cal.com integration, audit log.
+
+## Screenshots
+
+| Quote with VAT lines | Full-text search |
+|---|---|
+| ![Quote](docs/screenshots/quote.png) | ![Search](docs/screenshots/search.png) |
+
+| Customer accepts online | NPS survey |
+|---|---|
+| ![Accepted](docs/screenshots/quote-accepted.png) | ![NPS](docs/screenshots/nps.png) |
+
+## Architecture
+
+There is no `contacts` or `companies` table. A single generic `Record` entity stores its fields in a `jsonb` column, and its `objectType` says what it is. 
+The shape of each module is described by `ObjectType` and `FieldDef` rows (39 field types), so **adding a module needs no migration, only a configuration record**. One controller and one service serve all of them, and permissions are checked per module at runtime.
+
+The only deliberate exceptions to the jsonb model are document lines (`document_line`) and totals: those are real columns because we sum them.
+
+## Quick start
+
+You need Docker.
 
 ```bash
-cp backend/.env.example backend/.env     # e riempi i segreti, vedi sotto
+git clone https://github.com/AlessioFerrari8/crm.git
+cd crm
+cp backend/.env.example backend/.env
+# fill the secrets: openssl rand -base64 32  (a different one per line)
 docker compose up -d --build
 ```
 
-- frontend  http://localhost:4200
-- backend   http://localhost:8080
-- Swagger   http://localhost:8080/swagger-ui.html
-- Postgres  localhost:5433 (utente `user`, password `user`, database `crm_db`)
+| Service | URL |
+|---|---|
+| App | http://localhost:4200 |
+| API | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger-ui.html |
 
-Alla prima apertura il frontend mostra l'**onboarding**: crea il workspace e il primo utente, che prende il ruolo `owner`. L'endpoint si chiude da solo dopo il primo uso.
+The first time you open the app it shows **onboarding**: create your workspace and the first user, who becomes `owner`. The endpoint closes itself after first use.
 
-## Avvio in sviluppo
-
-Database dal compose, applicazioni in locale:
+### Run in development
 
 ```bash
 docker compose up -d postgres-db
-
-cd backend  && ./gradlew bootRun         # http://localhost:8080
-cd frontend && npm install && npm start  # http://localhost:4200
+cd backend  && ./gradlew bootRun          # http://localhost:8080
+cd frontend && npm install && npm start   # http://localhost:4200
 ```
 
-`application.properties` punta a `localhost:5433`, cioe' al Postgres del compose: `DB_USERNAME`/`DB_PASSWORD` vanno messi a `user`/`user`, non ai `postgres` di default.
+## Configuration
 
-Lo schema lo crea Hibernate (`ddl-auto=update`). Non c'e' Flyway: le colonne nuove su tabelle già popolate vogliono un `@ColumnDefault`, o l'avvio fallisce.
+Everything is in `backend/.env` (git-ignored); `backend/.env.example` is the template.
+These have no default on purpose, because a secret in a repo is a public secret:
 
-## Variabili d'ambiente
+| Variable | Purpose |
+|---|---|
+| `JWT_ACCESS_SECRET` | signs access tokens (15 min) |
+| `JWT_REFRESH_SECRET` | signs refresh tokens (30 days), must differ |
+| `JWT_PORTAL_SECRET` | customer portal tokens, must differ |
+| `QUOTE_ACCEPT_SECRET` | signs quote acceptance links |
+| `MFA_SECRET_KEY` | encrypts secrets at rest (TOTP, IMAP passwords), 32 bytes base64 |
+| `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL credentials |
 
-Tutte in `backend/.env` (gitignorato). Il modello completo è in `backend/.env.example`. Le cinque senza default, cioè quelle senza cui l'app non parte:
 
-| Variabile            | A cosa serve                                         |
-|----------------------|------------------------------------------------------| 
-| `JWT_ACCESS_SECRET`  | firma degli access token (15 min)                    |
-| `JWT_REFRESH_SECRET` | firma dei refresh token (30 giorni), segreto diverso |
-| `DB_USERNAME`        | utente Postgres                                      |
-| `DB_PASSWORD`        | password Postgres                                    |
-| `MFA_SECRET_KEY`     | cifra i segreti a riposo (TOTP, password IMAP), 32 byte base64 |
+**Optional:** outgoing email (`MAIL_PROVIDER=smtp` or `resend`, plus `SMTP_*`), Cal.com webhook, Swagger (`SWAGGER_ENABLED=false` in production).
+Without a mail provider everything works except sending: invitations, campaigns, NPS surveys and workflow emails.
 
-Si generano con `openssl rand -base64 32`, uno diverso per ciascuno. Non hanno un default apposta: un segreto scritto nel repo è un segreto pubblico.
-
-Le altre (email, CORS, cookie, rate limit, Cal.com, Swagger) hanno tutte un default sensato per lo sviluppo locale: vedi `.env.example`.
-
-## Test
+## Tests
 
 ```bash
-cd backend && ./gradlew test
+cd backend  && ./gradlew test      # needs Docker (Testcontainers)
+cd frontend && npx ng build
 ```
 
-La maggior parte sono Mockito puro e non serve niente. Le classi che estendono `AbstractIntegrationTest` avviano un `postgres:16-alpine` usa e getta con Testcontainers: **serve Docker acceso**, non un database.
+Most tests are plain Mockito. The integration tests start a throwaway
+`postgres:16-alpine` with Testcontainers.
 
-Non incanalare mai l'output in `tail`: l'exit code diventa quello di `tail` e un fallimento passa inosservato.
+## Security
 
-Il frontend:
+- httpOnly cookie auth: tokens never appear in a response body.
+- CSRF double-submit cookie; only signed webhooks and public forms are exempt.
+- RBAC per resource and action, with `OWN` / `TEAM` / `ALL` scope.
+- API keys are stored hashed and shown once.
+- Per-IP rate limiting on login, refresh, invitations and webhooks.
+- Upload hardening: blocked extensions, server-generated names, path checks.
+- SSRF guard on workflow URLs: DNS is resolved and private, loopback and link-local addresses are refused.
+- Secrets encrypted at rest.
 
-```bash
-cd frontend && npx ng build      # il collaudo vero
-npm test                         # vitest
-```
+## Under the hood
 
-## Struttura
+Things that look odd and are intentional:
 
-```
-backend/src/main/java/it/northleap/backend/
-  config/        seeder (@Order 1..7) e configurazione Spring
-  controllers/   un file per risorsa HTTP
-  services/      la logica: e' qui che sta il progetto
-  repositories/  Spring Data
-  entities/      JPA. Le colonne jsonb sono Map/List, mai JsonNode
-  dtos/          quello che entra ed esce dall'API
-  security/      JWT, cookie, RBAC, rate limit
-frontend/src/app/
-  pages/         una cartella per schermata
-  components/    quello che si riusa
-  services/      un service per risorsa, @Service() (Angular 22)
-  core/          interceptor, guard, configurazione
-docker/init.sql  estensioni Postgres (pg_trgm), solo alla prima creazione
-```
+- **jsonb columns are `Map` / `List`, never `JsonNode`.** Hibernate 7 uses Jackson 2 while Spring MVC uses Jackson 3; a library-specific type fails at runtime.
+- **PDF views are classes, not `record`s.** Thymeleaf looks for `getX()`; a record exposes `x()` and the field silently renders empty.
+- **Document totals have one owner**, `DocumentTotalService`, in this order: line, line discount, header discount, shipping, VAT by rate, total. The PDF and the e-invoice read those numbers, they never recompute.
+- **Seeders have an explicit `@Order`** (1 Role … 7 Report): two equal values do not fail, they give a non-deterministic boot.
+- **No Flyway.** Hibernate creates the schema (`ddl-auto=update`); new columns on populated tables need `@ColumnDefault`.
+- **The backend image is built with `bootJar -x test`.** Run `./gradlew build` before `docker compose build`.
 
-Le cartelle sono per **tipo**, non per feature: un controller nuovo va in `controllers/`, non accanto al suo service.
-
-## Sicurezza, in breve
-
-- **Autenticazione a cookie httpOnly** (`access_token`, `refresh_token`): i token 
-  non sono mai nel body della risposta e JavaScript non li legge.
-- **CSRF** double-submit con cookie `XSRF-TOKEN` + header `X-XSRF-TOKEN`, escluso
-  solo per i webhook in ingresso e i form pubblici, che sono protetti da firma
-  HMAC e rate limit.
-- **RBAC** per risorsa e per azione (lettura / scrittura / esecuzione) con tre
-  ambiti: `OWN`, `TEAM`, `ALL`. Il controllo sui record dinamici sta nel service,
-  non in un'annotazione, perche' la risorsa e' il nome del modulo a runtime.
-- **API key** `nl_...` per le integrazioni: in database c'e' solo l'hash, la
-  chiave in chiaro si vede una volta sola.
-- **Rate limit** in memoria per IP su login, refresh, invito e webhook. È per
-  singola istanza: con più istanze serve uno store condiviso.
-- **Upload**: estensioni pericolose bloccate, nome su disco generato dal server,
-  percorso verificato dentro la cartella di upload.
-- **SSRF**: gli URL chiamati dai workflow passano da un validatore che risolve il
-  DNS e rifiuta indirizzi privati, loopback e link-local.
-
-## Cose che sorprendono, e sono volute
-
-- **Le colonne `jsonb` non sono mai `JsonNode`.** Hibernate 7 le tratta con
-  Jackson 2, Spring MVC serializza con Jackson 3: un tipo specifico di libreria
-  esplode a runtime. `Map<String,Object>` e `List<...>` funzionano con entrambi.
-- **`Record` va importato esplicitamente.** Senza import, `Record` è
-  `java.lang.Record` e l'errore parla di metodi che esistono.
-- **Le view del PDF sono classi, non `record`.** Thymeleaf cerca `getX()`, un
-  record espone `x()`: il campo esce vuoto, senza errori.
-- **I totali di un documento li calcola un posto solo**, `DocumentTotalService`,
-  nell'ordine: riga, sconto riga, sconto testata, trasporto, IVA per aliquota,
-  totale. Il PDF e la fattura elettronica leggono quei numeri, non li ricalcolano.
-- **I seeder hanno un `@Order` esplicito** (1 Role, 2 ObjectType, 3 Permission,
-  4 Workflow, 5 Inventory, 6 PdfTemplate, 7 Report). Due `@Order` uguali non
-  danno errore: danno un avvio non deterministico.
-- **Il Dockerfile del backend costruisce con `bootJar -x test`**, perché dentro
-  l'immagine i test non possono girare (vogliono Docker). La regola e' lanciare
-  `./gradlew build` prima di `docker compose build`, sempre.
