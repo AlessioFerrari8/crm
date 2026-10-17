@@ -169,8 +169,11 @@
       <div class="flex gap-2 mb-3">
         <textarea class="textarea textarea-sm rounded-sm flex-1" rows="2" placeholder="Scrivi una nota…"
                   [value]="noteBody()" (input)="noteBody.set($any($event.target).value)"></textarea>
-        <button class="btn btn-primary btn-sm rounded-sm self-end" [disabled]="!noteBody().trim() || noteSaving()"
-                (click)="addNote()">Aggiungi</button>
+        <div class="flex flex-col gap-1 self-end">
+          <!-- il portale clienti mostra solo le note marcate così: il default è no -->
+          <label class="flex items-center gap-1 text-xs"><input type="checkbox" class="checkbox checkbox-xs" [checked]="noteForCustomer()" (change)="noteForCustomer.set($any($event.target).checked)" /> visibile al cliente</label>
+          <button class="btn btn-primary btn-sm rounded-sm" [disabled]="!noteBody().trim() || noteSaving()" (click)="addNote()">Aggiungi</button>
+        </div>
       </div>
       @if (notes().length === 0) {
         <p class="text-sm text-base-content/50">Nessuna nota.</p>

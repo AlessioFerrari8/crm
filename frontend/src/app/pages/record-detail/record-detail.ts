@@ -226,10 +226,11 @@ export class RecordDetail {
       });
   }
 
-  // ── note (timeline collaborativa) ───────────────────────────────────────────
+  // note (timeline collaborativa) 
   private readonly notesReload$ = new Subject<void>();
   protected readonly noteBody = signal('');
-  protected readonly noteSaving = signal(false);
+  protected readonly noteForCustomer: WritableSignal<boolean> = signal(false);
+  protected readonly noteSaving: WritableSignal<boolean> = signal(false);
 
   protected readonly notes = toSignal(
     this.notesReload$.pipe(
@@ -246,12 +247,13 @@ export class RecordDetail {
     if (!body || this.noteSaving()) return;
     this.noteSaving.set(true);
     this.recordsService
-      .addNote(this.recordId, body)
+      .addNote(this.recordId, body, this.noteForCustomer())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.noteSaving.set(false);
           this.noteBody.set('');
+          this.noteForCustomer.set(false);
           this.notesReload$.next();
         },
         error: () => this.noteSaving.set(false),

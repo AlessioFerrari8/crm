@@ -103,8 +103,8 @@ export class RecordsService {
     return this.http.get<RecordNote[]>(`${this.base}/${recordId}/notes`);
   }
 
-  addNote(recordId: string, body: string): Observable<RecordNote> {
-    return this.http.post<RecordNote>(`${this.base}/${recordId}/notes`, { body });
+  addNote(recordId: string, body: string, customerVisible = false): Observable<RecordNote> {
+    return this.http.post<RecordNote>(`${this.base}/${recordId}/notes`, { body, customerVisible });
   }
 
   removeNote(recordId: string, noteId: string): Observable<void> {
