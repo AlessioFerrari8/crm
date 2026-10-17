@@ -7,10 +7,10 @@ import { API_BASE_URL } from './api-config';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-// le richieste su /api/auth/* non devono mai innescare un retry-via-refresh (evita loop:
-// un 401/403 su /refresh stesso, o su /login con credenziali sbagliate, non deve tentare
-// un altro refresh)
-const NO_RETRY_PATHS = ['/api/auth/'];
+// le richieste su /api/auth/* non devono mai innescare un retry-via-refresh (evita loop: // un 401/403 su /refresh stesso, o
+// su /login con credenziali sbagliate, non deve tentare un altro refresh)
+// portale e pagine pubbliche non hanno la sessione interna: un loro 401 non è un access token scaduto
+const NO_RETRY_PATHS = ['/api/auth/', '/api/portal', '/api/public'];
 
 function readCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));

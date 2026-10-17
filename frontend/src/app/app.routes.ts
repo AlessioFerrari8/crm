@@ -39,6 +39,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/quote-accept/quote-accept').then((m) => m.QuoteAccept)
   },
   {
+    // portale clienti: fuori dall'authGuard interno, ha il suo login
+    path: 'portal',
+    children: [
+      { path: '', title: 'Area clienti', loadComponent: () => import('./pages/portal/portal-home/portal-home').then((m) => m.PortalHome )},
+      { path: 'login', title: 'Area clienti', loadComponent: () => import('./pages/portal/portal-login/portal-login').then((m) => m.PortalLogin) },
+      { path: 'invite', title: 'Area clienti', loadComponent: () => import('./pages/portal/portal-login/portal-login').then((m) => m.PortalLogin) },
+      { path: 'tickets/:id', title: 'Area clienti', loadComponent: () => import('./pages/portal/portal-ticket/portal-ticket').then((m) => m.PortalTicket) }
+    ]
+  },
+  {
     path: '',
     canActivate: [authGuard],
     children: [

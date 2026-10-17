@@ -1,0 +1,46 @@
+<main class="min-h-screen bg-base-200 p-4">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <header class="flex justify-between items-center">
+      <h1 class="text-xl font-semibold">Area clienti</h1>
+      <div class="text-sm">{{ portal.email() }} · <button class="link" (click)="logout()">Esci</button></div>
+    </header>
+
+    <section class="bg-base-100 rounded-sm p-4 space-y-3">
+      <h2 class="font-semibold">Le tue richieste</h2>
+      @for (t of tickets(); track t.id) {
+        <a [routerLink]="['/portal/tickets']" class="flex justify-between border-b border-base-300 py-2 hover:bg-base-200">
+          <span>{{ t.number }} · {{ t.subject }}</span>
+          <span class="text-xs text-base-content/60">{{ t.status }} · {{ t.createdAt | date: 'dd/MM/yyyy' }}</span>
+        </a>
+      } @empty {
+        <p class="text-sm text-base-content/60">Nessuna richiesta.</p>
+      }
+      <form class="space-y-2 pt-2" (ngSubmit)="open()">
+        <input name="subject" class="input rounded-sm w-full" placeholder="Oggetto della nuova richiesta" [(ngModel)]="subject" />
+        <textarea name="description" rows="3" class="textarea rounded-sm w-full" placeholder="Descrivi il problema" [(ngModel)]="description"></textarea>
+        <button class="btn btn-primary btn-sm rounded-sm">Apri richiesta</button>
+      </form>
+    </section>
+
+    <section class="bg-base-100 rounded-sm p-4">
+      <h2 class="font-semibold mb-2">I tuoi documenti</h2>
+      <table class="table table-sm">
+        <tbody>
+          @for (d of documents(); track d.id) {
+            <tr>
+              <td>{{ d.kind }} {{ d.number }}</td>
+              <td>{{ d.date }}</td>
+              <td class="text-right">{{ d.total | number : '1.2-2' : 'it' }} EUR</td>
+              <td class="text-right">
+                <a class="btn btn-ghost btn-xs rounded-sm" [href]="portal.pdfUrl(d.id)">PDF</a>
+                @if (d.acceptable) { <button class="btn btn-primary btn-xs rounded-sm" (click)="accept(d)">Accetta</button> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td class="text-sm text-base-content/60">Nessun documento.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+</main>

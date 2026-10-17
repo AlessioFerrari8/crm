@@ -1,0 +1,21 @@
+<main class="min-h-screen bg-base-200 p-4">
+  <div class="max-w-3xl mx-auto bg-base-100 rounded-sm p-4 space-y-4">
+    <a routerLink="/portal" class="link text-sm">&larr; Area clienti</a>
+    @if (detail(); as d) {
+    <h1 class="text-lg font-semibold">{{ d.ticket.number }} · {{ d.ticket.subject }}</h1>
+    <p class="text-sm whitespace-pre-line">{{ d.description }}</p>
+    @for (f of d.files; track f.id) { <a class="link text-sm block" [href]="portal.fileUrl(f.id)">{{ f.name }}</a> }
+    <ul class="space-y-2">
+      @for (m of d.messages; track $index) {
+      <li class="rounded-sm p-3 text-sm {{ m.mine ? 'bg-primary/10' : 'bg-base-200' }}">
+        <p class="text-xs text-base-content/60">{{ m.author }} · {{ m.at | date: 'dd/MM/yyyy HH:mm' }}</p>
+        <p class="whitespace-pre-line">{{ m.body }}</p>
+      </li>
+      }
+    </ul>
+    <textarea rows="3" class="textarea rounded-sm w-full" placeholder="Rispondi" [value]="body()"
+      (input)="body.set($any($event.target).value)"></textarea>
+    <button class="btn btn-primary btn-sm rounded-sm" [disabled]="!body().trim()" (click)="send()">Invia</button>
+    }
+  </div>
+</main>
