@@ -5,10 +5,11 @@ import { previewFormat } from '../../core/field-format';
 import { UserPreference } from '../../models/user-preference';
 import { UiButton } from '../../components/ui/button';
 import { MfaSection } from './mfa-section';
+import { CalendarSection } from './calendar-section';
 
 @Component({
   selector: 'app-preferences',
-  imports: [FormsModule, UiButton, MfaSection],
+  imports: [FormsModule, UiButton, MfaSection, CalendarSection],
   templateUrl: './preferences.html'
 })
 export class Preferences {

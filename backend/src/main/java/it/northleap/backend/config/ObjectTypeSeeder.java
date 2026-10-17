@@ -237,7 +237,13 @@ public class ObjectTypeSeeder implements ApplicationRunner {
                     fReq("start", "Inizio", FieldType.DATETIME),
                     f("end", "Fine", FieldType.DATETIME),
                     f("location", "Luogo", FieldType.TEXT),
-                    f("externalId", "ID esterno (sync)", FieldType.TEXT)
+                    f("externalId", "ID esterno (sync)", FieldType.TEXT),
+                    // un evento tutto-il-giorno ha una data, non un istante. start resta la mezzanotte del fuso del workspace
+                    // e la UI, con allDay, mostra solo il giorno
+                    f("allDay", "Tutto il girono", FieldType.BOOLEAN),
+                    f("description", "Descrizione", FieldType.LONGTEXT),
+                    // da quale calendario collegato viene: allo scollegamento si rimuovono tutti insieme
+                    f("calendarAccount", "Calendario di origine", FieldType.TEXT)
             )),
             new ObjectSpec("subscription", "Abbonamento", "Abbonamenti", "repeat", "#F97316", List.of(
                     fReq("name", "Nome", FieldType.TEXT),

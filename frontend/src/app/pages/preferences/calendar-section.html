@@ -1,0 +1,21 @@
+<section class="max-w-xl mt-8 space-y-3">
+  <h2 class="font-semibold">Calendario Google</h2>
+  @if (result() === 'connected') { <div class="alert alert-success rounded-sm py-2 text-sm">Calendario collegato: i tuoi
+    eventi arrivano entro 15 minuti.</div> }
+  @if (result() === 'denied') { <div class="alert alert-warning rounded-sm py-2 text-sm">Collegamento annullato su
+    Google.</div> }
+  @for (a of accounts(); track a.id) {
+  <div class="border border-base-300 rounded-sm p-3 flex justify-between items-center">
+    <div>
+      <p class="text-sm font-medium">{{ a.email }}</p>
+      <p class="text-xs text-base-content/60">Ultimo aggiornamento: {{ a.lastSyncAt ? (a.lastSyncAt | date: 'dd/MM
+        HH:mm') : 'in attesa' }}</p>
+      @if (a.lastError) { <p class="text-xs text-error">{{ a.lastError }}</p> }
+    </div>
+    <ui-button variant="danger" (click)="disconnect(a)">Scollega</ui-button>
+  </div>
+  }
+  <p class="text-xs text-base-content/60">Scollegando, gli eventi importati da quel calendario vengono tolti dal CRM.
+  </p>
+  <ui-button variant="primary" (click)="connect()">Collega Google Calendar</ui-button>
+</section>
