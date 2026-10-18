@@ -8,6 +8,7 @@
 import { FieldDef, FieldOption } from '../models/object-type';
 
 import { DEFAULT_PREFERENCE, UserPreference } from '../models/user-preference';
+import { currentLocale } from '../services/i18n';
 
 let currentPref: UserPreference = DEFAULT_PREFERENCE;
 
@@ -112,7 +113,7 @@ export function previewFormat(pref: UserPreference, n: number): string {
 // simbolo dalla valuta preferita, ricavato da Intl invece che da una tabella
 // nostra: "EUR" -> "€", "USD" -> "$"; funziona per qualsiasi codice ISO
 function currencySymbol(pref: UserPreference = currentPref): string {
-  const parts = new Intl.NumberFormat('it-IT', {
+  const parts = new Intl.NumberFormat(currentLocale(), {
     style: 'currency',
     currency: pref.currency,
   }).formatToParts(0);
@@ -134,7 +135,7 @@ function formatDate(raw: unknown, withTime: boolean): string {
   }
   const dt = new Date(raw as string);
   if (Number.isNaN(dt.getTime())) return String(raw);
-  return withTime ? dt.toLocaleString('it-IT') : dt.toLocaleDateString('it-IT');
+  return withTime ? dt.toLocaleString(currentLocale()) : dt.toLocaleDateString(currentLocale());
 }
 
 

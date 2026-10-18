@@ -10,6 +10,7 @@ import { ObjectType } from '../../models/object-type';
 import { ObjectTypeService } from '../../services/object-type.service';
 import { RecordsService } from '../../services/records.service';
 import { Workspace } from '../../services/workspace';
+import { currentLocale } from '../../services/i18n';
 
 // evento del calendario globale: record di un qualunque tipo con campo data, nel mese corrente
 interface CalEvent {
@@ -59,7 +60,7 @@ export class Calendar {
   }
 
   protected readonly monthLabel = computed(() =>
-    this.cursor().toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+    this.cursor().toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' })
   );
 
   protected readonly weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];

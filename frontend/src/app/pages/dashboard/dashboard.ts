@@ -15,6 +15,7 @@ import { IPipelinePoint } from '../../models/IPipelinePoint';
 import { IActivityPoint } from '../../models/IActivityPoint';
 import { IEfficiencyPoint } from '../../models/IEfficiencyPoint';
 import { AnalyticsService } from '../../services/analytics.service';
+import { currentLocale } from '../../services/i18n';
 
 interface Kpi {
   object: ObjectType;
@@ -142,7 +143,7 @@ export class Dashboard {
 
   protected dueDate(item: DueItem): string {
     const d = new Date(item.date);
-    return Number.isNaN(d.getTime()) ? item.date : d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+    return Number.isNaN(d.getTime()) ? item.date : d.toLocaleDateString(currentLocale(), { day: '2-digit', month: 'short' });
   }
 
   // ogni chart config deriva dai dati con un computed

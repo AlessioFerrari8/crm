@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, LucideAngularModule } from 'lucide-angular';
 
 import { FieldDef } from '../../models/object-type';
 import { RecordItem } from '../../models/record';
+import { currentLocale } from '../../services/i18n';
 
 // Vista calendario mensile per i record di un object type, plottati sul campo DATE/DATETIME scelto.
 // Metadata-driven: funziona per qualunque tipo che abbia un campo data (deal.closeDate,
@@ -29,7 +30,7 @@ export class RecordCalendar {
   protected readonly cursor = signal<Date>(startOfMonth(new Date()));
 
   protected readonly monthLabel = computed(() =>
-    this.cursor().toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+    this.cursor().toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' })
   );
 
   // record del mese corrente indicizzati per giorno, calcolati una volta sola per render

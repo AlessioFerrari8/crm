@@ -48,6 +48,7 @@ import {
 } from 'lucide-angular';
 import { Tag } from '../../models/tag';
 import { TagService } from '../../services/tag.service'
+import { currentLocale } from '../../services/i18n';
 
 type RecordView = 'table' | 'board' | 'calendar';
 
@@ -423,10 +424,10 @@ export class RecordList {
   }
 
   protected trashDate(rec: RecordItem): string {
-    return new Date(rec.updatedAt).toLocaleString('it-IT');
+    return new Date(rec.updatedAt).toLocaleString(currentLocale());
   }
 
-  // ── viste salvate ───────────────────────────────────────────────────────────
+  // viste salvate
   private readonly viewsReload$ = new Subject<void>();
 
   protected readonly savedViews = toSignal(

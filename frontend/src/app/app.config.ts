@@ -1,6 +1,8 @@
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { TitleStrategy } from '@angular/router';
+import { I18nTitleStrategy } from './core/i18n-title.strategy';
 import { firstValueFrom } from 'rxjs';
 
 import { authInterceptor } from './core/auth.interceptor';
@@ -13,6 +15,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    { provide: TitleStrategy, useClass: I18nTitleStrategy },
     // errorToastInterceptor per primo nell'array: sulla risposta gira per ultimo, quindi vede
     // solo gli errori definitivi (dopo il refresh+retry di authInterceptor)
     provideHttpClient(withFetch(), withInterceptors([errorToastInterceptor, authInterceptor])),

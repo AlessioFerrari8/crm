@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  WritableSignal,
   computed,
   effect,
   inject,
@@ -26,9 +27,10 @@ import { resolveObjectIcon } from '../../core/object-icons';
 import { SearchResult } from '../../models/record';
 import { ObjectTypeService } from '../../services/object-type.service';
 import { RecordsService } from '../../services/records.service';
+import { I18nService } from '../../services/i18n';
 
-// Voce della palette: sezione ('Record' | 'Vai a' | 'Azioni') + destinazione di navigazione.
-// `header` è precalcolato nel computed (prima voce della sua sezione nella lista piatta).
+// Voce della palette: sezione ('Record' | 'Vai a' | 'Azioni') + destinazione di navigazione `header` è precalcolato nel
+// computed
 interface PaletteItem {
   section: string;
   header: boolean;
@@ -40,9 +42,9 @@ interface PaletteItem {
   queryParams?: Record<string, string>;
 }
 
-// Command palette globale (Ctrl+K / Cmd+K): ricerca record live + navigazione rapida verso ogni
-// tipo/pagina + azioni ("Nuovo <tipo>" apre la lista col drawer di creazione via ?new=1).
-// Montata una volta nella shell autenticata (app.html); overlay chiuso da Esc o click fuori.
+// Command palette globale (Ctrl+K / Cmd+K): ricerca record live + navigazione rapida verso ogni tipo/pagina + azioni ("Nuovo
+// <tipo>" apre la lista col drawer di creazione via ?new=1) Montata una volta nella shell autenticata (app.html); overlay
+// chiuso da Esc o click fuori.
 @Component({
   selector: 'app-command-palette',
   standalone: true,
@@ -53,12 +55,14 @@ export class CommandPalette {
   private readonly router = inject(Router);
   private readonly objectTypeService = inject(ObjectTypeService);
   private readonly recordsService = inject(RecordsService);
+  protected readonly i18n = inject(I18nService);
 
   protected readonly SearchIcon = Search;
 
-  protected readonly open = signal(false);
+  protected readonly open: WritableSignal<boolean> = signal(false);
   protected readonly query = signal('');
-  protected readonly index = signal(0);
+  protected readonly index: WritableSignal<number> = signal(0);
+
 
   private readonly input = viewChild<ElementRef<HTMLInputElement>>('paletteInput');
 
@@ -98,8 +102,8 @@ export class CommandPalette {
     const objs = (this.objectTypeService.objects() ?? []).filter((o) => o.enabled);
 
     const records = this.searchResults().map((r) => ({
-      section: 'Record',
-      label: r.title || '(senza titolo)',
+      section: this.i18n.t('palette.section.records'),
+      label: r.title || this.i18n.t('common.untitled'),
       sublabel: r.objectType?.label,
       icon: FileText,
       route: ['/o', r.objectType?.key ?? '', r.id]

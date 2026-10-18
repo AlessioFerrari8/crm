@@ -48,6 +48,7 @@ import { RecordTime } from '../../components/record-time/record-time';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '../../core/api-config';
 import { RecordHistory } from '../../components/record-history/record-history';
+import { currentLocale } from '../../services/i18n';
 
 @Component({
   selector: 'app-record-detail',
@@ -226,7 +227,7 @@ export class RecordDetail {
       });
   }
 
-  // note (timeline collaborativa) 
+  // note (timeline collaborativa)
   private readonly notesReload$ = new Subject<void>();
   protected readonly noteBody = signal('');
   protected readonly noteForCustomer: WritableSignal<boolean> = signal(false);
@@ -276,11 +277,11 @@ export class RecordDetail {
   }
 
   protected noteDate(n: RecordNote): string {
-    return new Date(n.createdAt).toLocaleString('it-IT');
+    return new Date(n.createdAt).toLocaleString(currentLocale());
   }
 
 
-  // ── duplica record ──────────────────────────────────────────────────────────
+  // duplica record
   protected readonly duplicating = signal(false);
 
   protected duplicate(): void {

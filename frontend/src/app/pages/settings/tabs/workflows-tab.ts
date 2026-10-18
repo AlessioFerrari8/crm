@@ -8,6 +8,7 @@ import { Workflow, WorkflowRun } from '../../../models/admin';
 import { WfGraph, synthGraph } from '../../../models/workflow-graph';
 import { AdminService } from '../../../services/admin.service';
 import { ConfirmService } from '../../../services/confirm.service';
+import { currentLocale } from '../../../services/i18n';
 
 @Component({
   selector: 'app-workflows-tab',
@@ -118,7 +119,7 @@ export class WorkflowsTab {
   }
 
   protected runDate(r: WorkflowRun): string {
-    return new Date(r.startedAt).toLocaleString('it-IT');
+    return new Date(r.startedAt).toLocaleString(currentLocale());
   }
 
   protected closeEditor(): void {

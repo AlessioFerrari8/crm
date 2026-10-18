@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { FieldDef, FieldOption } from '../../models/object-type';
 import { RecordItem } from '../../models/record';
 import { RecordsService } from '../../services/records.service';
+import { currentLocale } from '../../services/i18n';
 
 // giorni senza aggiornamenti oltre i quali una card e' considerata "ferma" (rotting)
 const STALE_DAYS = 14;
@@ -62,7 +63,7 @@ export class RecordBoard {
   });
 
   protected formatTotal(total: number): string {
-    return total.toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    return total.toLocaleString(currentLocale(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   }
 
   // "rotting" alla Pipedrive: record fermo (nessun aggiornamento) da troppi giorni -> evidenziato
