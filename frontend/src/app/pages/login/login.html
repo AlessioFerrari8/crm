@@ -58,9 +58,17 @@
         </form>
       }
 
-      <p class="text-xs text-base-content/60 mt-4">
-        Prima volta? <a routerLink="/onboarding" class="link link-primary">Configura il workspace</a>
-      </p>
+      @if (status(); as s) {
+        @if (!s.onboarded) {
+          <p class="text-xs text-base-content/60 mt-4">
+            Prima volta? <a routerLink="/onboarding" class="link link-primary">Configura il workspace</a>
+          </p>
+        } @else if (s.registrationOpen) {
+          <p class="text-xs text-base-content/60 mt-4">
+            Non hai un account? <a routerLink="/register" class="link link-primary">Crea account</a>
+          </p>
+        }
+      }
     </ui-card>
   </div>
 </div>

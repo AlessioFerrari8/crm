@@ -13,10 +13,9 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-// @Order(0): deve essere valutata prima del catch-all in GlobalExceptionAdvice (vedi il
-// commento lì per il bug che questa precedenza esplicita previene - senza @Order, beans senza
-// l'annotazione finiscono comunque a LOWEST_PRECEDENCE come il catch-all, e l'ordine fra loro
-// non è garantito)
+// @Order(0): deve essere valutata prima del catch-all in GlobalExceptionAdvice (vedi il commento lì per il bug che
+// questa precedenza esplicita previene - senza @Order, beans senza l'annotazione finiscono comunque a
+// LOWEST_PRECEDENCE come il catch-all, e l'ordine fra loro non è garantito)
 @RestControllerAdvice
 @Order(0)
 public class AuthException {
@@ -52,6 +51,18 @@ public class AuthException {
                 Map.of(
                         "timestamp", Instant.now().toString(),
                         "status", 400,
+                        "message", ex.getMessage()
+                )
+        );
+    }
+
+    // registrazione pubblica spenta (REGISTRATION_ENABLED=false)
+    @ExceptionHandler(RegistrationClosedException.class)
+    public ResponseEntity<Map<String, Object>> handleRegistrationClosed(RegistrationClosedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "status", 403,
                         "message", ex.getMessage()
                 )
         );

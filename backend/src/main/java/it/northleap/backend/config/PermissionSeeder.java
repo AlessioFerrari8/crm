@@ -76,6 +76,31 @@ public class PermissionSeeder implements ApplicationRunner {
                 if ("campaign".equals(resource)) permission.setCanWrite(false);
             }
             case "viewer" -> permission.setCanRead(true);
+            case "member" -> {
+                // l'utente che si registra da solo: lavora sui record, niente amministrazione
+                if (FIXED_RESOURCES.contains(resource)) {
+                    switch (resource) {
+                        case "page", "campaign" -> permission.setCanRead(true);
+                        case "chart" -> {
+                            permission.setCanRead(true);
+                            permission.setCanWrite(true);
+                        }
+
+                        // le ore: solo le sue, come l'agent
+                        case "time" -> {
+                            permission.setCanRead(true);
+                            permission.setCanWrite(true);
+                            permission.setScope(PermScope.OWN);
+                        }
+                        // workflow, user, apikey: nessun accesso (gestione utenti, automazioni, chiavi)
+                        default -> { }
+                    }
+                } else {
+                    // object type (contatti, preventivi, ticket, ...): lettura e scrittura
+                    permission.setCanRead(true);
+                    permission.setCanWrite(true);
+                }
+            }
             default -> {
                 // ruoli custom futuri: nessun permesso di default
             }

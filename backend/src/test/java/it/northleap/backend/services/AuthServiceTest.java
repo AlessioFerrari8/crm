@@ -1,9 +1,11 @@
 package it.northleap.backend.services;
 
 import it.northleap.backend.dtos.MeResponse;
+import it.northleap.backend.dtos.RegisterRequest;
 import it.northleap.backend.entities.Role;
 import it.northleap.backend.entities.User;
 import it.northleap.backend.entities.UserRole;
+import it.northleap.backend.exceptions.RegistrationClosedException;
 import it.northleap.backend.exceptions.BadRequestException;
 import it.northleap.backend.repositories.RoleRepository;
 import it.northleap.backend.repositories.SessionRepository;
@@ -19,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -83,4 +86,43 @@ class AuthServiceTest {
         assertEquals("u@test.com", response.email());
         assertEquals(List.of("owner"), response.roles());
     }
+
+    @Test
+    void registerIsRefusedWhenRegistrationIsDisabled() {
+        // default: registrationEnabled = false
+        assertThrows(RegistrationClosedException.class, () -> service.register(new RegisterRequest("Mario",
+                "m@test.com", "Abcdef1!"), null));
+    }
+
+    @Test
+    void regsiterIsRefusedBeforeOnboarding() {
+        ReflectionTestUtils.setField(service, "registrationEnabled", true);
+        when(workspaceRepository.findTopByOrderByCreatedAtAsc()).thenReturn(java.util.Optional.empty());
+
+        assertThrows(BadRequestException.class, () -> service.register(new RegisterRequest("Mario", "m@test.com", "Abcdef1!"), null));
+    }
+
+    @Test
+    void registerRejectsTakenEmailIgnoringCase() {
+        ReflectionTestUtils.setField(service, "registrationEnabled", true);
+        var ws = new it.northleap.backend.entities.Workspace();
+        ws.setOnboarded(true);
+        when(workspaceRepository.findTopByOrderByCreatedAtAsc()).thenReturn(java.util.Optional.of(ws));
+        when(userRepository.existsByEmailIgnoreCase("mario@test.com")).thenReturn(true);
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.register(new RegisterRequest("Mario",
+                " Mario@Test.com ", "Abcdef1!"), null));
+        assertEquals("EMAIL_TAKEN", ex.getCode());
+    }
+
+    @Test
+    void registerRejectsWeakPassword() {
+        ReflectionTestUtils.setField(service, "registrationEnabled", true);
+        var ws = new it.northleap.backend.entities.Workspace();
+        ws.setOnboarded(true);
+        when(workspaceRepository.findTopByOrderByCreatedAtAsc()).thenReturn(java.util.Optional.of(ws));
+
+        assertThrows(BadRequestException.class, () -> service.register(new RegisterRequest("Mario", "m@test.com", "password"), null));
+    }
+
 }

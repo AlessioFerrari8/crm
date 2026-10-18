@@ -23,6 +23,8 @@ public class RoleSeeder implements ApplicationRunner {
             "admin", "Admin",
             "manager", "Manager",
             "agent", "Agent",
+            // chi si registra da solo (AuthService.register): lavora sui record, niente admin
+            "member", "Member",
             "viewer", "Viewer"
     );
 
@@ -30,11 +32,9 @@ public class RoleSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (roleRepository.count() > 0) {
-            return;
-        }
-
+        // solo i ruoli che mancano: un DB già popolato prima di "member" lo riceve al riavvio
         List<Role> roles = SYSTEM_ROLES.entrySet().stream()
+                .filter(entry -> roleRepository.findByKey(entry.getKey()).isEmpty())
                 .map(entry -> {
                     Role role = new Role();
                     role.setKey(entry.getKey());
@@ -44,6 +44,8 @@ public class RoleSeeder implements ApplicationRunner {
                 })
                 .toList();
 
-        roleRepository.saveAll(roles);
+        if (!roles.isEmpty()) {
+            roleRepository.saveAll(roles);
+        }
     }
 }

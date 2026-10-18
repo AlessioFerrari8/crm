@@ -1,0 +1,65 @@
+
+<div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+  <div class="w-full max-w-sm">
+    <ui-card>
+      <h1 class="text-xl font-semibold mb-1">Crea il tuo account</h1>
+
+      @if(status() === undefined) {
+        <p class="text-sm text-base-content/60 mt-4">Caricamento...</p>
+      } @else if (!status()?.registrationOpen) {
+        <p class="text-sm text-base-content/60 mb-4">
+          La registrazione non è attiva su questa istanza.
+        </p>
+        <a routerLink="/login" class="link link-primary text-sm">Torna al login</a>
+      } @else {
+        <p class="text-sm text-base-content/60 mb-4">Entri come membro del workspace di questa istanza</p>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+          <div>
+            <ui-label [required]="true">Nome</ui-label>
+            <input formControlName="name" autocomplete="name" class="input rounded-sm w-full" placeholder="Mario Rossi" />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <p class="text-error text-xs mt-1">Nome richiesto</p>
+            }
+          </div>
+
+          <div>
+            <ui-label [required]="true">Email</ui-label>
+            <input type="email" formControlName="email" autocomplete="email" class="input rounded-sm w-full" placeholder="tu@azienda.com" />
+            @if (form.controls.email.touched && form.controls.email.invalid) {
+              <p class="text-error text-xs mt-1">Inserisci un'email valida</p>
+            }
+          </div>
+
+          <div>
+            <ui-label [required]="true">Password</ui-label>
+            <input type="password" formControlName="password" autocomplete="new-password" class="input rounded-sm w-full" />
+            <ui-password-rules [password]="pwValue()" />
+          </div>
+
+          <label class="flex items-start gap-2 text-xs text-base-content/70 cursor-pointer">
+            <input type="checkbox" formControlName="accept" class="checkbox checkbox-sm mt-0.5" />
+            <span>
+              Ho capito che questa è un'istanza condivisa: i dati che inserisco sono visibili a tutti gli utenti registrati.
+              Non userò dati personali reali.
+            </span>
+          </label>
+          @if (form.controls.accept.touched && form.controls.accept.invalid) {
+            <p class="text-error text-xs">Devi confermare per continuare</p>
+          }
+
+          @if (error()) {
+            <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
+          }
+          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">Crea account</ui-button>
+        </form>
+
+        <p class="text-xs text-base-content/60 mt-4">
+          Hai già un account? <a routerLink="/login" class="link link-primary">Accedi</a>
+        </p>
+
+      }
+    </ui-card>
+  </div>
+
+</div>

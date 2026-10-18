@@ -7,6 +7,8 @@ import { IAuthResponse } from '../models/IAuthResponse';
 import { IMeResponse } from '../models/IMeResponse';
 import { IOnboardingPayload } from '../models/IOnboardingPayload';
 import { MfaChallenge, MfaSetup } from '../models/mfa';
+import { IAuthStatus } from '../models/IAuthStatus';
+import { IRegisterPayload } from '../models/IRegisterPayload';
 
 // I token JWT vivono solo nei cookie httpOnly impostati dal backend (mai letti/scritti qui via
 // JS) - questo service tiene solo lo stato "chi e' loggato", popolato da GET /auth/me.
@@ -71,6 +73,18 @@ export class AuthService {
   onboarding(payload: IOnboardingPayload): Observable<IMeResponse | null> {
     return this.http
       .post<IAuthResponse>(`${API_BASE_URL}/api/auth/onboarding`, payload)
+      .pipe(switchMap(() => this.load()));
+  }
+
+  // stato pubblico: serve al login per scegliere il link giusto e alla pagina /register
+  status(): Observable<IAuthStatus> {
+    return this.http.get<IAuthStatus>(`${API_BASE_URL}/api/auth/status`);
+  }
+
+  // registrazione pubblica: crea un utente "member" e lo logga (cookie), poi carica /me
+  register(payload: IRegisterPayload): Observable<IMeResponse | null> {
+    return this.http
+      .post<IAuthResponse>(`${API_BASE_URL}/api/auth/register`, payload)
       .pipe(switchMap(() => this.load()));
   }
 

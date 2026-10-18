@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, signal, WritableSignal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -7,6 +7,7 @@ import { UiButton } from '../../components/ui/button';
 import { UiCard } from '../../components/ui/card';
 import { UiLabel } from '../../components/ui/label';
 import { AuthService } from '../../services/auth.service';
+import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -28,6 +29,11 @@ export class Login {
   protected readonly mfaStep: WritableSignal<boolean> = signal(false);
   protected readonly useRecovery: WritableSignal<boolean> = signal(false);
   protected readonly code = signal('');
+
+  // decide quale link mostrare in fondo: undefined = in caricamento, null = backend non raggiungibile
+  protected readonly status = toSignal(this.auth.status().pipe(catchError(() => of(null))), {
+    initialValue: undefined
+  });
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

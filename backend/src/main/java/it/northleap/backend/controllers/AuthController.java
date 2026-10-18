@@ -38,6 +38,12 @@ public class AuthController {
         return withTokenCookies(authService.onboarding(request, httpRequest));
     }
 
+    // registrazione pubblica: crea un utente "member" e lo logga. 403 se REGISTRATION_ENABLED=false
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        return withTokenCookies(authService.register(request, httpRequest));
+    }
+
     // metodo login
     @PostMapping("/login")
     public ResponseEntity<Object> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {

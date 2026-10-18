@@ -7,10 +7,7 @@ import it.northleap.backend.entities.User;
 import it.northleap.backend.entities.UserRole;
 import it.northleap.backend.entities.UserRoleId;
 import it.northleap.backend.entities.Workspace;
-import it.northleap.backend.exceptions.BadRequestException;
-import it.northleap.backend.exceptions.ErrorCodes;
-import it.northleap.backend.exceptions.InvalidRefreshTokenException;
-import it.northleap.backend.exceptions.WorkspaceAlreadyOnboardedException;
+import it.northleap.backend.exceptions.*;
 import it.northleap.backend.repositories.RoleRepository;
 import it.northleap.backend.repositories.SessionRepository;
 import it.northleap.backend.repositories.UserRepository;
@@ -21,6 +18,8 @@ import it.northleap.backend.security.JwtService;
 import it.northleap.backend.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +34,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
+    // ruolo assegnato a chi si registra da solo (seminato da RoleSeeder)
+    private static final String SELF_REGISTER_ROLE = "member";
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -45,8 +47,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final MfaService mfaService;
 
+    // non final di proposito: @RequiredArgsConstructor non lo mette nel costruttore, quindi AuthServiceTest continua
+    // a costruire il service con 9 argomenti; Spring lo inietta da env
+    @Value("${app.registration.enabled:false}")
+    private boolean registrationEnabled;
+
     public StatusResponse status() {
-        return new StatusResponse(isOnboarded());
+        boolean onboarded = isOnboarded();
+        return new StatusResponse(onboarded, onboarded && registrationEnabled);
     }
 
     @Transactional
@@ -74,6 +82,46 @@ public class AuthService {
         userRole.setId(new UserRoleId(user.getId(), ownerRole.getId()));
         userRole.setUser(user);
         userRole.setRole(ownerRole);
+        userRoleRepository.save(userRole);
+
+        return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+    }
+
+    // registrazione pubblica: crea un utente "member" nel workspace che esiste già. Non crea un workspace nuovo (il
+    // modello dati ne ha uno solo): chi si registra vede gli stessi dati
+    @Transactional
+    public IssuedTokens register(RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!registrationEnabled) {
+            throw new RegistrationClosedException();
+        }
+        if (!isOnboarded()) {
+            throw new BadRequestException("Workspace non ancora configurato: completa prima l'onboarding");
+        }
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new BadRequestException("Utente già esistente", ErrorCodes.EMAIL_TAKEN);
+        }
+        PasswordPolicy.assertValid(request.password());
+
+        Role role = roleRepository.findByKey(SELF_REGISTER_ROLE)
+                .orElseThrow(() -> new IllegalStateException("Role '" + SELF_REGISTER_ROLE + "' not seeded"));
+
+        User user = new User();
+        user.setEmail(email);
+        user.setName(request.name().trim());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setActive(true);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            // due registrazioni con la stessa email nello stesso istante: vince la prima
+            throw new BadRequestException("Utente già esistente", ErrorCodes.EMAIL_TAKEN);
+        }
+
+        UserRole userRole = new UserRole();
+        userRole.setId(new UserRoleId(user.getId(), role.getId()));
+        userRole.setUser(user);
+        userRole.setRole(role);
         userRoleRepository.save(userRole);
 
         return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
