@@ -1,6 +1,7 @@
 package it.northleap.backend.calendar;
 
 import it.northleap.backend.dtos.UpsertRecordDto;
+import it.northleap.backend.entities.Record;
 import it.northleap.backend.entities.User;
 import it.northleap.backend.exceptions.BadRequestException;
 import it.northleap.backend.exceptions.NotFoundException;
@@ -41,7 +42,7 @@ public class CalendarSyncService {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
 
-    @Value("${app.fontend.base-url}")
+    @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
     // fuso orario in cui un evento tutto-il-giorno diventa "mezzanotte dui quel giorno"
@@ -65,7 +66,7 @@ public class CalendarSyncService {
     @Transactional
     public String callback(Actor actor, String code, String state) {
         OAuthState s = states.findById(HashUtil.sha256Hex(state == null ? "" : state))
-                .filter(x -> x.getExpiresAt().isAfter(Instant.now()) && x.getUserId().equals(actor.id))
+                .filter(x -> x.getExpiresAt().isAfter(Instant.now()) && x.getUserId().equals(actor.id()))
                 .orElseThrow(() -> new BadRequestException("Collegamento scaduto o non valido: riprova"));
         states.delete(s);
         states.purgeExpired(Instant.now());

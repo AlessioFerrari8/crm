@@ -16,7 +16,7 @@ import java.util.Map;
 // 4 chiamate a Google, niente SDK: token, refresh, calendario primario, eventi
 @Component
 public class GoogleCalendarClient {
-    private static final String AUTH = "https://accounts.google.com/o/auth2/v2/auth";
+    private static final String AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String TOKEN = "https://oauth2.googleapis.com/token";
     private static final String API = "https://www.googleapis.com/calendar/v3";
     // solo lettura finché l'import è unidirezionale: chiedere la scrittura "per dopo" allunga la verifica di settimane
@@ -66,6 +66,15 @@ public class GoogleCalendarClient {
         form.add("redirect_uri", redirectUri);
         form.add("grant_type", "authorization_code");
         return tokens(form, null);
+    }
+
+    public Tokens refresh(String refreshToken) {
+        var form = new LinkedMultiValueMap<String, String>();
+        form.add("refresh_token", refreshToken);
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("grant_type", "refresh_token");
+        return tokens(form, refreshToken);
     }
 
     // l'id del calendario primario è l'email dell'account: niente scope openid in più
