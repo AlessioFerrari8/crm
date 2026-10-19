@@ -25,8 +25,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,6 +41,9 @@ public class AuthService {
     // ruolo assegnato a chi si registra da solo (seminato da RoleSeeder)
     private static final String SELF_REGISTER_ROLE = "member";
 
+    private static SecureRandom RANDOM = new SecureRandom();
+    private static final int VERIFICATION_HOURS = 24;
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -46,6 +53,17 @@ public class AuthService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final MfaService mfaService;
+
+    private final EmailService emailService;
+
+    // origin del frontend: finisce nel link della mail (stessa proprietà di UserService)
+    @Value("${app.frontend.base-url:http://localhost:4200}")
+    private String frontendBaseUrl;
+
+    // non final, come registrationEnabled: in AuthServiceTest resta false, quindi i test della registrazione che non
+    // toccano la mail continuano a funzionare senza stub; Spring lo inietta da env (default true)
+    @Value("${app.registration.require-email-verification:true}")
+    private boolean requireEmailVerification;
 
     // non final di proposito: @RequiredArgsConstructor non lo mette nel costruttore, quindi AuthServiceTest continua
     // a costruire il service con 9 argomenti; Spring lo inietta da env
@@ -87,10 +105,12 @@ public class AuthService {
         return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
     }
 
-    // registrazione pubblica: crea un utente "member" nel workspace che esiste già. Non crea un workspace nuovo (il
-    // modello dati ne ha uno solo): chi si registra vede gli stessi dati
+    public record RegisterOutcome(IssuedTokens tokens) { }
+
+    // registrazione pubblica: crea un utente "member" nel workspace che esiste già. Non crea un workspace nuovo (il modello
+    // dati ne ha uno solo): chi si registra vde gli stessi dati
     @Transactional
-    public IssuedTokens register(RegisterRequest request, HttpServletRequest httpRequest) {
+    public RegisterOutcome register(RegisterRequest request, HttpServletRequest httpRequest) {
         if (!registrationEnabled) {
             throw new RegistrationClosedException();
         }
@@ -103,6 +123,11 @@ public class AuthService {
         }
         PasswordPolicy.assertValid(request.password());
 
+        // fail closed: senza posta funzionante nessuno potrebbe mai confermare, meglio rifiutare subito
+        if (requireEmailVerification && !emailService.isConfigured()) {
+            throw new BadRequestException("Registrazione temporaneamente non disponibile: invio email non configurato");
+        }
+
         Role role = roleRepository.findByKey(SELF_REGISTER_ROLE)
                 .orElseThrow(() -> new IllegalStateException("Role '" + SELF_REGISTER_ROLE + "' not seeded"));
 
@@ -111,6 +136,7 @@ public class AuthService {
         user.setName(request.name().trim());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setActive(true);
+        user.setEmailVerified(!requireEmailVerification);
         try {
             userRepository.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
@@ -124,8 +150,66 @@ public class AuthService {
         userRole.setRole(role);
         userRoleRepository.save(userRole);
 
-        return issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+        if (requireEmailVerification) {
+            // se l'invio fallisce l'eccezione fa il rollback: l'utente non resta a meta'
+            if (!sendVerificationEmail(user)) {
+                throw new BadRequestException("Impossibile inviare l'email di conferma: riprova tra poco");
+            }
+            return new RegisterOutcome(null);
+        }
+        return new RegisterOutcome(issueTokens(user, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr()));
     }
+
+    // conferma l'indirizzo: il token si cerca per hash, scade e si consuma
+    @Transactional
+    public void verifyEmail(VerifyEmailRequest request) {
+        User user = userRepository.findByVerificationTokenHash(HashUtil.sha256Hex(request.token()))
+                .filter(u -> u.getVerificationExpiresAt() != null && u.getVerificationExpiresAt().isAfter(Instant.now()))
+                .orElseThrow(() -> new BadRequestException("Link non valido o scaduto", ErrorCodes.VERIFICATION_INVALID));
+        user.setEmailVerified(true);
+        user.setVerificationTokenHash(null);
+        user.setVerificationExpiresAt(null);
+        userRepository.save(user);
+    }
+
+    // rinvia il link. Non dice mai se l'email esiste o è già verificata (stessa risposta per tutti): il token
+    // precedente viene sostituito
+    @Transactional
+    public void resendVerification(ResendVerificationRequest request) {
+        if (!requireEmailVerification || !emailService.isConfigured()) {
+            return;
+        }
+        userRepository.findByEmailIgnoreCase(request.email().trim())
+                .filter(u -> !u.isEmailVerified())
+                // pausa di 60 secondi: la scadenza e' "invio + 24h", quindi se mancano ancora quasi 24h
+                // l'ultima mail e' di meno di un minuto fa
+                .filter(u -> u.getVerificationExpiresAt() == null
+                        || u.getVerificationExpiresAt().isBefore(
+                        Instant.now().plus(VERIFICATION_HOURS, ChronoUnit.HOURS).minusSeconds(60)))
+                .ifPresent(this::sendVerificationEmail);
+    }
+
+    // genera un token nuovo, ne salva l'hash e manda il link. false = la mail non e' partita
+    private boolean sendVerificationEmail(User user) {
+        byte[] bytes = new byte[24];
+        RANDOM.nextBytes(bytes);
+        String token = HexFormat.of().formatHex(bytes);
+
+        user.setVerificationTokenHash(HashUtil.sha256Hex(token));
+        user.setVerificationExpiresAt(Instant.now().plus(VERIFICATION_HOURS, ChronoUnit.HOURS));
+        userRepository.save(user);
+
+        String link = frontendBaseUrl + "/verify?token=" + token;
+        // il nome lo ha scelto chi si registra: in una mail HTML va escapato
+        String html = """
+                <p>Ciao %s,</p>
+                <p>conferma il tuo indirizzo email per entrare in NorthLeap CRM:</p>
+                <p><a href="%s">Conferma l'email</a></p>
+                <p>Il link scade tra %d ore. Se non sei stato tu a registrarti, ignora questa email.</p>
+                """.formatted(HtmlUtils.htmlEscape(user.getName()), link, VERIFICATION_HOURS);
+        return emailService.send(user.getEmail(), "Conferma il tuo indirizzo email · NorthLeap CRM", html);
+    }
+
 
     public record LoginOutcome(IssuedTokens tokens, String mfaToken) { }
 
@@ -136,6 +220,11 @@ public class AuthService {
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         User user = userPrincipal.getUser();
+
+        // password giusta, ma indirizzo non confermato: nessun token, nemmeno la sfida MFA
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
 
         // la password è giusta, ma da sola non basta più
         if (user.isMfaEnabled()) {

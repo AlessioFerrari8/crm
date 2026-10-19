@@ -7,6 +7,8 @@ public final class ErrorCodes {
     public static final String INVITE_INVALID = "INVITE_INVALID";
     public static final String EMAIL_TAKEN = "EMAIL_TAKEN";
     public static final String CURRENT_PASSWORD_INVALID = "CURRENT_PASSWORD_INVALID";
+    public static final String VERIFICATION_INVALID = "VERIFICATION_INVALID";
+    public static final String EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED";
 
     private ErrorCodes() {}
 }

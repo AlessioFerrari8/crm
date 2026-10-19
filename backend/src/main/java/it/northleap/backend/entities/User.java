@@ -87,4 +87,18 @@ public class User {
     // tariffa oraria per il time tracking: si copia su ogni registrazione alla chiusura
     @Column(name = "hourly_rate", precision = 10, scale = 2)
     private java.math.BigDecimal hourlyRate;
+
+    // false solo per chi si registra da solo e non ha ancora cliccato il link. Il default è true: gli utenti creati
+    // dall'onboarding o da un invito (l'invito è già una prova di possesso dell'email) e quelli già nel db restano
+    // verificati
+    @Column(name = "email_verified", nullable = false)
+    @ColumnDefault("true")
+    private boolean emailVerified = true;
+
+    // hash SHA-256 del token mandato per email e sua scadenza. Entrambi null a verifica fatta
+    @Column(name = "verification_token_hash")
+    private String verificationTokenHash;
+
+    @Column(name = "verification_expires_at")
+    private Instant verificationExpiresAt;
 }

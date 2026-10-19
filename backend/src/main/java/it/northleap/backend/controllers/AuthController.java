@@ -38,10 +38,31 @@ public class AuthController {
         return withTokenCookies(authService.onboarding(request, httpRequest));
     }
 
-    // registrazione pubblica: crea un utente "member" e lo logga. 403 se REGISTRATION_ENABLED=false
+    // registrazione pubblica: crea un utente "member". 403 se REGISTRATION_ENABLED=false. Con la verifica email risponde
+    // 202 e non imposta cookie; senza, logga come prima
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
-        return withTokenCookies(authService.register(request, httpRequest));
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        AuthService.RegisterOutcome outcome = authService.register(request, httpRequest);
+        if (outcome.tokens() == null) {
+            return ResponseEntity.accepted().body(new RegisterResponse(true));
+        }
+        return ResponseEntity.ok()
+                .headers(cookieHeaders(outcome.tokens()))
+                .body(outcome.tokens().body());
+    }
+
+    // conferma dell'email dal link ricevuto: pubblico, il token e' la prova
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    // rinvia il link: 204 sempre, anche se l'email non esiste (nessun oracolo)
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        authService.resendVerification(request);
+        return ResponseEntity.noContent().build();
     }
 
     // metodo login

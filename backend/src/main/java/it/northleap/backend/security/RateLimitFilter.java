@@ -26,6 +26,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/api/auth/login", "/api/auth/refresh", "/api/users/accept-invite",
             // registrazione pubblica: crea utenti (e fa lavorare bcrypt) a chiunque, quindi limitata
             "/api/auth/register",
+            // verifica e rinvio: il rinvio fa partire una mail vera, il token è lungo ma non si regala il brute force
+            "/api/auth/verify-email", "/api/auth/resend-verification",
             "/api/integrations/calcom/webhook",
             // sei cifre senza limite di tentativi sono un milione di possibilità probabili in pochi
             // minuti: senza questa riga il secondo fattore è decorativo

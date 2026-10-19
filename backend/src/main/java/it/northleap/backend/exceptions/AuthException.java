@@ -68,6 +68,19 @@ public class AuthException {
         );
     }
 
+    // password giusta ma email non confermata: il frontend legge il code per offrire "Rinvia email"
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "status", 403,
+                        "message", ex.getMessage(),
+                        "code", ErrorCodes.EMAIL_NOT_VERIFIED
+                )
+        );
+    }
+
     // refresh token mancante/scaduto/revocato: stesso messaggio generico, non si specifica il motivo
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
