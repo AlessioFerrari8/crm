@@ -54,7 +54,7 @@ public class EmailService {
 
     public boolean send(String from, String to, String subject, String html) {
         MailTransport t = transport();
-        if (t == null && !t.isConfigured()) {
+        if (t == null || !t.isConfigured()) {
             log.debug("Nessun trasporto email configurato: invio a {} saltato", to);
             return false;
         }
