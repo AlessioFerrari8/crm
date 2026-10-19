@@ -7,6 +7,7 @@ import { UiButton } from '../../components/ui/button';
 import { UiCard } from '../../components/ui/card';
 import { UiLabel } from '../../components/ui/label';
 import { AuthService } from '../../services/auth.service';
+import { I18nService } from '../../services/i18n';
 import { catchError, of } from 'rxjs';
 
 @Component({
@@ -20,6 +21,7 @@ export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly i18n = inject(I18nService);
 
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -71,10 +73,10 @@ export class Login {
           // password giusta ma email NON CONFERMATA: il backend lo dice solo in questo caso
           if (err?.status === 403 && err?.error?.code === 'EMAIL_NOT_VERIFIED') {
             this.notVerified.set(true);
-            this.error.set('Devi confermare il tuo indirizzo email: apri il link che ti abbiamo mandato.')
+            this.error.set(this.i18n.t('login.notVerified'))
             return;
           }
-          this.error.set('Credenziali non valide');
+          this.error.set(this.i18n.t('login.badCredentials'));
         }
       });
   }
@@ -97,7 +99,7 @@ export class Login {
         this.submitting.set(false);
         // 401 col token di sfida scaduto (5 min): si ricomincia dalla password
         if (err?.status === 401 && !this.auth.mfaToken()) this.mfaStep.set(false);
-        this.error.set('Codice non valido');
+        this.error.set(this.i18n.t('login.badCode'));
         this.code.set('');
       }
     });
@@ -110,8 +112,8 @@ export class Login {
       .resendVerification(email)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.resendMsg.set('Se l\'account esiste, ti abbiamo mandato una nuova email.'),
-        error: () => this.resendMsg.set('Troppe richieste: riprova fra poco.')
+        next: () => this.resendMsg.set(this.i18n.t('login.resendSent')),
+        error: () => this.resendMsg.set(this.i18n.t('auth.tooMany'))
       });
   }
 

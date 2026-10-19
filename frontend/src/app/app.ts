@@ -11,15 +11,19 @@ import { PwaUpdateService } from './services/pwa-update.service';
 import { PwaInstallService } from './services/pwa-install.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
+import { Languages, LucideAngularModule } from 'lucide-angular';
+import { I18nService } from './services/i18n';
 
 // Root: ospita la shell (sidebar/topbar + contenuto via router-outlet). La shell si // mostra solo quando l'utente è autenticato;
 // login/onboarding (non autenticato) rendono solo il router-outlet, senza sidebar
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Topbar, Sidebar, CommandPalette, UiToasts, UiConfirmDialog],
+  imports: [RouterOutlet, Topbar, Sidebar, CommandPalette, UiToasts, UiConfirmDialog, LucideAngularModule],
   templateUrl: './app.html'
 })
 export class App {
+  protected readonly i18n = inject(I18nService);
+  protected readonly Languages = Languages;
   private readonly authenticated = inject(AuthService).isAuthenticated;
   private readonly url = toSignal(
     inject(Router).events.pipe(filter((e) => e instanceof NavigationEnd), map((e) => (e as NavigationEnd).urlAfterRedirects)),

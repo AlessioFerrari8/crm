@@ -2,14 +2,13 @@
   <div class="w-full max-w-sm">
     <ui-card>
       <h1 class="text-xl font-semibold mb-1">NorthLeap CRM</h1>
-      <p class="text-sm text-base-content/60 mb-4">Accedi al tuo workspace</p>
+      <p class="text-sm text-base-content/60 mb-4">{{ i18n.t('login.subtitle') }}</p>
 
 
       @if (mfaStep()) {
         <!-- (submit) e non (ngSubmit): senza [formGroup] nessuna direttiva emette ngSubmit, e il form ricaricherebbe la pagina -->
         <form (submit)="$event.preventDefault(); verify()" class="space-y-3">
-          <ui-label [required]="true">{{ useRecovery() ? 'Codice di recupero' : 'Codice dell\'app di autenticazione'
-            }}</ui-label>
+          <ui-label [required]="true">{{ useRecovery() ? i18n.t('auth.recoveryCode') : i18n.t('auth.authCode') }}</ui-label>
           @if (useRecovery()) {
           <input name="recovery" autocomplete="off" class="input rounded-sm w-full font-mono" [value]="code()"
             (input)="code.set($any($event.target).value)" />
@@ -23,9 +22,9 @@
           <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
           }
 
-          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">Verifica</ui-button>
+          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">{{ i18n.t('login.verify') }}</ui-button>
           <button type="button" class="link link-primary text-xs" (click)="useRecovery.set(!useRecovery()); code.set('')">
-            {{ useRecovery() ? 'Usa il codice dell\'app' : 'Non hai il telefono? usa un codice di recupero' }}
+            {{ useRecovery() ? i18n.t('login.useAppCode') : i18n.t('login.useRecovery') }}
           </button>
         </form>
       } @else {
@@ -33,18 +32,18 @@
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <div>
-            <ui-label [required]="true">Email</ui-label>
-            <input type="email" formControlName="email" class="input rounded-sm w-full" placeholder="tu@azienda.com" />
+            <ui-label [required]="true">{{ i18n.t('common.email') }}</ui-label>
+            <input type="email" formControlName="email" class="input rounded-sm w-full" [placeholder]="i18n.t('common.placeholderEmail')" />
             @if (form.controls.email.touched && form.controls.email.invalid) {
-              <p class="text-error text-xs mt-1">Inserisci un'email valida</p>
+              <p class="text-error text-xs mt-1">{{ i18n.t('login.emailInvalid') }}</p>
             }
           </div>
 
           <div>
-            <ui-label [required]="true">Password</ui-label>
+            <ui-label [required]="true">{{ i18n.t('common.password') }}</ui-label>
             <input type="password" formControlName="password" class="input rounded-sm w-full" placeholder="••••••••" />
             @if (form.controls.password.touched && form.controls.password.invalid) {
-              <p class="text-error text-xs mt-1">Password richiesta</p>
+              <p class="text-error text-xs mt-1">{{ i18n.t('login.passwordRequired') }}</p>
             }
           </div>
 
@@ -53,14 +52,14 @@
           }
 
           @if (notVerified()) {
-            <button type="button" class="link link-primary text-xs" (click)="resend()">Rinvia email</button>
+            <button type="button" class="link link-primary text-xs" (click)="resend()">{{ i18n.t('login.resend') }}</button>
             @if (resendMsg()) {
               <p class="text-xs text-base-content/70">{{ resendMsg() }}</p>
             }
           }
 
           <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">
-            Accedi
+            {{ i18n.t('login.submit') }}
           </ui-button>
         </form>
       }
@@ -68,11 +67,11 @@
       @if (status(); as s) {
         @if (!s.onboarded) {
           <p class="text-xs text-base-content/60 mt-4">
-            Prima volta? <a routerLink="/onboarding" class="link link-primary">Configura il workspace</a>
+            {{ i18n.t('login.firstTime') }} <a routerLink="/onboarding" class="link link-primary">{{ i18n.t('login.setupWorkspace') }}</a>
           </p>
         } @else if (s.registrationOpen) {
           <p class="text-xs text-base-content/60 mt-4">
-            Non hai un account? <a routerLink="/register" class="link link-primary">Crea account</a>
+            {{ i18n.t('login.noAccount') }} <a routerLink="/register" class="link link-primary">{{ i18n.t('login.createAccount') }}</a>
           </p>
         }
       }

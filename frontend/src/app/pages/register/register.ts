@@ -22,7 +22,7 @@ export class Register {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly i18n = inject(I18nService);
+  protected readonly i18n = inject(I18nService);
 
   protected readonly submitting: WritableSignal<boolean> = signal(false);
   protected readonly error: WritableSignal<string | null> = signal(null);
@@ -56,7 +56,7 @@ export class Register {
     }
 
     if (!passwordValid(this.form.controls.password.value)) {
-      this.error.set('La password non rispetta tutti i requisiti elencati');
+      this.error.set(this.i18n.t('register.weakPassword'));
       return;
     }
 
@@ -80,7 +80,7 @@ export class Register {
           this.submitting.set(false);
           // /api/auth/* è escluso da errorToastInterceptor: l'errore si mostra qui
           const key = errorKey(err);
-          this.error.set(key ? this.i18n.t(key) : (err?.error?.message ?? 'Errore durante la registrazione'));
+          this.error.set(key ? this.i18n.t(key) : (err?.error?.message ?? this.i18n.t('register.failed')));
         }
       });
   }
@@ -96,11 +96,11 @@ export class Register {
       .subscribe({
         next: () => {
           this.resending.set(false);
-          this.resendMsg.set('Se serve, ti abbiamo mandato una nuova email.')
+          this.resendMsg.set(this.i18n.t('register.resendSent'))
         },
         error: () => {
           this.resending.set(false);
-          this.resendMsg.set('Troppe richieste: riprova fra poco.');
+          this.resendMsg.set(this.i18n.t('auth.tooMany'));
         }
       });
   }

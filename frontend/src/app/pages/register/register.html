@@ -2,50 +2,50 @@
 <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
   <div class="w-full max-w-sm">
     <ui-card>
-      <h1 class="text-xl font-semibold mb-1">Crea il tuo account</h1>
+      <h1 class="text-xl font-semibold mb-1">{{ i18n.t('register.title') }}</h1>
 
       @if (sentTo(); as addr) {
         <p class="text-sm mt-4">
-          Ti abbiamo mandato un'email a <strong>{{ addr }}</strong>. Apri il link per attivare l'account: vale 24 ore.
+          {{ i18n.t('register.sentTo') }} <strong>{{ addr }}</strong>. {{ i18n.t('register.sentHint') }}
         </p>
-        <p class="text-xs text-base-content/60 mt-3">Non la vedi? Controlla anche nello spam.</p>
+        <p class="text-xs text-base-content/60 mt-3">{{ i18n.t('register.spam') }}</p>
         @if (resendMsg()) {
           <p class="text-xs mt-3">{{ resendMsg() }}</p>
         }
         <button type="button" class="link link-primary text-xs mt-3" [disabled]="resending()" (click)="resend()">
-          Rinvia email
+          {{ i18n.t('login.resend') }}
         </button>
-        <p class="text-xs text-base-content/60 mt-4"><a routerLink="/login" class="link link-primary">Vai al login</a></p>
+        <p class="text-xs text-base-content/60 mt-4"><a routerLink="/login" class="link link-primary">{{ i18n.t('register.goLogin') }}</a></p>
       } @else if (status() === undefined) {
-        <p class="text-sm text-base-content/60 mt-4">Caricamento...</p>
+        <p class="text-sm text-base-content/60 mt-4">{{ i18n.t('common.loading') }}</p>
       }
       @else if (!status()?.registrationOpen) {
         <p class="text-sm text-base-content/60 mb-4">
-          La registrazione non è attiva su questa istanza.
+          {{ i18n.t('register.closed') }}
         </p>
-        <a routerLink="/login" class="link link-primary text-sm">Torna al login</a>
+        <a routerLink="/login" class="link link-primary text-sm">{{ i18n.t('register.backToLogin') }}</a>
       } @else {
-        <p class="text-sm text-base-content/60 mb-4">Entri come membro del workspace di questa istanza</p>
+        <p class="text-sm text-base-content/60 mb-4">{{ i18n.t('register.subtitle') }}</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <div>
-            <ui-label [required]="true">Nome</ui-label>
-            <input formControlName="name" autocomplete="name" class="input rounded-sm w-full" placeholder="Mario Rossi" />
+            <ui-label [required]="true">{{ i18n.t('common.name') }}</ui-label>
+            <input formControlName="name" autocomplete="name" class="input rounded-sm w-full" [placeholder]="i18n.t('common.placeholderPerson')" />
             @if (form.controls.name.touched && form.controls.name.invalid) {
-              <p class="text-error text-xs mt-1">Nome richiesto</p>
+              <p class="text-error text-xs mt-1">{{ i18n.t('register.nameRequired') }}</p>
             }
           </div>
 
           <div>
-            <ui-label [required]="true">Email</ui-label>
-            <input type="email" formControlName="email" autocomplete="email" class="input rounded-sm w-full" placeholder="tu@azienda.com" />
+            <ui-label [required]="true">{{ i18n.t('common.email') }}</ui-label>
+            <input type="email" formControlName="email" autocomplete="email" class="input rounded-sm w-full" [placeholder]="i18n.t('common.placeholderEmail')" />
             @if (form.controls.email.touched && form.controls.email.invalid) {
-              <p class="text-error text-xs mt-1">Inserisci un'email valida</p>
+              <p class="text-error text-xs mt-1">{{ i18n.t('login.emailInvalid') }}</p>
             }
           </div>
 
           <div>
-            <ui-label [required]="true">Password</ui-label>
+            <ui-label [required]="true">{{ i18n.t('common.password') }}</ui-label>
             <input type="password" formControlName="password" autocomplete="new-password" class="input rounded-sm w-full" />
             <ui-password-rules [password]="pwValue()" />
           </div>
@@ -53,22 +53,21 @@
           <label class="flex items-start gap-2 text-xs text-base-content/70 cursor-pointer">
             <input type="checkbox" formControlName="accept" class="checkbox checkbox-sm mt-0.5" />
             <span>
-              Ho capito che questa è un'istanza condivisa: i dati che inserisco sono visibili a tutti gli utenti registrati.
-              Non userò dati personali reali.
+              {{ i18n.t('register.accept') }}
             </span>
           </label>
           @if (form.controls.accept.touched && form.controls.accept.invalid) {
-            <p class="text-error text-xs">Devi confermare per continuare</p>
+            <p class="text-error text-xs">{{ i18n.t('register.acceptRequired') }}</p>
           }
 
           @if (error()) {
             <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
           }
-          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">Crea account</ui-button>
+          <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">{{ i18n.t('register.submit') }}</ui-button>
         </form>
 
         <p class="text-xs text-base-content/60 mt-4">
-          Hai già un account? <a routerLink="/login" class="link link-primary">Accedi</a>
+          {{ i18n.t('register.haveAccount') }} <a routerLink="/login" class="link link-primary">{{ i18n.t('register.signIn') }}</a>
         </p>
 
       }

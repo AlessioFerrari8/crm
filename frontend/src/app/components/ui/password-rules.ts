@@ -1,13 +1,14 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
+import { I18nService, TranslationKey } from '../../services/i18n';
 
 // Regole password, specchio esatto della PasswordPolicy backend (che resta la garanzia vera):
 // la checklist serve a non far scoprire i requisiti a colpi di 400.
-export const PASSWORD_RULES: { label: string; test: (pw: string) => boolean }[] = [
-  { label: 'Almeno 8 caratteri', test: (p) => p.length >= 8 },
-  { label: 'Una lettera maiuscola', test: (p) => /[A-Z]/.test(p) },
-  { label: 'Una lettera minuscola', test: (p) => /[a-z]/.test(p) },
-  { label: 'Un numero', test: (p) => /\d/.test(p) },
-  { label: 'Un carattere speciale (!, @, #, …)', test: (p) => /[^A-Za-z0-9]/.test(p) }
+export const PASSWORD_RULES: { label: TranslationKey; test: (pw: string) => boolean }[] = [
+  { label: 'pw.min8', test: (p) => p.length >= 8 },
+  { label: 'pw.upper', test: (p) => /[A-Z]/.test(p) },
+  { label: 'pw.lower', test: (p) => /[a-z]/.test(p) },
+  { label: 'pw.digit', test: (p) => /\d/.test(p) },
+  { label: 'pw.special', test: (p) => /[^A-Za-z0-9]/.test(p) }
 ];
 
 export function passwordValid(pw: string): boolean {
@@ -25,13 +26,14 @@ export function passwordValid(pw: string): boolean {
             [class.text-success]="r.test(password())"
             [class.opacity-50]="!r.test(password())">
           <span class="w-3 inline-block">{{ r.test(password()) ? '✓' : '○' }}</span>
-          {{ r.label }}
+          {{ i18n.t(r.label) }}
         </li>
       }
     </ul>
   `
 })
 export class UiPasswordRules {
+  protected readonly i18n = inject(I18nService);
   readonly password = input('');
   protected readonly rules = PASSWORD_RULES;
 }
