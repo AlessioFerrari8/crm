@@ -30,6 +30,10 @@ export class Login {
   protected readonly useRecovery: WritableSignal<boolean> = signal(false);
   protected readonly code = signal('');
 
+  // true dopo un 403 EMAIL_NOT_VERIFIED: compare "Rinvia email"
+  protected readonly notVerified: WritableSignal<boolean> = signal(false);
+  protected readonly resendMsg: WritableSignal<string | null> = signal(null);
+
   // decide quale link mostrare in fondo: undefined = in caricamento, null = backend non raggiungibile
   protected readonly status = toSignal(this.auth.status().pipe(catchError(() => of(null))), {
     initialValue: undefined
@@ -47,6 +51,8 @@ export class Login {
     }
     this.submitting.set(true);
     this.error.set(null);
+    this.notVerified.set(false);
+    this.resendMsg.set(null);
     const { email, password } = this.form.getRawValue();
     this.auth
       .login(email, password)
@@ -60,8 +66,14 @@ export class Login {
           }
           this.router.navigate(['/']);
         },
-        error: () => {
+        error: (err) => {
           this.submitting.set(false);
+          // password giusta ma email NON CONFERMATA: il backend lo dice solo in questo caso
+          if (err?.status === 403 && err?.error?.code === 'EMAIL_NOT_VERIFIED') {
+            this.notVerified.set(true);
+            this.error.set('Devi confermare il tuo indirizzo email: apri il link che ti abbiamo mandato.')
+            return;
+          }
           this.error.set('Credenziali non valide');
         }
       });
@@ -90,4 +102,17 @@ export class Login {
       }
     });
   }
+
+  protected resend(): void {
+    const email = this.form.controls.email.value.trim();
+    if (!email) return;
+    this.auth
+      .resendVerification(email)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.resendMsg.set('Se l\'account esiste, ti abbiamo mandato una nuova email.'),
+        error: () => this.resendMsg.set('Troppe richieste: riprova fra poco.')
+      });
+  }
+
 }

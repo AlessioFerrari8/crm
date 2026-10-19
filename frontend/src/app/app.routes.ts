@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register/register').then((m) => m.Register)
   },
   {
+    path: 'verify',
+    title: 'route.verify',
+    loadComponent: () => import('./pages/verify/verify').then((m) => m.VerifyEmail)
+  },
+  {
     // pubblica: l'invitato arriva qui dal link /invite?token=... copiato dall'admin
     path: 'invite',
     title: 'route.invite',

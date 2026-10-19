@@ -52,6 +52,13 @@
             <div class="alert alert-error rounded-sm py-2 text-sm">{{ error() }}</div>
           }
 
+          @if (notVerified()) {
+            <button type="button" class="link link-primary text-xs" (click)="resend()">Rinvia email</button>
+            @if (resendMsg()) {
+              <p class="text-xs text-base-content/70">{{ resendMsg() }}</p>
+            }
+          }
+
           <ui-button type="submit" variant="primary" [loading]="submitting()" class="block">
             Accedi
           </ui-button>

@@ -1,0 +1,23 @@
+<div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+  <div class="w-full max-w-sm">
+    <ui-card>
+      <h1 class="text-xl font-semibold mb-3">Conferma email</h1>
+
+      @switch (state()) {
+        @case ('loading') {
+          <p class="text-sm text-base-content/60">Verifica in corso...</p>
+        }
+        @case ('ok') {
+          <p class="text-sm mb-4">Email confermata. Ora puoi accedere.</p>
+          <a routerLink="/login" class="btn btn-primary rounded-sm">Vai al login</a>
+        }
+        @case ('error') {
+          <p class="text-sm mb-4">Il link non è valido o è scaduto</p>
+          <p class="text-xs text-base-content/60">
+            Prova ad accedere con la tua email e la tua password: portrai chiedere un nuovo link.
+          </p>
+        }
+      }
+    </ui-card>
+  </div>
+</div>

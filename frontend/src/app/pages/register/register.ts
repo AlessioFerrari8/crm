@@ -27,6 +27,11 @@ export class Register {
   protected readonly submitting: WritableSignal<boolean> = signal(false);
   protected readonly error: WritableSignal<string | null> = signal(null);
 
+  // indirizzo a cui è partita la mail di conferma; null = form ancora da compilare
+  protected readonly sentTo: WritableSignal<string | null> = signal(null);
+  protected readonly resending: WritableSignal<boolean> = signal(false);
+  protected readonly resendMsg: WritableSignal<string | null> = signal(null);
+
   // undefined = sto ancora caricando, null = il backend non risponde. La get serve anche a ricevere il cookie XSRF-TOKEN, senza il
   // quale il POST di registrazione verrebbe rifiutato
   protected readonly status = toSignal(this.auth.status().pipe(catchError(() => of(null))), {
@@ -62,8 +67,13 @@ export class Register {
       .register({ name: name.trim(), email: email.trim(), password })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
+        next: (outcome) => {
           this.submitting.set(false);
+          if (outcome === 'verify') {
+            // utente creato, ma entra solo dopo il link: mostro "controlla la posta"
+            this.sentTo.set(email.trim());
+            return;
+          }
           this.router.navigate(['/']);
         },
         error: (err) => {
@@ -75,6 +85,24 @@ export class Register {
       });
   }
 
-
+  protected resend(): void {
+    const to = this.sentTo();
+    if (!to || this.resending()) return;
+    this.resending.set(true);
+    this.resendMsg.set(null);
+    this.auth
+      .resendVerification(to)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.resending.set(false);
+          this.resendMsg.set('Se serve, ti abbiamo mandato una nuova email.')
+        },
+        error: () => {
+          this.resending.set(false);
+          this.resendMsg.set('Troppe richieste: riprova fra poco.');
+        }
+      });
+  }
 
 }

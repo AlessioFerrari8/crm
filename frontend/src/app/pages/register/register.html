@@ -4,9 +4,22 @@
     <ui-card>
       <h1 class="text-xl font-semibold mb-1">Crea il tuo account</h1>
 
-      @if(status() === undefined) {
+      @if (sentTo(); as addr) {
+        <p class="text-sm mt-4">
+          Ti abbiamo mandato un'email a <strong>{{ addr }}</strong>. Apri il link per attivare l'account: vale 24 ore.
+        </p>
+        <p class="text-xs text-base-content/60 mt-3">Non la vedi? Controlla anche nello spam.</p>
+        @if (resendMsg()) {
+          <p class="text-xs mt-3">{{ resendMsg() }}</p>
+        }
+        <button type="button" class="link link-primary text-xs mt-3" [disabled]="resending()" (click)="resend()">
+          Rinvia email
+        </button>
+        <p class="text-xs text-base-content/60 mt-4"><a routerLink="/login" class="link link-primary">Vai al login</a></p>
+      } @else if (status() === undefined) {
         <p class="text-sm text-base-content/60 mt-4">Caricamento...</p>
-      } @else if (!status()?.registrationOpen) {
+      }
+      @else if (!status()?.registrationOpen) {
         <p class="text-sm text-base-content/60 mb-4">
           La registrazione non è attiva su questa istanza.
         </p>

@@ -579,6 +579,7 @@ export const en = {
   'route.login': 'Sign in',
   'route.onboarding': 'Welcome',
   'route.register': 'Create account',
+  'route.verify': 'Confirm email',
   'route.invite': 'Invitation',
   'route.publicForm': 'Form',
   'route.dashboard': 'Dashboard',

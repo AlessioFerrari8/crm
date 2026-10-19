@@ -1,7 +1,7 @@
 import { API_BASE_URL } from './../core/api-config';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, Service, WritableSignal, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, of, switchMap, tap } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 
 import { IAuthResponse } from '../models/IAuthResponse';
 import { IMeResponse } from '../models/IMeResponse';
@@ -81,11 +81,29 @@ export class AuthService {
     return this.http.get<IAuthStatus>(`${API_BASE_URL}/api/auth/status`);
   }
 
-  // registrazione pubblica: crea un utente "member" e lo logga (cookie), poi carica /me
-  register(payload: IRegisterPayload): Observable<IMeResponse | null> {
+  // registrazione pubblica. 'verify' = utente creato ma da confermare via email (nessun cookie); 'logged' = verifica spenta,
+  // l'utente è già dentro e /me è caricato
+  register(payload: IRegisterPayload): Observable<'verify' | 'logged'> {
     return this.http
-      .post<IAuthResponse>(`${API_BASE_URL}/api/auth/register`, payload)
-      .pipe(switchMap(() => this.load()));
+      .post<{ verificationRequired?: boolean }>(`${API_BASE_URL}/api/auth/register`, payload)
+      .pipe(
+        switchMap((r) =>
+          r?.verificationRequired ? of('verify' as const) : this.load().pipe(map(() => 'logged' as const))
+        )
+      );
+  }
+
+  // conferma dal link dell mail. La pagina /verify si apre senza cookie: la GET di status() serve a ricevere XSRF-TOKEN, senza il quale
+  // la POST verrebbe rifiutata
+  verifyEmail(token: string): Observable<void> {
+    return this.status().pipe(
+      switchMap(() => this.http.post<void>(`${API_BASE_URL}/api/auth/verify-email`, { token }))
+    );
+  }
+
+  // 204 sempre: il backend non dice se l'indirizzo esiste
+  resendVerification(email: string): Observable<void> {
+    return this.http.post<void>(`${API_BASE_URL}/api/auth/resend-verification`, { email });
   }
 
   // accettazione invito (endpoint pubblico): l'invitato sceglie nome e password col token

@@ -551,6 +551,7 @@ export const it = {
   'route.login': 'Accedi',
   'route.onboarding': 'Benvenuto',
   'route.register': 'Crea account',
+  'route.verify': 'Conferma email',
   'route.invite': 'Invito',
   'route.publicForm': 'Modulo',
   'route.dashboard': 'Dashboard',
