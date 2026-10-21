@@ -110,23 +110,23 @@ export class CommandPalette {
     }));
 
     const nav = [
-      { section: 'Vai a', label: 'Dashboard', icon: LayoutDashboard, route: ['/'] },
+      { section: this.i18n.t('palette.section.goTo'), label: this.i18n.t('palette.nav.dashboard'), icon: LayoutDashboard, route: ['/'] },
       ...objs.map((o) => ({
-        section: 'Vai a',
+        section: this.i18n.t('palette.section.goTo'),
         label: o.pluralLabel,
         icon: resolveObjectIcon(o.icon),
         color: o.color,
         route: ['/o', o.key]
       })),
-      { section: 'Vai a', label: 'Calendario', icon: CalendarDays, route: ['/calendar'] },
-      { section: 'Vai a', label: 'Grafici', icon: ChartLine, route: ['/charts'] },
-      { section: 'Vai a', label: 'Impostazioni', icon: Settings, route: ['/settings'] }
+      { section: this.i18n.t('palette.section.goTo'), label: this.i18n.t('palette.nav.calendar'), icon: CalendarDays, route: ['/calendar'] },
+      { section: this.i18n.t('palette.section.goTo'), label: this.i18n.t('palette.nav.charts'), icon: ChartLine, route: ['/charts'] },
+      { section: this.i18n.t('palette.section.goTo'), label: this.i18n.t('palette.nav.settings'), icon: Settings, route: ['/settings'] }
     ].filter((i) => !q || i.label.toLowerCase().includes(q));
 
     const actions = objs
       .map((o) => ({
-        section: 'Azioni',
-        label: `Nuovo ${o.label}`,
+        section: this.i18n.t('palette.section.actions'),
+        label: this.i18n.t('palette.action.new', { label: o.label }),
         icon: Plus,
         route: ['/o', o.key],
         queryParams: { new: '1' }

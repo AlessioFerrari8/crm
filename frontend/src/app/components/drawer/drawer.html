@@ -5,7 +5,7 @@
             <header class="flex items-center justify-between p-4 border-b border-base-300">
                 <h2 class="font-semibold">{{ title() }}</h2>
                 <button class="btn btn-ghost btn-sm btn-square rounded-sm" (click)="close.emit()"
-                    aria-label="Chiudi">✕</button>
+                    [attr.aria-label]="i18n.t('drawer.closeAria')">✕</button>
             </header>
             <div class="flex-1 overflow-y-auto p-4">
                 <ng-content />

@@ -9,7 +9,7 @@
   <div class="flex items-center justify-center p-2 cursor-pointer">
     <img
       src="logo_minimale_con_bussola_stilizzata-removebg-preview.png"
-      alt="NorthLeap"
+      alt="i18n.t('sidebar.logoAlt')"
       [class]="showLabels() ? 'w-32' : 'w-10'"
       (click)="toDashboard()"
     />
@@ -43,11 +43,11 @@
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
       [class.justify-center]="!showLabels()"
       [class.justify-start]="showLabels()"
-      title="Dashboard"
+      title="i18n.t('palette.nav.dashboard')"
     >
       <lucide-icon [img]="DashboardsIcon" [size]="20" />
       @if(showLabels()) {
-        <span>Dashboard</span>
+        <span>{{ i18n.t('palette.nav.dashboard') }}</span>
       }
     </a>
 
@@ -57,11 +57,11 @@
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
       [class.justify-center]="!showLabels()"
       [class.justify-start]="showLabels()"
-      title="Report"
+      title="i18n.t('nav.reports')"
     >
       <lucide-icon [img]="ReportsIcon" [size]="20" />
       @if(showLabels()) {
-        <span>Report</span>
+        <span>{{ i18n.t('nav.reports') }}</span>
       }
     </a>
 
@@ -71,11 +71,11 @@
       class="btn btn-ghost btn-sm rounded-sm w-full gap-2"
       [class.justify-center]="!showLabels()"
       [class.justify-start]="showLabels()"
-      title="Fatture elettroniche"
+      title="i18n.t('nav.einvoices')"
     >
       <lucide-icon [img]="EInvoicesIcon" [size]="20" />
       @if(showLabels()) {
-        <span>Fatture elettroniche</span>
+        <span>{{ i18n.t('nav.einvoices') }}</span>
       }
     </a>
 

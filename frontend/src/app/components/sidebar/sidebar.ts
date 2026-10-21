@@ -6,6 +6,7 @@ import { CalendarDays, ChartColumn, LucideAngularModule, Settings, Copy, FileTex
 import { resolveObjectIcon } from '../../core/object-icons';
 import { ObjectType } from '../../models/object-type';
 import { ObjectTypeService } from '../../services/object-type.service';
+import { I18nService } from '../../services/i18n';
 
 const MIN_WIDTH = 64;        // rail con sole icone
 const MAX_WIDTH = 200;
@@ -28,6 +29,7 @@ export class Sidebar {
 
   // servizi
   private readonly objectTypeService = inject(ObjectTypeService);
+  protected readonly i18n = inject(I18nService);
 
   // gestisco il ciclo di vita
   private readonly destroyRef = inject(DestroyRef);
@@ -198,5 +200,5 @@ function snap(value: number): number {
 function readInitialWidth(): number {
   const stored = Number(localStorage.getItem(STORAGE_KEY));
   if (stored >= MIN_WIDTH && stored <= MAX_WIDTH) return stored;
-  return MIN_WIDTH;
+  return EXPANDED_WIDTH;
 }

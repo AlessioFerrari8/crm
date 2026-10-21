@@ -1,21 +1,21 @@
-<button class="btn btn-primary btn-sm rounded-sm" (click)="open.set(true)" aria-label="Creazione veloce">+</button>
+<button class="btn btn-primary btn-sm rounded-sm" (click)="open.set(true)" [attr.aria-label]="i18n.t('quick.label')">+</button>
 
 @if(open()) {
   <div class="modal modal-open">
     <div class="modal-box rounded-sm max-w-lg">
       @if(!selected()) {
-        <h3 class="font-semibold mb-3">Cosa vuoi creare?</h3>
+        <h3 class="font-semibold mb-3">{{ i18n.t('quick.prompt') }}</h3>
         <div class="grid grid-cols-2 gap-2">
           @for(o of quick(); track o.id) {
             <button class="btn btn-ghost justify-start rounded-sm" (click)="pick(o)">{{ o.label }}</button>
           }
         </div>
       } @else {
-        <h3 class="font-semibold mb-3">Nuovo: {{ selected()!.label }}</h3>
+        <h3 class="font-semibold mb-3">{{ i18n.t('quick.new', { label: selected()!.label }) }}</h3>
         <app-dynamic-form [fields]="quickFields()" [submitting]="saving()" (save)="create($event)" />
       }
       <div class="modal-action">
-        <ui-button variant="ghost" (click)="open.set(false); selected.set(null)">Annulla</ui-button>
+        <ui-button variant="ghost" (click)="open.set(false); selected.set(null)">{{ i18n.t('common.cancel') }}</ui-button>
       </div>
     </div>
   </div>

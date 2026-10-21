@@ -8,6 +8,7 @@ import { RecordsService } from '../../services/records.service';
 import { Router } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { I18nService } from '../../services/i18n';
 
 
 // Pannello a due colonne dei moduli più usati + modal con i soli campi obbligatori
@@ -27,6 +28,7 @@ export class QuickCreate {
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly i18n = inject(I18nService);
 
   // l'ordine è quello del pannello della demo, due colonne da quattro
   private static readonly QUICK_KEYS = [

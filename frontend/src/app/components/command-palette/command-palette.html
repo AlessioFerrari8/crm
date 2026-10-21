@@ -4,7 +4,7 @@
       <div class="flex items-center gap-2 border-b border-base-300 px-3">
         <lucide-icon [img]="SearchIcon" [size]="16" class="opacity-50 shrink-0" />
         <input #paletteInput class="w-full bg-transparent outline-none py-3 text-sm"
-               placeholder="Cerca record, vai a una sezione, crea…"
+               placeholder="i18n.t('palette.placeholder)"
                [value]="query()" (input)="query.set($any($event.target).value)"
                (keydown)="onInputKeydown($event)" />
         <kbd class="kbd kbd-xs">Esc</kbd>
@@ -30,14 +30,14 @@
             </button>
           </li>
         } @empty {
-          <li class="p-4 text-center text-sm text-base-content/40">Nessun risultato.</li>
+          <li class="p-4 text-center text-sm text-base-content/40">{{ i18n.t('palette.noResults') }}</li>
         }
       </ul>
 
       <div class="border-t border-base-300 px-3 py-1.5 text-[10px] text-base-content/40 flex gap-3">
-        <span><kbd class="kbd kbd-xs">↑</kbd> <kbd class="kbd kbd-xs">↓</kbd> naviga</span>
-        <span><kbd class="kbd kbd-xs">Invio</kbd> apri</span>
-        <span><kbd class="kbd kbd-xs">Ctrl</kbd>+<kbd class="kbd kbd-xs">K</kbd> apri/chiudi</span>
+        <span><kbd class="kbd kbd-xs">↑</kbd> <kbd class="kbd kbd-xs">↓</kbd> {{ i18n.t('palette.hintNavigate') }}</span>
+        <span><kbd class="kbd kbd-xs">{{ i18n.t('palette.hintEnter') }}</kbd> {{ i18n.t('palette.hintOpen') }}</span>
+        <span><kbd class="kbd kbd-xs">Ctrl</kbd>+<kbd class="kbd kbd-xs">K</kbd> {{ i18n.t('palette.hintToggle') }}</span>
       </div>
     </div>
   </div>
