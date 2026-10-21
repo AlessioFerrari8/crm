@@ -47,21 +47,22 @@ import {
   Trash2
 } from 'lucide-angular';
 import { Tag } from '../../models/tag';
-import { TagService } from '../../services/tag.service'
+import { TagService } from '../../services/tag.service';
 import { currentLocale } from '../../services/i18n';
 
 type RecordView = 'table' | 'board' | 'calendar';
 
-// quoting CSV + guardia formula-injection (celle che iniziano con =,+,-,@ aprirebbero come
-// formule in Excel/LibreOffice: si prefissa un apostrofo)
+// prepara un valore per esportazione CSV, evitando che i dati vengano interpretati come formule
 function csvCell(value: string): string {
   let v = value;
+
   if (/^[=+\-@]/.test(v)) {
     v = "'" + v;
   }
   if (/[";\n\r]/.test(v)) {
     v = '"' + v.replace(/"/g, '""') + '"';
   }
+
   return v;
 }
 
@@ -72,7 +73,6 @@ function csvCell(value: string): string {
   templateUrl: './record-list.html'
 })
 export class RecordList {
-  // serivizi vari
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recordsService = inject(RecordsService);
@@ -87,9 +87,8 @@ export class RecordList {
   protected readonly drawerOpen: WritableSignal<boolean> = signal(false);
   protected readonly submitting: WritableSignal<boolean> = signal(false);
 
-
   // vista corrente: tabella, board (Kanban) o calendario
-  protected readonly view = signal<RecordView>('table');
+  protected readonly view: WritableSignal<RecordView> = signal('table');
 
   protected readonly LayoutListIcon = LayoutList;
   protected readonly ColumnsIcon = Columns3;
@@ -104,20 +103,20 @@ export class RecordList {
   protected readonly UploadIcon = Upload;
 
   // pannello import CSV
-  protected readonly importOpen = signal(false);
+  protected readonly importOpen: WritableSignal<boolean> = signal(false);
 
   // ricerca testuale (q, debounced), ordinamento singolo per colonna (asc/desc/nessuno)
   protected readonly search = signal('');
-  protected readonly sort = signal<SortSpec[]>([]);
+  protected readonly sort: WritableSignal<SortSpec[]> = signal([]);
 
-  // paginazione: senza, oltre PAGE_SIZE record la lista veniva semplicemente troncata
+  // paginazione risultati
   protected readonly page = signal(1);
 
   // selezione righe + stato del pannello azioni di massa
-  protected readonly selected = signal<Set<string>>(new Set());
+  protected readonly selected: WritableSignal<Set<string>> = signal(new Set());
   protected readonly bulkField = signal('');
   protected readonly bulkValue = signal('');
-  protected readonly bulkPending = signal(false);
+  protected readonly bulkPending: WritableSignal<boolean> = signal(false);
 
   // status field -> abilita la board (le colonne). null se l'object type non ne ha uno
   protected readonly statusField = computed<FieldDef | null>(
@@ -130,12 +129,11 @@ export class RecordList {
   );
 
   constructor() {
-    // cambiando object type le viste disponibili cambiano (board/calendario possono sparire):
-    // si riparte sempre dalla tabella, l'unica vista garantita per qualunque tipo
+    // Quando cambia il tipo, si ripristinano la vista e i filtri locali
     effect(() => {
       this.objectKey();
       this.view.set('table');
-      // reset stato specifico dell'elenco cambiando tipo (equivalente al remount con key= del riferimento)
+      // reset stato locale quando cambia il tipo di record
       this.sort.set([]);
       this.search.set('');
       this.selected.set(new Set());
@@ -172,7 +170,7 @@ export class RecordList {
     });
   }
 
-  // filtri avanzati (AND/OR annidati). Vuoto = nessun filtro.
+  // filtri avanzati (AND/OR annidati). Vuoto = nessun filtro
   protected readonly showFilters = signal(false);
   protected readonly filterGroup = signal<FilterGroup>({ combinator: 'and', conditions: [] });
   protected readonly activeFilterCount = computed(() => this.filterGroup().conditions.length);
@@ -185,9 +183,7 @@ export class RecordList {
   // la chiave di rotta esposta come signal (serve a openRecord/createRecord)
   protected readonly objectKey = toSignal(this.key$, { initialValue: '' });
 
-  // stream dati: a ogni cambio di key, reload o filtro, interroga il backend via queryAdvanced
-  // (POST col body filter+sort). switchMap annulla la richiesta precedente. Il filtro vuoto è
-  // innocuo lato backend (nessuna WHERE). Risultato in un signal via toSignal.
+  // carica i record quando cambiano tipo, filtri o ordinamento
   private static readonly PAGE_SIZE = 200;
 
   private readonly result = toSignal(
@@ -195,8 +191,6 @@ export class RecordList {
       this.key$,
       this.reload$.pipe(startWith(undefined)),
       toObservable(this.filterGroup),
-      // startWith('') emette subito così il primo caricamento non aspetta i 300ms del debounce;
-      // distinctUntilChanged dopo lo startWith evita la query doppia iniziale (due '' consecutivi)
       toObservable(this.search).pipe(debounceTime(300), startWith(''), distinctUntilChanged()),
       toObservable(this.sort),
       toObservable(this.page)
@@ -230,9 +224,7 @@ export class RecordList {
   protected readonly total = computed(() => this.result()?.total ?? 0);
   protected readonly formFields = computed<FieldDef[]>(() => this.object()?.fields ?? []);
 
-  // I tag della pagina corrente in una chiamata sola. L'aggancio è su records(), cioè sulla pagina:
-  // agganciarlo alla riga vorrebbe dire 200 richieste. switchMap perché sfogliando in fretta le risposte
-  // tornano fuori ordine, e senza anullamento la mappa vecchia sovrascriverebbe quella nuova
+  // recupera i tag dei record visibili, con un'unica richiesta
   protected readonly tagsByRecord = toSignal(
     toObservable(this.records).pipe(
       map((rows) => rows.map((r) => r.id)),
@@ -270,7 +262,7 @@ export class RecordList {
     return fieldCell(field, raw);
   }
 
-  // ── ricerca / ordinamento ──────────────────────────────────────────────────
+  // ricerca / ordinamento
   protected onSearch(value: string): void {
     this.search.set(value);
   }
@@ -288,7 +280,7 @@ export class RecordList {
     return cur && cur.field === field ? cur.dir : null;
   }
 
-  // ── selezione / azioni di massa ─────────────────────────────────────────────
+  // selezione / azioni di massa
   protected isSelected(id: string): boolean {
     return this.selected().has(id);
   }
@@ -342,9 +334,9 @@ export class RecordList {
       });
   }
 
-  // ── export CSV ──────────────────────────────────────────────────────────────
-  // esporta la pagina corrente (filtri/ordinamento/ricerca applicati), separatore ';' e BOM
-  // per Excel. I valori che iniziano con =,+,-,@ vengono prefissati con ' (formula injection).
+  // export CSV
+  // esporta la pagina corrente (filtri/ordinamento/ricerca applicati), separatore ';' e BOM per Excel. I valori che iniziano
+  // con =,+,-,@ vengono prefissati con ' (formula injection)
   protected exportCsv(): void {
     const cols = this.columns();
     const rows = this.records();
@@ -370,7 +362,7 @@ export class RecordList {
     URL.revokeObjectURL(url);
   }
 
-  // ── cestino (soft-delete + ripristino) ──────────────────────────────────────
+  // cestino (soft-delete + ripristino)
   protected readonly trashOpen = signal(false);
   protected readonly trashItems = signal<RecordItem[]>([]);
   protected readonly trashLoading = signal(false);
