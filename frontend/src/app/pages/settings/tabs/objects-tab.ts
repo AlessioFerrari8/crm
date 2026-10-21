@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, WritableSignal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -7,7 +7,13 @@ import { Subject, catchError, forkJoin, of, startWith, switchMap, tap } from 'rx
 import { ICON_KEYS, resolveObjectIcon } from '../../../core/object-icons';
 import { UiButton } from '../../../components/ui/button';
 import { UiSpinner } from '../../../components/ui/spinner';
-import { FIELD_TYPES, FieldDef, FieldOption, FieldType, ObjectType } from '../../../models/object-type';
+import {
+  FIELD_TYPES,
+  FieldDef,
+  FieldOption,
+  FieldType,
+  ObjectType,
+} from '../../../models/object-type';
 import { FieldUpsert, ObjectTypeService } from '../../../services/object-type.service';
 import { ConfirmService } from '../../../services/confirm.service';
 
@@ -15,7 +21,7 @@ import { ConfirmService } from '../../../services/confirm.service';
   selector: 'app-objects-tab',
   standalone: true,
   imports: [ReactiveFormsModule, UiButton, UiSpinner, LucideAngularModule],
-  templateUrl: './objects-tab.html'
+  templateUrl: './objects-tab.html',
 })
 export class ObjectsTab {
   private readonly fb = inject(FormBuilder);
@@ -23,22 +29,32 @@ export class ObjectsTab {
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly loading = signal(true);
-  protected readonly expanded = signal<string | null>(null);
-  protected readonly creating = signal(false);
-  protected readonly submitting = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly loading: WritableSignal<boolean> = signal(true);
+  protected readonly expanded: WritableSignal<string | null> = signal(null);
+  protected readonly creating: WritableSignal<boolean> = signal(false);
+  protected readonly submitting: WritableSignal<boolean> = signal(false);
+  protected readonly error: WritableSignal<string | null> = signal<string | null>(null);
 
   private readonly reload$ = new Subject<void>();
 
   protected readonly objects = toSignal(
     this.reload$.pipe(
       startWith(undefined),
-      tap(() => this.loading.set(true)),
-      switchMap(() => this.objectTypeService.load().pipe(catchError(() => of<ObjectType[]>([])))),
-      tap(() => this.loading.set(false))
+      tap(() => {
+        this.loading.set(true);
+        this.error.set(null);
+      }),
+      switchMap(() =>
+        this.objectTypeService.load().pipe(
+          catchError((err) => {
+            this.error.set(err?.error?.message ?? 'Errore nel caricamento degli oggetti');
+            return of<ObjectType[]>([]);
+          }),
+        ),
+      ),
+      tap(() => this.loading.set(false)),
     ),
-    { initialValue: [] as ObjectType[] }
+    { initialValue: [] as ObjectType[] },
   );
 
   protected readonly form = this.fb.nonNullable.group({
@@ -46,10 +62,9 @@ export class ObjectsTab {
     label: ['', Validators.required],
     pluralLabel: ['', Validators.required],
     icon: [''],
-    color: ['#2563eb']
+    color: ['#2563eb'],
   });
 
-  // --- gestione campi (aggiungi/elimina) ---
   protected readonly fieldTypes = FIELD_TYPES;
   // icone selezionabili + resolver, riusati dal registro condiviso (core/object-icons)
   protected readonly iconKeys = ICON_KEYS;
@@ -66,10 +81,8 @@ export class ObjectsTab {
     icon: [''],
     // opzioni per i tipi a scelta: una riga per voce, formato "valore" oppure "valore|etichetta"
     optionsText: [''],
-    // configurazione relazione
     targetObject: [''],
     multiple: [false],
-    // config avanzata
     description: [''],
     placeholder: [''],
     section: [''],
@@ -84,21 +97,29 @@ export class ObjectsTab {
     unique: [false],
     indexed: [false],
     readonly: [false],
-    hidden: [false]
+    hidden: [false],
   });
 
   // tipi che richiedono una lista di opzioni / una relazione (per mostrare i campi giusti nel form)
   protected readonly selectTypes: FieldType[] = ['SELECT', 'MULTISELECT', 'STATUS', 'TAGS'];
   protected readonly relationTypes: FieldType[] = ['RELATION', 'LOOKUP'];
-  // tipi con vincoli numerici (min/max/step) e testuali (min/max lunghezza + pattern)
+  // tipi con vincoli numerici e testuali
   protected readonly numericTypes: FieldType[] = [
-    'NUMBER', 'INTEGER', 'BIGINT', 'DECIMAL', 'FLOAT', 'PERCENT', 'CURRENCY', 'RATING', 'DURATION'
+    'NUMBER',
+    'INTEGER',
+    'BIGINT',
+    'DECIMAL',
+    'FLOAT',
+    'PERCENT',
+    'CURRENCY',
+    'RATING',
+    'DURATION',
   ];
   protected readonly textualTypes: FieldType[] = ['TEXT', 'VARCHAR', 'LONGTEXT', 'RICHTEXT'];
   protected readonly widths = [
     { value: 'full', label: 'Intera' },
     { value: 'half', label: 'Metà' },
-    { value: 'third', label: 'Un terzo' }
+    { value: 'third', label: 'Un terzo' },
   ];
 
   // chiave del campo in modifica (null = stiamo aggiungendo un campo nuovo)
@@ -147,7 +168,7 @@ export class ObjectsTab {
       unique: field.unique,
       indexed: field.indexed,
       readonly: field.readonly,
-      hidden: field.hidden
+      hidden: field.hidden,
     });
     this.fieldForm.controls.key.disable();
     this.addingField.set(true);
@@ -185,7 +206,7 @@ export class ObjectsTab {
       isUnique: raw.unique,
       isIndexed: raw.indexed,
       isReadonly: raw.readonly,
-      isHidden: raw.hidden
+      isHidden: raw.hidden,
     };
     // vincoli numerici (min/max/step) e testuali (min/max lunghezza + pattern) solo per i tipi pertinenti
     if (this.numericTypes.includes(raw.type) || this.textualTypes.includes(raw.type)) {
@@ -218,7 +239,7 @@ export class ObjectsTab {
       error: (err) => {
         this.fieldSubmitting.set(false);
         this.fieldError.set(err?.error?.message ?? 'Errore nel salvataggio del campo');
-      }
+      },
     });
   }
 
@@ -250,7 +271,8 @@ export class ObjectsTab {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => this.reload$.next(),
-          error: (err) => this.fieldError.set(err?.error?.message ?? 'Errore nella rimozione del campo')
+          error: (err) =>
+            this.fieldError.set(err?.error?.message ?? 'Errore nella rimozione del campo'),
         });
     });
   }
@@ -275,22 +297,24 @@ export class ObjectsTab {
         error: (err) => {
           this.submitting.set(false);
           this.error.set(err?.error?.message ?? 'Errore nella creazione');
-        }
+        },
       });
   }
 
   protected remove(obj: ObjectType): void {
     if (obj.system) return;
-    this.confirmService.ask(`Eliminare l'oggetto "${obj.label}" e tutti i suoi record?`).then((ok) => {
-      if (!ok) return;
-      this.objectTypeService
-        .remove(obj.key)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => this.reload$.next());
-    });
+    this.confirmService
+      .ask(`Eliminare l'oggetto "${obj.label}" e tutti i suoi record?`)
+      .then((ok) => {
+        if (!ok) return;
+        this.objectTypeService
+          .remove(obj.key)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => this.reload$.next());
+      });
   }
 
-  // ── modifica oggetto esistente (label/plurale/colore/icona) ────────────────
+  // modifica oggetto esistente (label/plurale/colore/icona)
   protected readonly editingObjectKey = signal<string | null>(null);
   protected readonly editSubmitting = signal(false);
 
@@ -298,7 +322,7 @@ export class ObjectsTab {
     label: ['', Validators.required],
     pluralLabel: ['', Validators.required],
     icon: [''],
-    color: ['#2563eb']
+    color: ['#2563eb'],
   });
 
   protected startEditObject(obj: ObjectType): void {
@@ -306,7 +330,7 @@ export class ObjectsTab {
       label: obj.label,
       pluralLabel: obj.pluralLabel,
       icon: obj.icon ?? '',
-      color: obj.color ?? '#2563eb'
+      color: obj.color ?? '#2563eb',
     });
     this.editingObjectKey.set(obj.key);
     this.expanded.set(obj.key);
@@ -331,7 +355,7 @@ export class ObjectsTab {
           this.editingObjectKey.set(null);
           this.reload$.next();
         },
-        error: () => this.editSubmitting.set(false)
+        error: () => this.editSubmitting.set(false),
       });
   }
 
@@ -343,7 +367,7 @@ export class ObjectsTab {
       .subscribe(() => this.reload$.next());
   }
 
-  // ── modulo pubblico di lead capture (/f/{key}) ──────────────────────────────
+  // modulo pubblico di lead capture (/f/{key})
   protected readonly formLinkCopied = signal<string | null>(null);
 
   protected togglePublicForm(obj: ObjectType): void {
@@ -364,8 +388,8 @@ export class ObjectsTab {
     });
   }
 
-  // riordino: scambia la posizione col vicino, rinumerando per indice (i sortOrder seminati
-  // possono avere duplicati: lo scambio secco dei valori non basterebbe)
+  // riordino: scambia la posizione col vicino, rinumerando per indice (i sortOrder seminati possono avere duplicati:
+  // lo scambio secco dei valori non basterebbe)
   protected moveObject(obj: ObjectType, delta: -1 | 1): void {
     const list = this.objects();
     const idx = list.findIndex((o) => o.key === obj.key);
@@ -374,7 +398,7 @@ export class ObjectsTab {
     const other = list[swapIdx];
     forkJoin([
       this.objectTypeService.update(obj.key, { sortOrder: swapIdx }),
-      this.objectTypeService.update(other.key, { sortOrder: idx })
+      this.objectTypeService.update(other.key, { sortOrder: idx }),
     ])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.reload$.next());
